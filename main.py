@@ -62,20 +62,29 @@ class MainWindow(QMainWindow):
         self.is_saved = False
         self.update_window_title()
 
-    def action_triggered(self):
-        self.status_bar.showMessage("Shortcut triggered.", 2000)
-
     def alignrightevent(self):
-        self.text_editor.setAlignment(Qt.AlignRight)
+        if self.text_editor.alignment() == Qt.AlignRight:
+            self.text_editor.setAlignment(Qt.AlignLeft)
+        else:
+            self.text_editor.setAlignment(Qt.AlignRight)
 
     def alignleftevent(self):
-        self.text_editor.setAlignment(Qt.AlignLeft)
+        if self.text_editor.alignment() == Qt.AlignLeft:
+            self.text_editor.setAlignment(Qt.AlignLeft)
+        else:
+            self.text_editor.setAlignment(Qt.AlignLeft)
 
     def aligncenterevent(self):
-        self.text_editor.setAlignment(Qt.AlignCenter)
+        if self.text_editor.alignment() == Qt.AlignCenter:
+            self.text_editor.setAlignment(Qt.AlignLeft)
+        else:
+            self.text_editor.setAlignment(Qt.AlignCenter)
 
     def alignjustifiedevent(self):
-        self.text_editor.setAlignment(Qt.AlignJustify)
+        if self.text_editor.alignment() == Qt.AlignJustify:
+            self.text_editor.setAlignment(Qt.AlignLeft)
+        else:
+            self.text_editor.setAlignment(Qt.AlignJustify)
 
     def bold(self):
         if self.text_editor.fontWeight() == QFont.Bold:
@@ -97,22 +106,23 @@ class MainWindow(QMainWindow):
 
     def actionprepare(self):
         self.alignrightevent = QAction('Align Right', statusTip='Text rightward.',
-                                       triggered=self.alignrightevent, checkable=True, shortcut='Alt+R')
+                                       triggered=self.alignrightevent, checkable=False, shortcut='Alt+R')
         self.alignleftevent = QAction('Align Left', statusTip='Text leftward.',
-                                      triggered=self.alignleftevent, checkable=True, shortcut='Alt+L')
+                                      triggered=self.alignleftevent, checkable=False, shortcut='Alt+L')
         self.aligncenterevent = QAction('Align Center', statusTip='Text centered.',
-                                        triggered=self.aligncenterevent, checkable=True, shortcut='Alt+C')
+                                        triggered=self.aligncenterevent, checkable=False, shortcut='Alt+C')
         self.alignjustifiedevent = QAction('Align Justify', statusTip='Text justified.',
-                                           triggered=self.alignjustifiedevent, checkable=True, shortcut='Alt+J')
+                                           triggered=self.alignjustifiedevent, checkable=False, shortcut='Alt+J')
         self.bold = QAction('Bold', statusTip='Text bold.',
-                            triggered=self.bold, checkable=True, shortcut='Alt+B')
+                            triggered=self.bold, checkable=False, shortcut='Alt+B')
         self.italic = QAction('Italic', statusTip='Text italic.',
-                              triggered=self.italic, checkable=True, shortcut='Alt+I')
+                              triggered=self.italic, checkable=False, shortcut='Alt+I')
         self.underline = QAction('Underline', statusTip='Text underline.',
-                                 triggered=self.underline, checkable=True, shortcut='Alt+U')
+                                 triggered=self.underline, checkable=False, shortcut='Alt+U')
 
     def toolbar(self):
         self.toolbar = self.addToolBar('Toolbar')
+        self.setObjectName("Toolbar")
         self.toolbar.addAction(self.alignrightevent)
         self.toolbar.addAction(self.alignleftevent)
         self.toolbar.addAction(self.aligncenterevent)
