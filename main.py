@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from PyQt5.QtPrintSupport import *
 
 
 class MainWindow(QMainWindow):
@@ -148,6 +149,14 @@ class MainWindow(QMainWindow):
             'Save', statusTip='Save file.', triggered=self.save, shortcut=QKeySequence.Save)
         self.saveasaction = QAction(
             'Save As', statusTip='Save file as.', triggered=self.save_as, shortcut=QKeySequence.SaveAs)
+        self.printaction = QAction(
+            'Print', statusTip='Print file.', triggered=self.print, shortcut=QKeySequence.Print)
+        self.exitaction = QAction(
+            'Exit', statusTip='Exit application.', triggered=self.exit, shortcut=QKeySequence.Quit)
+        self.undoaction = QAction(
+            'Undo', statusTip='Undo last action.', triggered=self.undo, shortcut=QKeySequence.Undo)
+        self.redoaction = QAction(
+            'Redo', statusTip='Redo last action.', triggered=self.redo, shortcut=QKeySequence.Redo)
 
     def toolbar(self):
         self.toolbar = self.addToolBar('File')
@@ -155,6 +164,10 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.openaction)
         self.toolbar.addAction(self.saveaction)
         self.toolbar.addAction(self.saveasaction)
+        self.toolbar.addAction(self.printaction)
+        self.toolbar.addAction(self.exitaction)
+        self.toolbar.addAction(self.undoaction)
+        self.toolbar.addAction(self.redoaction)
         self.addToolBarBreak()
         self.toolbar = self.addToolBar('Format')
         self.toolbar.addWidget(QLabel("<b>Alignment:</b>"))
@@ -229,6 +242,31 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("Opened.", 2000)
         self.is_saved = True
         self.update_window_title()
+
+    def print(self):
+        printer = QPrinter(QPrinter.HighResolution)
+        dialog = QPrintDialog(printer, self)
+        if dialog.exec_() == QPrintDialog.Accepted:
+            self.text_editor.print_(printer)
+
+    def exit(self):
+        if self.is_saved:
+            sys.exit()
+        else:
+            reply = QMessageBox.question(self, 'Message',
+                                         "Are you sure to quit without saving?", QMessageBox.Yes |
+                                         QMessageBox.No, QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                sys.exit()
+            else:
+                pass
+
+    def undo(self):
+        self.text_editor.undo()
+
+    def redo(self):
+        self.text_editor.redo()
 
 
 if __name__ == "__main__":
