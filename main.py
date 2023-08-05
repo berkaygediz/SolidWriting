@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -19,9 +20,11 @@ class MainWindow(QMainWindow):
             'background_color': '#FFFFFF',
         }
 
+        self.selected_file = None
         self.is_saved = False
         self.file_name = None
         self.default_directory = QDir().homePath()
+        self.directory = self.default_directory
 
         self.text_editor = QTextEdit()
         self.text_editor.setFontFamily(self.default_values['font_family'])
@@ -104,14 +107,28 @@ class MainWindow(QMainWindow):
         else:
             self.text_editor.setFontUnderline(True)
 
+    def strike(self):
+        if self.text_editor.fontStrikeOut():
+            self.text_editor.setFontStrikeOut(False)
+        else:
+            self.text_editor.setFontStrikeOut(True)
+
+    def color(self):
+        color = QColorDialog.getColor()
+        self.text_editor.setTextColor(color)
+
+    def backgroundcolor(self):
+        color = QColorDialog.getColor()
+        self.text_editor.setTextBackgroundColor(color)
+
     def actionprepare(self):
-        self.alignrightevent = QAction('Align Right', statusTip='Text rightward.',
+        self.alignrightevent = QAction('Right', statusTip='Text rightward.',
                                        triggered=self.alignrightevent, checkable=False, shortcut='Alt+R')
-        self.alignleftevent = QAction('Align Left', statusTip='Text leftward.',
+        self.alignleftevent = QAction('Left', statusTip='Text leftward.',
                                       triggered=self.alignleftevent, checkable=False, shortcut='Alt+L')
-        self.aligncenterevent = QAction('Align Center', statusTip='Text centered.',
+        self.aligncenterevent = QAction('Center', statusTip='Text centered.',
                                         triggered=self.aligncenterevent, checkable=False, shortcut='Alt+C')
-        self.alignjustifiedevent = QAction('Align Justify', statusTip='Text justified.',
+        self.alignjustifiedevent = QAction('Justify', statusTip='Text justified.',
                                            triggered=self.alignjustifiedevent, checkable=False, shortcut='Alt+J')
         self.bold = QAction('Bold', statusTip='Text bold.',
                             triggered=self.bold, checkable=False, shortcut='Alt+B')
@@ -119,17 +136,99 @@ class MainWindow(QMainWindow):
                               triggered=self.italic, checkable=False, shortcut='Alt+I')
         self.underline = QAction('Underline', statusTip='Text underline.',
                                  triggered=self.underline, checkable=False, shortcut='Alt+U')
+        self.strike = QAction('Strike', statusTip='Text strike.',
+                              triggered=self.strike, checkable=False, shortcut='Alt+S')
+        self.color = QAction('Color', statusTip='Text color.',
+                             triggered=self.color, checkable=False, shortcut='Alt+C+O')
+        self.backgroundcolor = QAction('Background Color', statusTip='Text background color.',
+                                       triggered=self.backgroundcolor, checkable=False, shortcut='Alt+B+G')
+        self.openaction = QAction(
+            'Open', statusTip='Open file.', triggered=self.open, shortcut=QKeySequence.Open)
+        self.saveaction = QAction(
+            'Save', statusTip='Save file.', triggered=self.save, shortcut=QKeySequence.Save)
+        self.saveasaction = QAction(
+            'Save As', statusTip='Save file as.', triggered=self.save_as, shortcut=QKeySequence.SaveAs)
 
     def toolbar(self):
-        self.toolbar = self.addToolBar('Toolbar')
-        self.setObjectName("Toolbar")
+        self.toolbar = self.addToolBar('File')
+        self.toolbar.addWidget(QLabel("<b>File:</b>"))
+        self.toolbar.addAction(self.openaction)
+        self.toolbar.addAction(self.saveaction)
+        self.toolbar.addAction(self.saveasaction)
+        self.addToolBarBreak()
+        self.toolbar = self.addToolBar('Format')
+        self.toolbar.addWidget(QLabel("<b>Alignment:</b>"))
         self.toolbar.addAction(self.alignrightevent)
         self.toolbar.addAction(self.alignleftevent)
         self.toolbar.addAction(self.aligncenterevent)
         self.toolbar.addAction(self.alignjustifiedevent)
+        self.toolbar.addSeparator()
+        self.toolbar.addWidget(QLabel("<b>Font:</b>"))
         self.toolbar.addAction(self.bold)
         self.toolbar.addAction(self.italic)
         self.toolbar.addAction(self.underline)
+        self.toolbar.addAction(self.strike)
+        self.addToolBarBreak()
+        self.toolbar = self.addToolBar('Color')
+        self.toolbar.addWidget(QLabel("<b>Color:</b>"))
+        self.toolbar.addAction(self.color)
+        self.toolbar.addAction(self.backgroundcolor)
+
+    def savepermament(self):
+        F = open(self.file_name, 'w')
+        if os.path.splitext(self.file_name)[1] == ".html":
+            F.write(self.text_editor.toHtml())
+        else:
+            F.write(self.text_editor.toPlainText())
+        F.close()
+        self.status_bar.showMessage("Saved.", 2000)
+        self.is_saved = True
+        self.update_window_title()
+
+    def save_as(self):
+        file = self.file_name if self.file_name else self.directory
+        selected_file, _ = QFileDialog.getSaveFileName(self, app.applicationName() + " - Save As", file,
+                                                       "HTML Files (*.html);;Text Files (*.txt)")
+
+        if selected_file:
+            self.file_name = selected_file
+            self.savepermament()
+            self.save_directory = os.path.dirname(self.file_name)
+            return True
+        else:
+            return False
+
+    def save(self):
+        if self.is_saved:
+            self.savepermament()
+        elif self.file_name:
+            self.savepermament()
+        else:
+            self.save_as()
+
+    def open(self):
+        file = self.file_name if self.file_name else self.directory
+        selected_file, _ = QFileDialog.getOpenFileName(self, app.applicationName() + " - Open", file,
+                                                       "HTML Files (*.html);;Text Files (*.txt)")
+
+        if selected_file:
+            self.file_name = selected_file
+            self.openpermament()
+            self.save_directory = os.path.dirname(self.file_name)
+            return True
+        else:
+            return False
+
+    def openpermament(self):
+        F = open(self.file_name, 'r')
+        if os.path.splitext(self.file_name)[1] == ".html":
+            self.text_editor.setHtml(F.read())
+        else:
+            self.text_editor.setPlainText(F.read())
+        F.close()
+        self.status_bar.showMessage("Opened.", 2000)
+        self.is_saved = True
+        self.update_window_title()
 
 
 if __name__ == "__main__":
@@ -137,6 +236,6 @@ if __name__ == "__main__":
     main_window = MainWindow()
     app.setOrganizationName("BG")
     app.setApplicationName("BG Text Editor")
-    app.setApplicationVersion("0.1")
+    app.setApplicationVersion("0.2")
     main_window.show()
     sys.exit(app.exec_())
