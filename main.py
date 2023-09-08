@@ -35,7 +35,15 @@ class MainWindow(QMainWindow):
         self.text_editor.textChanged.connect(self.update_statistics)
         self.setup_actions()
         self.setup_toolbar()
+        self.light_theme = QPalette()
+        self.dark_theme = QPalette()
+        self.light_theme.setColor(QPalette.Window, QColor(255, 255, 255))
+        self.light_theme.setColor(QPalette.WindowText, QColor(0, 0, 0))
+        self.dark_theme.setColor(QPalette.Window, QColor(0, 0, 0))
+        self.dark_theme.setColor(QPalette.WindowText, QColor(255, 255, 255))
+        self.setPalette(self.light_theme)
         self.restore_previous_state()
+        self.restore_theme()
 
     def setup_text_editor(self):
         self.text_editor.setFontFamily(self.default_values['font_family'])
@@ -136,6 +144,30 @@ class MainWindow(QMainWindow):
         color = QColorDialog.getColor()
         self.text_editor.setTextBackgroundColor(color)
 
+    def toggle_theme(self):
+        if self.palette() == self.light_theme:
+            self.setPalette(self.dark_theme)
+        else:
+            self.setPalette(self.light_theme)
+
+        self.update_toolbar_text_color()
+
+    def update_toolbar_text_color(self):
+        palette = self.palette()
+
+        if palette == self.light_theme:
+            text_color = QColor(0, 0, 0)
+        else:
+            text_color = QColor(255, 255, 255)
+
+        for toolbar in self.findChildren(QToolBar):
+            for action in toolbar.actions():
+                if action.text() and action.text() != "Theme:":
+                    action_color = QPalette()
+                    action_color.setColor(QPalette.ButtonText, text_color)
+                    action_color.setColor(QPalette.WindowText, text_color)
+                    toolbar.setPalette(action_color)
+
     def setup_actions(self):
         self.newaction = self.create_action(
             "New", "Create a new document", self.new_file, QKeySequence.New)
@@ -188,6 +220,13 @@ class MainWindow(QMainWindow):
         self.add_toolbar_label(self.toolbar, "File:")
         self.toolbar.addActions([self.newaction, self.openaction, self.saveaction, self.saveasaction,
                                 self.printaction, self.exitaction, self.undoaction, self.redoaction])
+
+        self.toolbar = self.addToolBar('Theme')
+        self.add_toolbar_label(self.toolbar, "Theme:")
+        self.theme_action = self.create_action(
+            "Toggle Theme", "Toggle between light and dark themes", self.toggle_theme)
+        self.toolbar.addAction(self.theme_action)
+
         self.addToolBarBreak()
 
         self.toolbar = self.addToolBar('Format')
@@ -215,6 +254,17 @@ class MainWindow(QMainWindow):
         settings.setValue("text_content", self.text_editor.toPlainText())
         settings.setValue("scroll_position",
                           self.text_editor.verticalScrollBar().value())
+        settings.setValue("current_theme", "dark" if self.palette()
+                          == self.dark_theme else "light")
+
+    def restore_theme(self):
+        settings = QSettings("berkaygediz", "RichSpan")
+        saved_theme = settings.value("current_theme")
+
+        if saved_theme == "dark":
+            self.setPalette(self.dark_theme)
+        else:
+            self.setPalette(self.light_theme)
 
     def restore_previous_state(self):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -228,11 +278,16 @@ class MainWindow(QMainWindow):
 
         if self.file_name and os.path.exists(self.file_name):
             with open(self.file_name, 'r', encoding='utf-8') as file:
-                self.text_editor.setHtml(file.read())
+                if self.file_name.endswith((".html", ".htm")):
+                    self.text_editor.setHtml(file.read())
+                else:
+                    self.text_editor.setPlainText(file.read())
 
         scroll_position = settings.value("scroll_position")
         if scroll_position is not None:
             self.text_editor.verticalScrollBar().setValue(int(scroll_position))
+
+        self.restore_theme()
 
     def new_file(self):
         self.text_editor.clear()

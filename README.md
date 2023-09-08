@@ -1,11 +1,25 @@
-# BG Text Editor
+# RichSpan
 
-BG Text Editor is a simple text editor application built using PyQt5, a Python library for creating desktop applications with graphical user interfaces. This text editor allows users to create, edit, and save plain text files.
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/berkaygediz/richspan)
+![GitHub repo size](https://img.shields.io/github/repo-size/berkaygediz/richspan)
+![GitHub](https://img.shields.io/github/license/berkaygediz/richspan)
 
-## Features
+RichSpan is a simple text editor written in Python using the PyQt5 library. It is lightweight, fast, and easy to use. It is designed to be a simple alternative to other text editors. It is currently available for running on Windows, Linux, and macOS.
 
-- Create, edit, and save plain text files
-- Coming soon!
+### Features
+
+- [x] Create, edit, and save plain text files
+- [x] Open files from local storage
+- [x] Cut, copy, and paste text
+- [x] Undo and redo actions
+- [x] Change font family, size, and color
+- [x] Change background color
+- [x] Change text alignment
+- [x] Change text style (bold, italic, underline)
+- [x] Print files
+- [x] Analyze text statistics (word count, character count, line count)
+- [x] Use keyboard shortcuts for common actions
+- [x] Toggle between light and dark mode
 
 ### Prerequisites
 
@@ -17,7 +31,7 @@ BG Text Editor is a simple text editor application built using PyQt5, a Python l
 1. Clone the repository to your local machine:
 
 ```
-git clone https://github.com/berkaygediz/bg-txt.git
+git clone https://github.com/berkaygediz/RichSpan.git
 ```
 
 2. Install the required libraries:
@@ -28,22 +42,14 @@ pip install PyQt5
 
 ### Usage
 
-To run the text editor, navigate to the project directory and run the following command:
-
 ```
 python main.py
 ```
 
-Coming soon!
-
 ## Contributing
 
-Contributions to the BG Text Editor project are welcome! If you find any issues or have ideas for improvements, feel free to create an issue or submit a pull request.
+Contributions to the RichSpan project are welcome! If you find any issues or have ideas for improvements, feel free to create an issue or submit a pull request.
 
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-BG Text Editor is inspired by the need for a simple and efficient text editor that provides essential features for everyday use. It wouldn't have been possible without the amazing PyQt5 library and the community support. Thank you!
