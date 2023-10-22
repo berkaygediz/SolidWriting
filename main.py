@@ -438,6 +438,6 @@ if __name__ == "__main__":
     main_window = MainWindow()
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
-    app.setApplicationVersion("1.0.0")
+    app.setApplicationVersion("1.1.0")
     main_window.show()
     sys.exit(app.exec_())
