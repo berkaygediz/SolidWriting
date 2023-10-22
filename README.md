@@ -1,25 +1,25 @@
-# RichSpan
+# RichSpan - A Word Processor
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/berkaygediz/richspan)
 ![GitHub repo size](https://img.shields.io/github/repo-size/berkaygediz/richspan)
 ![GitHub](https://img.shields.io/github/license/berkaygediz/richspan)
 
-RichSpan is a simple text editor written in Python using the PyQt5 library. It is lightweight, fast, and easy to use. It is designed to be a simple alternative to other text editors. It is currently available for running on Windows, Linux, and macOS.
+RichSpan is a word processor. Lightweight and easy to use, it is designed to be a simple alternative to other word processors. It is written in Python and uses the PyQt5 library for the graphical user interface. It is cross-platform and can be used on Windows, macOS, and Linux.
 
 ### Features
 
-- [x] Create, edit, and save plain text files
-- [x] Open files from local storage
-- [x] Cut, copy, and paste text
-- [x] Undo and redo actions
-- [x] Change font family, size, and color
-- [x] Change background color
+- [x] Rich text editing
+- [x] Toggle between dark and light mode
+- [x] Save and open documents
+- [x] Change font, font size, and font color
 - [x] Change text alignment
-- [x] Change text style (bold, italic, underline)
-- [x] Print files
-- [x] Analyze text statistics (word count, character count, line count)
-- [x] Use keyboard shortcuts for common actions
-- [x] Toggle between light and dark mode
+- [x] Change background color
+- [x] Document statistics
+- [x] Print and export to PDF
+- [x] Cross-platform
+- [x] Open source
+- [x] Lightweight
+- [x] Use keyboard shortcuts to quickly perform common tasks
 
 ### Prerequisites
 
@@ -28,27 +28,27 @@ RichSpan is a simple text editor written in Python using the PyQt5 library. It i
 
 ### Installation
 
-1. Clone the repository to your local machine:
+1. Open a terminal and clone the repository:
 
-```
+```bash
 git clone https://github.com/berkaygediz/RichSpan.git
 ```
 
-2. Install the required libraries:
+2. Install PyQt5:
 
-```
+```bash
 pip install PyQt5
 ```
 
 ### Usage
 
-```
+```bash
 python main.py
 ```
 
 ## Contributing
 
-Contributions to the RichSpan project are welcome! If you find any issues or have ideas for improvements, feel free to create an issue or submit a pull request.
+Contributions to the RichSpan project are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
 
 ## License
 
