@@ -12,15 +12,22 @@ class MainWindow(QMainWindow):
 
         self.default_values = {
             'font_family': 'Arial',
-            'font_size': 10,
+            'font_size': 12,
             'bold': False,
             'italic': False,
             'underline': False,
             'alignment': Qt.AlignLeft,
             'text_color': '#000000',
             'background_color': '#FFFFFF',
+            'theme': 'light',
+            'window_geometry': None,
+            'default_directory': None,
+            'file_name': None,
+            'text_content': None,
+            'is_saved': None,
+            'scroll_position': None,
+            'current_theme': None,
         }
-
         self.selected_file = None
         self.is_saved = False
         self.file_name = None
@@ -38,9 +45,17 @@ class MainWindow(QMainWindow):
         self.light_theme = QPalette()
         self.dark_theme = QPalette()
         self.light_theme.setColor(QPalette.Window, QColor(255, 255, 255))
-        self.light_theme.setColor(QPalette.WindowText, QColor(0, 0, 0))
-        self.dark_theme.setColor(QPalette.Window, QColor(0, 0, 0))
+        self.light_theme.setColor(QPalette.WindowText, QColor(37, 38, 39))
+        self.dark_theme.setColor(QPalette.Window, QColor(37, 38, 39))
         self.dark_theme.setColor(QPalette.WindowText, QColor(255, 255, 255))
+        self.light_theme.setColor(QPalette.Base, QColor(255, 255, 255))
+        self.light_theme.setColor(QPalette.Text, QColor(42, 43, 44))
+        self.dark_theme.setColor(QPalette.Base, QColor(42, 43, 44))
+        self.dark_theme.setColor(QPalette.Text, QColor(255, 255, 255))
+        self.light_theme.setColor(QPalette.Highlight, QColor(218, 221, 177))
+        self.light_theme.setColor(QPalette.HighlightedText, QColor(42, 43, 44))
+        self.dark_theme.setColor(QPalette.Highlight, QColor(218, 221, 177))
+        self.dark_theme.setColor(QPalette.HighlightedText, QColor(42, 43, 44))
         self.setPalette(self.light_theme)
         self.restore_previous_state()
         self.restore_theme()
@@ -48,10 +63,16 @@ class MainWindow(QMainWindow):
     def setup_text_editor(self):
         self.text_editor.setFontFamily(self.default_values['font_family'])
         self.text_editor.setFontPointSize(self.default_values['font_size'])
+        self.text_editor.setFontWeight(
+            75 if self.default_values['bold'] else 50)
+        self.text_editor.setFontItalic(self.default_values['italic'])
+        self.text_editor.setFontUnderline(self.default_values['underline'])
+        self.text_editor.setAlignment(self.default_values['alignment'])
         self.text_editor.setTextColor(
             QColor(self.default_values['text_color']))
         self.text_editor.setTextBackgroundColor(
             QColor(self.default_values['background_color']))
+        self.text_editor.setTabStopWidth(33)
         self.setCentralWidget(self.text_editor)
 
     def setup_status_bar(self):
@@ -67,7 +88,7 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock_widget)
 
     def update_window_title(self):
-        file = self.file_name if self.file_name else "New File"
+        file = self.file_name if self.file_name else "Untitled"
         asterisk = "*" if not self.is_saved else ""
         self.setWindowTitle(f"{file}{asterisk} - RichSpan")
 
@@ -81,9 +102,9 @@ class MainWindow(QMainWindow):
         statistics = f"<html><head><style>"
         statistics += "table { border-collapse: collapse; width: 100%; }"
         statistics += "th, td { text-align: left; padding: 8px; }"
-        statistics += "tr:nth-child(odd) { background-color: #f2f2f2; }"
+        statistics += "tr:nth-child(odd) { background-color: #f3f3f3; }"
         statistics += "th { background-color: #333; color: white; }"
-        statistics += ".highlight { background-color: #FFFF00; font-weight: bold; }"
+        statistics += ".highlight { background-color: #DDEEAA; font-weight: bold; color: #332211; }"
         statistics += "</style></head><body>"
         statistics += "<table>"
         statistics += "<tr><th>Statistic</th></tr>"
@@ -206,6 +227,13 @@ class MainWindow(QMainWindow):
             "Text Color", "Set text color", self.set_text_color)
         self.backgroundcolor = self.create_action(
             "Background Color", "Set background color", self.set_background_color)
+        self.fontfamily = self.create_action(
+            "Font Family", "Set font family", self.set_font_family)
+    
+    def set_font_family(self):
+        font, ok = QFontDialog.getFont(self.text_editor.currentFont(), self)
+        if ok:
+            self.text_editor.setCurrentFont(font)
 
     def create_action(self, text, status_tip, function, shortcut=None):
         action = QAction(text, self)
@@ -240,7 +268,7 @@ class MainWindow(QMainWindow):
 
         self.toolbar = self.addToolBar('Color')
         self.add_toolbar_label(self.toolbar, "Color:")
-        self.toolbar.addActions([self.color, self.backgroundcolor])
+        self.toolbar.addActions([self.color, self.backgroundcolor, self.fontfamily])
 
     def add_toolbar_label(self, toolbar, text):
         label = QLabel(f"<b>{text}</b>")
@@ -252,19 +280,21 @@ class MainWindow(QMainWindow):
         settings.setValue("default_directory", self.directory)
         settings.setValue("file_name", self.file_name)
         settings.setValue("text_content", self.text_editor.toPlainText())
+        settings.setValue("is_saved", self.is_saved)
         settings.setValue("scroll_position",
                           self.text_editor.verticalScrollBar().value())
         settings.setValue("current_theme", "dark" if self.palette()
                           == self.dark_theme else "light")
+        settings.sync()
 
     def restore_theme(self):
         settings = QSettings("berkaygediz", "RichSpan")
-        saved_theme = settings.value("current_theme")
-
-        if saved_theme == "dark":
+        theme = settings.value("current_theme")
+        if theme == "dark":
             self.setPalette(self.dark_theme)
         else:
             self.setPalette(self.light_theme)
+        self.update_toolbar_text_color()
 
     def restore_previous_state(self):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -272,6 +302,8 @@ class MainWindow(QMainWindow):
         self.directory = settings.value(
             "default_directory", self.default_directory)
         self.file_name = settings.value("file_name")
+        self.text_editor.setPlainText(settings.value("text_content"))
+        self.is_saved = settings.value("is_saved", False)
 
         if geometry is not None:
             self.restoreGeometry(geometry)
@@ -286,19 +318,53 @@ class MainWindow(QMainWindow):
         scroll_position = settings.value("scroll_position")
         if scroll_position is not None:
             self.text_editor.verticalScrollBar().setValue(int(scroll_position))
+        else:
+            self.text_editor.verticalScrollBar().setValue(0)
+            
+        if self.file_name:
+            self.is_saved = False
+        else:
+            self.is_saved = True
 
         self.restore_theme()
+        self.update_window_title()
 
     def new_file(self):
-        self.text_editor.clear()
-        self.file_name = None
-        self.is_saved = False
-        self.update_window_title()
+        if self.is_saved:
+            self.text_editor.clear()
+            self.file_name = None
+            self.is_saved = True
+            self.update_window_title()
+        else:
+            reply = QMessageBox.question(self, 'Message',
+                                         "Are you sure to create a new file without saving?", QMessageBox.Yes |
+                                         QMessageBox.No, QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                self.text_editor.clear()
+                self.text_editor.setFontFamily(self.default_values['font_family'])
+                self.text_editor.setFontPointSize(self.default_values['font_size'])
+                self.text_editor.setFontWeight(
+                    75 if self.default_values['bold'] else 50)
+                self.text_editor.setFontItalic(self.default_values['italic'])
+                self.text_editor.setFontUnderline(self.default_values['underline'])
+                self.text_editor.setAlignment(self.default_values['alignment'])
+                self.text_editor.setTextColor(
+                    QColor(self.default_values['text_color']))
+                self.text_editor.setTextBackgroundColor(
+                    QColor(self.default_values['background_color']))
+                self.text_editor.setTabStopWidth(33)
+                self.directory = self.default_directory
+                self.file_name = None
+                self.is_saved = False
+                self.update_window_title()
+            else:
+                pass
 
     def save_process(self):
         if not self.file_name:
             self.save_as()
-        if self.file_name:
+        else:
             with open(self.file_name, 'w', encoding='utf-8') as file:
                 if self.file_name.endswith((".html", ".htm")):
                     file.write(self.text_editor.toHtml())
@@ -311,7 +377,7 @@ class MainWindow(QMainWindow):
     def save_as(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        file_filter = "HTML Files (*.html);;Text Files (*.txt)"
+        file_filter = "HTML Files (*.html);;Text Files (*.txt);;HTM Files (*.htm);;INI Files (*.ini);;LOG Files (*.log);;JSON Files (*.json);;XML Files (*.xml);;JS Files (*.js);;CSS Files (*.css);;SQL Files (*.sql);;Markdown Files (*.md);;"
         selected_file, _ = QFileDialog.getSaveFileName(
             self, "Save As", self.file_name, file_filter, options=options)
         if selected_file:
@@ -332,9 +398,9 @@ class MainWindow(QMainWindow):
     def open(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        file_filter = "All Files (*);;HTML Files (*.html);;Text Files (*.txt);;HTM Files (*.htm)"
+        file_filter = "HTML Files (*.html);;Text Files (*.txt);;HTM Files (*.htm);;INI Files (*.ini);;LOG Files (*.log);;JSON Files (*.json);;XML Files (*.xml);;JS Files (*.js);;CSS Files (*.css);;SQL Files (*.sql);;Markdown Files (*.md);;"
         selected_file, _ = QFileDialog.getOpenFileName(
-            self, "Open File", self.directory, file_filter, options=options)
+            self, "Open", self.directory, file_filter, options=options)
         if selected_file:
             self.file_name = selected_file
             with open(self.file_name, 'r', encoding='utf-8') as file:
@@ -342,10 +408,9 @@ class MainWindow(QMainWindow):
                     self.text_editor.setHtml(file.read())
                 else:
                     self.text_editor.setPlainText(file.read())
-            self.status_bar.showMessage("Opened.", 2000)
+            self.directory = os.path.dirname(self.file_name)
             self.is_saved = True
             self.update_window_title()
-            self.directory = os.path.dirname(self.file_name)
 
     def exit(self):
         if self.is_saved:
@@ -367,13 +432,6 @@ class MainWindow(QMainWindow):
         dialog = QPrintDialog(printer, self)
         if dialog.exec_() == QPrintDialog.Accepted:
             self.text_editor.print_(printer)
-
-    def undo(self):
-        self.text_editor.undo()
-
-    def redo(self):
-        self.text_editor.redo()
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
