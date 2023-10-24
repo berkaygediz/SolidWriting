@@ -20,6 +20,8 @@ RichSpan is a word processor. Lightweight and easy to use, it is designed to be 
 - [x] Open source
 - [x] Lightweight
 - [x] Use keyboard shortcuts to quickly perform common tasks
+- [x] Threading support for long operations
+- [x] Image support
 
 ### Prerequisites
 
