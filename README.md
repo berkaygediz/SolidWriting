@@ -8,20 +8,20 @@ RichSpan is a word processor. Lightweight and easy to use, it is designed to be 
 
 ### Features
 
-- [x] Rich text editing
-- [x] Toggle between dark and light mode
-- [x] Save and open documents
-- [x] Change font, font size, and font color
-- [x] Change text alignment
-- [x] Change background color
-- [x] Document statistics
-- [x] Print and export to PDF
 - [x] Cross-platform
-- [x] Open source
-- [x] Lightweight
-- [x] Use keyboard shortcuts to quickly perform common tasks
-- [x] Threading support for long operations
-- [x] Image support
+- [x] Word count, character count and line count
+- [x] Find & replace
+- [x] Print (Export to PDF)
+- [x] Open and save .txt, .html, and .rsdoc (RichSpan Document) files
+- [x] Text color/background color, bold, italic, underline, alignment, font, font size, and font color
+- [x] Undo and redo
+- [x] Drag and drop
+- [x] Base64 image support
+- [x] Customizable toolbar
+- [x] Fast and lightweight
+- [x] Threading support
+- [x] Unsaved changes warning
+- [x] Dark mode
 
 ### Prerequisites
 
