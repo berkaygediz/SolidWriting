@@ -6,6 +6,7 @@ import time
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from PyQt5.QtTest import *
 from PyQt5.QtPrintSupport import *
 
 class RS_Threading(QThread):
@@ -83,10 +84,9 @@ class RS_Workspace(QMainWindow):
         self.showMaximized()
         self.rs_area.setFocus()
         self.rs_area.setAcceptRichText(True)
-        endtime = datetime.datetime.now()
-        self.status_bar.showMessage(str((endtime - starttime).total_seconds()) + " ms", 2500)
-
         self.rs_area.selectAll()
+        endtime = datetime.datetime.now()
+        self.status_bar.showMessage(str((endtime - starttime).total_seconds()) + " ms", 2500) 
 
     def closeEvent(self, event):
         if self.is_saved == False:
@@ -272,7 +272,8 @@ class RS_Workspace(QMainWindow):
             self.savefile()
             self.directory = os.path.dirname(self.file_name)
             return True
-        return False
+        else:
+            return False
 
     def savefile(self):
         if not self.file_name:
@@ -431,7 +432,6 @@ class RS_Workspace(QMainWindow):
             "Undo", "Undo last action", self.rs_area.undo, QKeySequence.Undo)
         self.redoaction = self.create_action(
             "Redo", "Redo last action", self.rs_area.redo, QKeySequence.Redo)
-
 
         self.alignrightevent = self.create_action(
             "Right", "Align text right", lambda: self.align(Qt.AlignRight))
