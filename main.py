@@ -8,6 +8,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtTest import *
 from PyQt5.QtPrintSupport import *
+from modules.translations import *
+
 
 class RS_Threading(QThread):
     update_signal = pyqtSignal()
@@ -22,6 +24,23 @@ class RS_Threading(QThread):
             time.sleep(0.15)
             self.update_signal.emit()
             self.running = False
+
+
+class RS_About(QMainWindow):
+    def __init__(self, parent=None):
+        super(RS_About, self).__init__(parent)
+        self.setWindowFlags(Qt.WindowCloseButtonHint)
+        self.setWindowModality(Qt.ApplicationModal)
+        self.setGeometry(QStyle.alignedRect(Qt.LeftToRight, Qt.AlignCenter, self.size(
+        ), QApplication.desktop().availableGeometry()))
+        self.about_label = QLabel()
+        self.about_label.setWordWrap(True)
+        self.about_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.about_label.setTextFormat(Qt.RichText)
+        self.about_label.setText(
+            "<center>Made by Berkay Gediz<br>Apache License 2.0</center>")
+        self.setCentralWidget(self.about_label)
+
 
 class RS_Workspace(QMainWindow):
     def __init__(self, parent=None):
@@ -45,59 +64,66 @@ class RS_Workspace(QMainWindow):
             'text_content': None,
             'is_saved': None,
             'scroll_position': None,
-            'current_theme': None,
+            'current_theme': 'light',
+            'current_language': 'English'
         }
+        self.light_theme = QPalette()
+        self.dark_theme = QPalette()
+        self.light_theme.setColor(QPalette.Window, QColor(239, 213, 195))
+        self.light_theme.setColor(QPalette.WindowText, QColor(37, 38, 39))
+        self.light_theme.setColor(QPalette.Base, QColor(255, 255, 255))
+        self.light_theme.setColor(QPalette.Text, QColor(0, 0, 0))
+        self.light_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
+        self.dark_theme.setColor(QPalette.Window, QColor(58, 68, 93))
+        self.dark_theme.setColor(QPalette.WindowText, QColor(239, 213, 195))
+        self.dark_theme.setColor(QPalette.Base, QColor(94, 87, 104))
+        self.dark_theme.setColor(QPalette.Text, QColor(255, 255, 255))
+        self.dark_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
+        self.setWindowIcon(QIcon("icon.png"))
         self.selected_file = None
         self.file_name = None
         self.is_saved = None
         self.default_directory = QDir().homePath()
         self.directory = self.default_directory
-        self.rs_area = QTextEdit()
-        self.setup_rs_area()
-        self.status_bar = self.statusBar()
         self.setup_dock()
         self.dock_widget.hide()
-        self.update_statistics()
-        self.rs_area.textChanged.connect(self.richspan_thread.start)
+        self.status_bar = self.statusBar()
+        self.rs_area = QTextEdit()
+        self.setup_rs_area()
+        self.rs_area.setDisabled(True)
         self.setup_actions()
         self.setup_toolbar()
-        self.light_theme = QPalette()
-        self.dark_theme = QPalette()
-        self.light_theme.setColor(QPalette.Window, QColor(255, 255, 255))
-        self.light_theme.setColor(QPalette.WindowText, QColor(37, 38, 39))
-        self.dark_theme.setColor(QPalette.Window, QColor(37, 38, 39))
-        self.dark_theme.setColor(QPalette.WindowText, QColor(255, 255, 255))
-        self.light_theme.setColor(QPalette.Base, QColor(255, 255, 255))
-        self.light_theme.setColor(QPalette.Text, QColor(42, 43, 44))
-        self.dark_theme.setColor(QPalette.Base, QColor(42, 43, 44))
-        self.dark_theme.setColor(QPalette.Text, QColor(255, 255, 255))
-        self.light_theme.setColor(QPalette.Highlight, QColor(218, 221, 177))
-        self.light_theme.setColor(QPalette.HighlightedText, QColor(42, 43, 44))
-        self.dark_theme.setColor(QPalette.Highlight, QColor(218, 221, 177))
-        self.dark_theme.setColor(QPalette.HighlightedText, QColor(42, 43, 44))
         self.setPalette(self.light_theme)
-        self.rs_restorestate()
-        self.rs_restoretheme()
-        self.update_title()
-        self.setUnifiedTitleAndToolBarOnMac(True)
-        self.setWindowIcon(QIcon("icon.png"))
+        self.rs_area.textChanged.connect(self.richspan_thread.start)
         self.showMaximized()
         self.rs_area.setFocus()
         self.rs_area.setAcceptRichText(True)
-        self.rs_area.selectAll()
+        QTimer.singleShot(50, self.rs_restoretheme)
+        QTimer.singleShot(150, self.rs_restorestate)
+        self.rs_area.setDisabled(False)
+        self.update_title()
         endtime = datetime.datetime.now()
-        self.status_bar.showMessage(str((endtime - starttime).total_seconds()) + " ms", 2500) 
+        self.status_bar.showMessage(
+            str((endtime - starttime).total_seconds()) + " ms", 2500)
+
+    def change_language(self):
+        language = self.language_combobox.currentText()
+        settings = QSettings("berkaygediz", "RichSpan")
+        settings.setValue("current_language", language)
+        settings.sync()
 
     def closeEvent(self, event):
+        settings = QSettings("berkaygediz", "RichSpan")
         if self.is_saved == False:
             reply = QMessageBox.question(self, 'RichSpan',
-                                         "Are you sure to save RichSpan?", QMessageBox.Yes |
+                                         translations[settings.value("current_language")]["exit_message"], QMessageBox.Yes |
                                          QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
                 self.rs_savestate()
                 event.accept()
             else:
+                self.rs_savestate()
                 event.ignore()
         else:
             self.rs_savestate()
@@ -114,6 +140,8 @@ class RS_Workspace(QMainWindow):
                           self.rs_area.verticalScrollBar().value())
         settings.setValue("current_theme", "dark" if self.palette()
                           == self.dark_theme else "light")
+        settings.setValue("current_language",
+                          self.language_combobox.currentText())
         settings.sync()
 
     def rs_restorestate(self):
@@ -124,6 +152,8 @@ class RS_Workspace(QMainWindow):
         self.file_name = settings.value("file_name")
         self.rs_area.setPlainText(settings.value("text_content"))
         self.is_saved = settings.value("is_saved")
+        self.language_combobox.setCurrentText(
+            settings.value("current_language"))
 
         if geometry is not None:
             self.restoreGeometry(geometry)
@@ -186,27 +216,28 @@ class RS_Workspace(QMainWindow):
         self.rs_toolbartheme()
 
     def new(self):
+        settings = QSettings("berkaygediz", "RichSpan")
         if self.is_saved == True:
             self.rs_area.clear()
             self.rs_area.setFontFamily(self.default_values['font_family'])
             self.rs_area.setFontPointSize(self.default_values['font_size'])
             self.rs_area.setFontWeight(
-                    75 if self.default_values['bold'] else 50)
+                75 if self.default_values['bold'] else 50)
             self.rs_area.setFontItalic(self.default_values['italic'])
             self.rs_area.setFontUnderline(self.default_values['underline'])
             self.rs_area.setAlignment(self.default_values['alignment'])
             self.rs_area.setTextColor(
-                    QColor(self.default_values['text_color']))
+                QColor(self.default_values['text_color']))
             self.rs_area.setTextBackgroundColor(
-                    QColor(self.default_values['background_color']))
+                QColor(self.default_values['background_color']))
             self.rs_area.setTabStopWidth(33)
             self.directory = self.default_directory
             self.file_name = None
             self.is_saved = False
             self.update_title()
         else:
-            reply = QMessageBox.question(self, 'Message - RichSpan',
-                                         "Are you sure to create a new file without saving?", QMessageBox.Yes |
+            reply = QMessageBox.question(self, 'RichSpan',
+                                         translations[settings.value("current_language")]["new_message"], QMessageBox.Yes |
                                          QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
@@ -229,12 +260,14 @@ class RS_Workspace(QMainWindow):
                 self.update_title()
             else:
                 pass
-    
+
     def open(self):
         options = QFileDialog.Options()
+        settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
-        file_filter = "RichSpan Document (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)"
-        selected_file, _ = QFileDialog.getOpenFileName(self, "Open - RichSpan", self.directory, file_filter, options=options)
+        file_filter = f"{translations[settings.value('current_language')]['rsdoc']} (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)"
+        selected_file, _ = QFileDialog.getOpenFileName(
+            self, translations[settings.value("current_language")]["open_title"] + " — RichSpan ", self.directory, file_filter, options=options)
         if selected_file:
             self.file_name = selected_file
             with open(self.file_name, 'r', encoding='utf-8') as file:
@@ -263,10 +296,11 @@ class RS_Workspace(QMainWindow):
 
     def saveas(self):
         options = QFileDialog.Options()
+        settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
-        file_filter = "RichSpan Document (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)"
+        file_filter = f"{translations[settings.value('current_language')]['rsdoc']} (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)"
         selected_file, _ = QFileDialog.getSaveFileName(
-            self, "Save As - RichSpan", self.file_name, file_filter, options=options)
+            self, translations[settings.value("current_language")]["save_as_title"] + " — RichSpan ", self.directory, file_filter, options=options)
         if selected_file:
             self.file_name = selected_file
             self.savefile()
@@ -321,13 +355,15 @@ class RS_Workspace(QMainWindow):
         self.setCentralWidget(self.rs_area)
 
     def setup_dock(self):
-        self.dock_widget = QDockWidget("Help",self)
+        settings = QSettings("berkaygediz", "RichSpan")
+        self.dock_widget = QDockWidget(translations[settings.value(
+            "current_language")]["help"], self)
         self.statistics_label = QLabel()
         self.help_label = QLabel()
         self.help_label.setWordWrap(True)
         self.help_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.help_label.setTextFormat(Qt.RichText)
-        self.help_label.setText("<html><head><style>"   
+        self.help_label.setText("<html><head><style>"
                                 "table {border-collapse: collapse; width: 100%;}"
                                 "th, td {text-align: left; padding: 8px;}"
                                 "tr:nth-child(even) {background-color: #f2f2f2;}"
@@ -335,31 +371,33 @@ class RS_Workspace(QMainWindow):
                                 "th {background-color: #4CAF50; color: white;}"
                                 "</style></head><body>"
                                 "<table><tr>"
-                                "<th>Shortcut</th>"
-                                "<th>Description</th>"
-                                "</tr><tr><td>Ctrl+N</td><td>New</td></tr>"
-                                "<tr><td>Ctrl+O</td><td>Open</td></tr>"
-                                "<tr><td>Ctrl+S</td><td>Save</td></tr>"
-                                "<tr><td>Ctrl+Shift+S</td><td>Save As</td></tr>"
-                                "<tr><td>Ctrl+P</td><td>Print</td></tr>"
-                                "<tr><td>Ctrl+Z</td><td>Undo</td></tr>"
-                                "<tr><td>Ctrl+Y</td><td>Redo</td></tr>"
-                                "<tr><td>Ctrl+Shift+T</td><td>Change Theme</td></tr>"
-                                "<tr><td>Ctrl+Shift+D</td><td>Hide or Show Help</td></tr>"
-                                "<tr><td>Ctrl+Shift+C</td><td>Set Text Color</td></tr>"
-                                "<tr><td>Ctrl+Shift+B</td><td>Set Background Color</td></tr>"
-                                "<tr><td>Ctrl+Shift+F</td><td>Set Font Family</td></tr>"
-                                "<tr><td>Ctrl++</td><td>Increase Font Size</td></tr>"
-                                "<tr><td>Ctrl+-</td><td>Decrease Font Size</td></tr>"
-                                "<tr><td>Ctrl+Shift+P</td><td>Add Photo</td></tr>"
-                                "<tr><td>Ctrl+Shift+W+S</td><td>Save Workspace</td></tr>"
-                                "<tr><td>Ctrl+F</td><td>Find</td></tr>"
-                                "<tr><td>Ctrl+H</td><td>Replace</td></tr>"
+                                f"<th>{translations[settings.value('current_language')]['help_shortcut_title']}</th>"
+                                f"<th>{translations[settings.value('current_language')]['help_description_title']}</th>"
+                                f"</tr><tr><td>Ctrl+N</td><td>{translations[settings.value('current_language')]['new_message']}</td></tr>"
+                                f"<tr><td>Ctrl+O</td><td>{translations[settings.value('current_language')]['open_message']}</td></tr>"
+                                f"<tr><td>Ctrl+S</td><td>{translations[settings.value('current_language')]['save_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+S</td><td>{translations[settings.value('current_language')]['save_as_message']}</td></tr>"
+                                f"<tr><td>Ctrl+P</td><td>{translations[settings.value('current_language')]['print_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Z</td><td>{translations[settings.value('current_language')]['undo_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Y</td><td>{translations[settings.value('current_language')]['redo_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+V</td><td>{translations[settings.value('current_language')]['viewmode_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+T</td><td>{translations[settings.value('current_language')]['darklight_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+D</td><td>{translations[settings.value('current_language')]['help_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+C</td><td>{translations[settings.value('current_language')]['font_color_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+B</td><td>{translations[settings.value('current_language')]['background_color_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+F</td><td>{translations[settings.value('current_language')]['font_message']}</td></tr>"
+                                f"<tr><td>Ctrl++</td><td>{translations[settings.value('current_language')]['inc_font_message']}</td></tr>"
+                                f"<tr><td>Ctrl+-</td><td>{translations[settings.value('current_language')]['dec_font_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+P</td><td>{translations[settings.value('current_language')]['image_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+W+S</td><td>{translations[settings.value('current_language')]['save_workspace_message']}</td></tr>"
+                                f"<tr><td>Ctrl+F</td><td>{translations[settings.value('current_language')]['find_message']}</td></tr>"
+                                f"<tr><td>Ctrl+H</td><td>{translations[settings.value('current_language')]['replace_message']}</td></tr>"
                                 "</table></body></html>")
-        
+
         self.dock_widget.setWidget(self.help_label)
         self.dock_widget.setObjectName("Help")
-        self.dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.dock_widget.setAllowedAreas(
+            Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_widget)
 
     def toolbarlabel(self, toolbar, text):
@@ -367,40 +405,62 @@ class RS_Workspace(QMainWindow):
         toolbar.addWidget(label)
 
     def setup_toolbar(self):
-        self.toolbar = self.addToolBar('File')
-        self.toolbarlabel(self.toolbar, "File: ")
+        settings = QSettings("berkaygediz", "RichSpan")
+        self.toolbar = self.addToolBar(
+            translations[settings.value("current_language")]["file"])
+        self.toolbarlabel(self.toolbar, translations[settings.value(
+            "current_language")]["file"] + ": ")
         self.toolbar.addActions([self.newaction, self.openaction, self.saveaction, self.saveasaction,
                                 self.printaction, self.saveworkspaceaction, self.undoaction, self.redoaction, self.findaction, self.replaceaction])
 
-        self.toolbar = self.addToolBar('Interface')
-        self.toolbarlabel(self.toolbar, "UI: ")
+        self.toolbar = self.addToolBar(
+            translations[settings.value("current_language")]["ui"])
+        self.toolbarlabel(
+            self.toolbar, translations[settings.value("current_language")]["ui"] + ": ")
         self.theme_action = self.create_action(
-            "Dark/Light", "Change theme dark or light", self.rs_themechange, QKeySequence("Ctrl+Shift+T"), )
+            translations[settings.value("current_language")]["darklight"], translations[settings.value("current_language")]["darklight_message"], self.rs_themechange, QKeySequence("Ctrl+Shift+T"), )
         self.toolbar.addAction(self.theme_action)
         self.hide_dock_widget = self.create_action(
-            "Help", "Hide or show Help", self.toggle_dock, QKeySequence("Ctrl+Shift+H"), )
+            translations[settings.value("current_language")]["help"], translations[settings.value("current_language")]["help_message"], self.toggle_dock, QKeySequence("Ctrl+Shift+D"), )
         self.toolbar.addAction(self.hide_dock_widget)
         self.toggle_view_action = self.create_action(
-            "View Mode", "Toggle view mode", self.toggle_view, )
+            translations[settings.value("current_language")]["viewmode"], translations[settings.value("current_language")]["viewmode_message"], self.toggle_view, QKeySequence("Ctrl+Shift+V"), )
         self.toolbar.addAction(self.toggle_view_action)
+        self.language_combobox = QComboBox(self)
+        self.language_combobox.addItems(
+            ["English", "Türkçe", "Azərbaycanca", "Deutsch", "Español"])
+        self.language_combobox.currentIndexChanged.connect(
+            self.change_language)
+        self.toolbar.addWidget(self.language_combobox)
 
+        self.aboutaction = self.create_action(
+            translations[settings.value("current_language")]["about"], "", self.about)
+        self.toolbar.addAction(self.aboutaction)
         self.addToolBarBreak()
 
-        self.toolbar = self.addToolBar('Format')
-        self.toolbarlabel(self.toolbar, "Alignment: ")
+        self.toolbar = self.addToolBar(
+            translations[settings.value("current_language")]["edit"])
+        self.toolbarlabel(self.toolbar, translations[settings.value(
+            "current_language")]["edit"] + ": ")
         self.toolbar.addActions(
-            [self.alignrightevent, self.alignleftevent, self.aligncenterevent, self.alignjustifiedevent])
+            [self.alignrightevent, self.aligncenterevent, self.alignleftevent, self.alignjustifiedevent])
         self.toolbar.addSeparator()
-        self.toolbarlabel(self.toolbar, "Font: ")
+        self.toolbarlabel(self.toolbar, translations[settings.value(
+            "current_language")]["font_title"] + ": ")
         self.toolbar.addActions([self.bold, self.italic, self.underline])
         self.addToolBarBreak()
 
-        self.toolbar = self.addToolBar('Color')
-        self.toolbarlabel(self.toolbar, "Color: ")
-        self.toolbar.addActions([self.color, self.backgroundcolor, self.fontfamily, self.inc_font, self.dec_font])
+        self.toolbar = self.addToolBar(
+            translations[settings.value("current_language")]["color"])
+        self.toolbarlabel(self.toolbar, translations[settings.value(
+            "current_language")]["color"] + ": ")
+        self.toolbar.addActions(
+            [self.color, self.backgroundcolor, self.fontfamily, self.inc_font, self.dec_font])
 
-        self.toolbar = self.addToolBar('Multimedia')
-        self.toolbarlabel(self.toolbar, "Multimedia: ")
+        self.toolbar = self.addToolBar(
+            translations[settings.value("current_language")]["multimedia"])
+        self.toolbarlabel(self.toolbar, translations[settings.value(
+            "current_language")]["multimedia"] + ": ")
         self.toolbar.addActions([self.addimage])
 
     def create_action(self, text, status_tip, function, shortcut=None):
@@ -412,63 +472,72 @@ class RS_Workspace(QMainWindow):
         return action
 
     def setup_actions(self):
+        settings = QSettings("berkaygediz", "RichSpan")
         self.newaction = self.create_action(
-            "New", "Create a new document", self.new, QKeySequence.New)
+            translations[settings.value("current_language")]["new"], translations[settings.value("current_language")]["new_message"], self.new, QKeySequence.New)
         self.openaction = self.create_action(
-            "Open", "Open file", self.open, QKeySequence.Open)
+            translations[settings.value("current_language")]["open"], translations[settings.value("current_language")]["open_message"], self.open, QKeySequence.Open)
         self.saveaction = self.create_action(
-            "Save", "Save file", self.save, QKeySequence.Save)
+            translations[settings.value("current_language")]["save"], translations[settings.value("current_language")]["save_message"], self.save, QKeySequence.Save)
         self.saveasaction = self.create_action(
-            "Save As", "Save file as", self.saveas, QKeySequence.SaveAs)
+            translations[settings.value("current_language")]["save_as"], translations[settings.value("current_language")]["save_as_message"], self.saveas, QKeySequence.SaveAs)
         self.printaction = self.create_action(
-            "Print", "Print file", self.print, QKeySequence.Print)
+            translations[settings.value("current_language")]["print"], translations[settings.value("current_language")]["print_message"], self.print, QKeySequence.Print)
         self.saveworkspaceaction = self.create_action(
-            "Save Workspace", "Save Workspace", self.rs_savestate, QKeySequence("Ctrl+Shift+W+S"))
+            translations[settings.value("current_language")]["save_workspace_title"], translations[settings.value("current_language")]["save_workspace_message"], self.rs_savestate, QKeySequence("Ctrl+Shift+W+S"))
         self.findaction = self.create_action(
-            "Find", "Find text", self.find, QKeySequence.Find)
+            translations[settings.value("current_language")]["find_title"], translations[settings.value("current_language")]["find_message"], self.find, QKeySequence.Find)
         self.replaceaction = self.create_action(
-            "Replace", "Replace text", self.replace, QKeySequence.Replace)
+            translations[settings.value("current_language")]["replace_title"], translations[settings.value("current_language")]["replace_message"], self.replace, QKeySequence.Replace)
         self.undoaction = self.create_action(
-            "Undo", "Undo last action", self.rs_area.undo, QKeySequence.Undo)
+            translations[settings.value("current_language")]["undo_title"], translations[settings.value("current_language")]["undo_message"], self.rs_area.undo, QKeySequence.Undo)
         self.redoaction = self.create_action(
-            "Redo", "Redo last action", self.rs_area.redo, QKeySequence.Redo)
-
+            translations[settings.value("current_language")]["redo_title"], translations[settings.value("current_language")]["redo_message"], self.rs_area.redo, QKeySequence.Redo)
         self.alignrightevent = self.create_action(
-            "Right", "Align text right", lambda: self.align(Qt.AlignRight))
+            translations[settings.value("current_language")]["right_title"], translations[settings.value("current_language")]["right_message"], lambda: self.align(Qt.AlignRight))
         self.alignleftevent = self.create_action(
-            "Left", "Align text left", lambda: self.align(Qt.AlignLeft))
+            translations[settings.value("current_language")]["left_title"], translations[settings.value("current_language")]["left_message"], lambda: self.align(Qt.AlignLeft))
         self.aligncenterevent = self.create_action(
-            "Center", "Align text center", lambda: self.align(Qt.AlignCenter))
+            translations[settings.value("current_language")]["center_title"], translations[settings.value("current_language")]["center_message"], lambda: self.align(Qt.AlignCenter))
         self.alignjustifiedevent = self.create_action(
-            "Justify", "Align text justify", lambda: self.align(Qt.AlignJustify))
-
+            translations[settings.value("current_language")]["justify_title"], translations[settings.value("current_language")]["justify_message"], lambda: self.align(Qt.AlignJustify))
         self.bold = self.create_action(
-            "Bold", "Bold text", self.toggle_bold, QKeySequence.Bold)
+            translations[settings.value("current_language")]["bold_title"], translations[settings.value("current_language")]["bold_message"], self.toggle_bold, QKeySequence.Bold)
         self.italic = self.create_action(
-            "Italic", "Italicize text", self.toggle_italic, QKeySequence.Italic,)
+            translations[settings.value("current_language")]["italic_title"], translations[settings.value("current_language")]["italic_message"], self.toggle_italic, QKeySequence.Italic)
         self.underline = self.create_action(
-            "Underline", "Underline text", self.toggle_underline, QKeySequence.Underline)
-
+            translations[settings.value("current_language")]["underline_title"], translations[settings.value("current_language")]["underline_message"], self.toggle_underline, QKeySequence.Underline)
         self.color = self.create_action(
-            "Color", "Set text color", self.toggle_color, QKeySequence("Ctrl+Shift+C"))
+            translations[settings.value("current_language")]["font_color_title"], translations[settings.value("current_language")]["font_color_message"], self.toggle_color, QKeySequence("Ctrl+Shift+C"))
         self.backgroundcolor = self.create_action(
-            "Background", "Set background color", self.toggle_bgcolor, QKeySequence("Ctrl+Shift+B"))
+            translations[settings.value("current_language")]["background_color_title"], translations[settings.value("current_language")]["background_color_message"], self.toggle_bgcolor, QKeySequence("Ctrl+Shift+B"))
         self.fontfamily = self.create_action(
-            "Font", "Set font family", self.toggle_font, QKeySequence("Ctrl+Shift+F"))
+            translations[settings.value("current_language")]["font_title"], translations[settings.value("current_language")]["font_message"], self.toggle_font, QKeySequence("Ctrl+Shift+F"))
         self.inc_font = self.create_action(
-            "A+", "Increase font size", self.inc_font, QKeySequence("Ctrl++"))
+            "A+", translations[settings.value("current_language")]["inc_font_message"], self.inc_font, QKeySequence("Ctrl++"))
         self.dec_font = self.create_action(
-            "A-", "Decrease font size", self.dec_font, QKeySequence("Ctrl+-"))
+            "A-", translations[settings.value("current_language")]["dec_font_message"], self.dec_font, QKeySequence("Ctrl+-"))
         self.addimage = self.create_action(
-            "Image", "Add photo", self.add_image, QKeySequence("Ctrl+Shift+P"))
+            translations[settings.value("current_language")]["image_title"], translations[settings.value("current_language")]["image_message"], self.add_image, QKeySequence("Ctrl+Shift+P"))
+        self.aboutaction = self.create_action(
+            translations[settings.value("current_language")]["about"], "", self.about)
+
+    def about(self):
+        self.about_window = RS_About()
+        self.about_window.show()
 
     def update_title(self):
-        file = self.file_name if self.file_name else "Untitled"
-        if self.is_saved == True: asterisk = ""
-        else: asterisk = "*"
-        self.setWindowTitle(f"{file}{asterisk} - RichSpan")
+        settings = QSettings("berkaygediz", "RichSpan")
+        file = self.file_name if self.file_name else translations[settings.value(
+            "current_language")]["new_title"]
+        if self.is_saved == True:
+            asterisk = ""
+        else:
+            asterisk = "*"
+        self.setWindowTitle(f"{file}{asterisk} — RichSpan")
 
     def update_statistics(self):
+        settings = QSettings("berkaygediz", "RichSpan")
         text = self.rs_area.toPlainText()
         character_count = len(text)
         word_count = len(text.split())
@@ -488,20 +557,21 @@ class RS_Workspace(QMainWindow):
         statistics += "</style></head><body>"
         statistics += "<table><tr>"
         if word_count > 0 and line_count > 0 and character_count > 0 and page_count > 0 and text != "":
-            statistics += "<th>Analysis</th>"
-            avg_word_length = sum(len(word) for word in text.split()) / word_count
-            statistics += f"<td>Average Word: {avg_word_length:.2f}</td>"
+            statistics += f"<th>{translations[settings.value('current_language')]['analysis_title']}</th>"
+            avg_word_length = sum(len(word)
+                                  for word in text.split()) / word_count
+            statistics += f"<td>{translations[settings.value('current_language')]['analysis_message_1'].format(avg_word_length)}</td>"
             avg_line_length = character_count / line_count - 1
-            statistics += f"<td>Average Line: {avg_line_length:.2f}</td>"
+            statistics += f"<td>{translations[settings.value('current_language')]['analysis_message_2'].format(avg_line_length)}</td>"
             uppercase_count = sum(1 for char in text if char.isupper())
             lowercase_count = sum(1 for char in text if char.islower())
-            statistics += f"<td>Uppercase Characters: {uppercase_count}</td>"
-            statistics += f"<td>Lowercase Characters: {lowercase_count}</td>"
-        statistics += "<th>Statistics</th>"
-        statistics += f"<td>Characters: {character_count}</td>"
-        statistics += f"<td>Word: {word_count}</td>"
-        statistics += f"<td>Line: {line_count}</td>"
-        statistics += f"<td>Page: ~{page_count}</td>"
+            statistics += f"<td>{translations[settings.value('current_language')]['analysis_message_3'].format(uppercase_count)}</td>"
+            statistics += f"<td>{translations[settings.value('current_language')]['analysis_message_4'].format(lowercase_count)}</td>"
+        statistics += f"<th>{translations[settings.value('current_language')]['statistic_title']}</th>"
+        statistics += f"<td>{translations[settings.value('current_language')]['statistic_message_1'].format(line_count)}</td>"
+        statistics += f"<td>{translations[settings.value('current_language')]['statistic_message_2'].format(word_count)}</td>"
+        statistics += f"<td>{translations[settings.value('current_language')]['statistic_message_3'].format(character_count)}</td>"
+        statistics += f"<td>{translations[settings.value('current_language')]['statistic_message_4'].format(page_count)}</td>"
         statistics += "</td><th id='rs-text'>RichSpan</th>"
         statistics += "</tr></table></body></html>"
 
@@ -513,7 +583,7 @@ class RS_Workspace(QMainWindow):
         else:
             self.is_saved = True
         self.update_title()
-    
+
     def toggle_dock(self):
         if self.dock_widget.isHidden():
             self.dock_widget.show()
@@ -555,7 +625,7 @@ class RS_Workspace(QMainWindow):
     def toggle_bgcolor(self):
         color = QColorDialog.getColor()
         self.rs_area.setTextBackgroundColor(color)
-    
+
     def toggle_font(self):
         font, ok = QFontDialog.getFont(self.rs_area.currentFont(), self)
         if ok:
@@ -582,15 +652,21 @@ class RS_Workspace(QMainWindow):
                 data = file.read()
                 data = base64.b64encode(data)
                 data = data.decode('utf-8')
-                self.rs_area.insertHtml(f'<img src="data:image/png;base64,{data}"/>')
+                self.rs_area.insertHtml(
+                    f'<img src="data:image/png;base64,{data}"/>')
 
     def find(self):
+        settings = QSettings("berkaygediz", "RichSpan")
         self.find_dialog = QInputDialog(self)
         self.find_dialog.setInputMode(QInputDialog.TextInput)
-        self.find_dialog.setLabelText("Find:")
-        self.find_dialog.setWindowTitle("Find")
-        self.find_dialog.setOkButtonText("Find")
-        self.find_dialog.setCancelButtonText("Cancel")
+        self.find_dialog.setLabelText(
+            translations[settings.value("current_language")]["find"])
+        self.find_dialog.setWindowTitle(
+            translations[settings.value("current_language")]["find_title"])
+        self.find_dialog.setOkButtonText(
+            translations[settings.value("current_language")]["find"])
+        self.find_dialog.setCancelButtonText(
+            translations[settings.value("current_language")]["cancel"])
         self.find_dialog.textValueSelected.connect(self.find_text)
         self.find_dialog.show()
 
@@ -598,18 +674,24 @@ class RS_Workspace(QMainWindow):
         self.rs_area.find(text)
 
     def replace(self):
+        settings = QSettings("berkaygediz", "RichSpan")
         self.replace_dialog = QInputDialog(self)
         self.replace_dialog.setInputMode(QInputDialog.TextInput)
-        self.replace_dialog.setLabelText("Find:")
-        self.replace_dialog.setWindowTitle("Replace")
-        self.replace_dialog.setOkButtonText("Replace")
-        self.replace_dialog.setCancelButtonText("Cancel")
+        self.replace_dialog.setLabelText(
+            translations[settings.value("current_language")]["replace"])
+        self.replace_dialog.setWindowTitle(
+            translations[settings.value("current_language")]["replace_title"])
+        self.replace_dialog.setOkButtonText(
+            translations[settings.value("current_language")]["replace"])
+        self.replace_dialog.setCancelButtonText(
+            translations[settings.value("current_language")]["cancel"])
         self.replace_dialog.textValueSelected.connect(self.replace_text)
         self.replace_dialog.show()
-    
+
     def replace_text(self, text):
         self.rs_area.find(text)
         self.rs_area.insertPlainText(text)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -617,6 +699,6 @@ if __name__ == "__main__":
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
     app.setApplicationDisplayName("RichSpan")
-    app.setApplicationVersion("1.2.0")
+    app.setApplicationVersion("1.2.3")
     core.show()
     sys.exit(app.exec_())

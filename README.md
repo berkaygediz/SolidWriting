@@ -9,7 +9,7 @@ RichSpan is a word processor. Lightweight and easy to use, it is designed to be 
 ### Features
 
 - [x] Cross-platform
-- [x] Word count, character count and line count
+- [x] Statistics
 - [x] Find & replace
 - [x] Print (Export to PDF)
 - [x] Open and save .txt, .html, and .rsdoc (RichSpan Document) files
@@ -22,6 +22,7 @@ RichSpan is a word processor. Lightweight and easy to use, it is designed to be 
 - [x] Threading support
 - [x] Unsaved changes warning
 - [x] Dark mode
+- [x] Multi language (English, Turkish, German, Spanish, Azerbaijani)
 
 ### Prerequisites
 
