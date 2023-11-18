@@ -49,6 +49,7 @@ class RS_Workspace(QMainWindow):
     def __init__(self, parent=None):
         super(RS_Workspace, self).__init__(parent)
         starttime = datetime.datetime.now()
+        settings = QSettings("berkaygediz", "RichSpan")
         self.richspan_thread = RS_Threading()
         self.richspan_thread.update_signal.connect(self.RS_updateStatistics)
         self.default_values = {
@@ -88,6 +89,10 @@ class RS_Workspace(QMainWindow):
         self.is_saved = None
         self.default_directory = QDir().homePath()
         self.directory = self.default_directory
+        if settings.value("current_language") == None:
+            settings.setValue("current_language", "English")
+            settings.sync()
+        self.language = settings.value("current_language")
         self.RS_setupDock()
         self.dock_widget.hide()
         self.status_bar = self.statusBar()
