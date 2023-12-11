@@ -88,6 +88,8 @@ translations = {
         "exit_message": "Are you sure you want to exit?",
         "cancel": "Cancel",
         "rsdoc": "RichSpan Document",
+        "connection_verified": "Connection verified",
+        "connection_denied": "Connection denied",
     },
     "Türkçe": {
         "new": "Yeni",

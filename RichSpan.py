@@ -1,14 +1,38 @@
 import sys
 import os
+import platform
 import datetime
 import base64
 import time
+import sqlite3
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtTest import *
 from PyQt5.QtPrintSupport import *
 from modules.translations import *
+from modules.secrets import *
+
+
+default_values = {
+    'font_family': 'Arial',
+    'font_size': 14,
+    'bold': False,
+    'italic': False,
+    'underline': False,
+    'alignment': Qt.AlignLeft,
+    'text_color': '#000000',
+    'background_color': '#FFFFFF',
+    'theme': 'light',
+    'window_geometry': None,
+    'default_directory': None,
+    'file_name': None,
+    'text_content': None,
+    'is_saved': None,
+    'scroll_position': None,
+    'current_theme': 'light',
+    'current_language': 'English'
+}
 
 
 class RS_Threading(QThread):
@@ -45,74 +69,355 @@ class RS_About(QMainWindow):
         self.setCentralWidget(self.about_label)
 
 
+class RS_ControlInfo(QMainWindow):
+    def __init__(self, parent=None):
+        super(RS_ControlInfo, self).__init__(parent)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        settings = QSettings("berkaygediz", "RichSpan")
+        self.setWindowModality(Qt.ApplicationModal)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        screen = QApplication.desktop().availableGeometry()
+        self.setGeometry(
+            QStyle.alignedRect(
+                Qt.LeftToRight,
+                Qt.AlignCenter,
+                QSize(int(screen.width() * 0.2),
+                      int(screen.height() * 0.2)),
+                screen
+            )
+        )
+
+        if settings.value("current_language") == None:
+            settings.setValue("current_language", "English")
+            settings.sync()
+
+        self.setStyleSheet("background-color: transparent;")
+        self.setWindowOpacity(0.75)
+        self.widget_central = QWidget()
+        self.layout_central = QVBoxLayout(self.widget_central)
+        self.widget_central.setStyleSheet(
+            "background-color: #6F61C0; border-radius: 50px; border: 1px solid #A084E8; border-radius: 10px;")
+
+        self.title = QLabel("RichSpan", self)
+        self.title.setAlignment(Qt.AlignCenter)
+        self.title.setFont(QFont('Roboto', 30))
+        self.title.setStyleSheet(
+            "background-color: #A084E8; color: #FFFFFF; font-weight: bold; font-size: 30px; border-radius: 25px; border: 1px solid #000000;")
+        self.layout_central.addWidget(self.title)
+
+        self.label_status = QLabel("...", self)
+        self.label_status.setAlignment(Qt.AlignCenter)
+        self.label_status.setFont(QFont('Roboto', 10))
+        self.layout_central.addWidget(self.label_status)
+
+        self.setCentralWidget(self.widget_central)
+
+        if serverconnect():
+            sqlite_file = os.path.join(os.path.dirname(
+                os.path.abspath(__file__)), 'profile.db')
+            sqlitedb = sqlite3.connect(sqlite_file)
+            sqlitecursor = sqlitedb.cursor()
+            sqlitecursor.execute(
+                "CREATE TABLE IF NOT EXISTS profile (email TEXT, password TEXT)")
+            sqlitecursor.execute(
+                "CREATE TABLE IF NOT EXISTS apps (richspan boolean DEFAULT 0, email TEXT)")
+            sqlitecursor.execute(
+                "CREATE TABLE IF NOT EXISTS log (email TEXT, devicename TEXT, log TEXT, logdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+
+            profile_email = sqlitecursor.execute(
+                "SELECT email FROM profile").fetchone()
+            profile_pw = sqlitecursor.execute(
+                "SELECT password FROM profile").fetchone()
+
+            if profile_email and profile_pw:
+                local_email = profile_email[0]
+                local_pw = profile_pw[0]
+
+                mysql_connection = serverconnect()
+                if mysql_connection:
+                    mysqlcursor = mysql_connection.cursor()
+                    mysqlcursor.execute(
+                        "SELECT * FROM profile WHERE email = %s", (local_email,))
+                    user_result = mysqlcursor.fetchone()
+
+                    if user_result:
+                        if local_pw == user_result[1]:
+                            sqlitecursor.execute(
+                                "INSERT INTO log (email, devicename, log) VALUES (?, ?, ?)", (local_email, platform.node(), "Login Successful!"))
+                            mysqlcursor.execute(
+                                "INSERT INTO log (email, devicename, log) VALUES (%s, %s, %s)", (local_email, platform.node(), "Login Successful!"))
+                            mysql_connection.commit()
+
+                            if settings.value("current_language") is None:
+                                settings.setValue(
+                                    "current_language", "English")
+                                settings.sync()
+                            self.label_status.setStyleSheet(
+                                "background-color: #7900FF; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
+                            self.label_status.setText(
+                                "💡" + local_email.split('@')[0])
+                            RS_Workspace().show()
+                            QTimer.singleShot(1250, self.hide)
+                        else:
+                            self.label_status.setText(
+                                "Şifre hatalı, lütfen tekrar deneyin.")
+                    else:
+                        self.label_status.setStyleSheet(
+                            "background-color: #252525; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
+                        self.label_status.setText(
+                            "Kullanıcı bulunamadı. Lütfen kaydolun.")
+                        logoutbutton = QPushButton("Kaydol")
+                        logoutbutton.setStyleSheet(
+                            "background-color: #7900FF; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
+                        logoutbutton.clicked.connect(RS_Welcome().show)
+                        self.layout_central.addWidget(logoutbutton)
+                        self.close_button = QPushButton("Kapat")
+                        self.close_button.setStyleSheet(
+                            "background-color: #7900FF; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
+                        self.close_button.clicked.connect(sys.exit)
+                        self.layout_central.addWidget(self.close_button)
+
+                else:
+                    self.label_status.setText(
+                        "MySQL bağlantısı kurulamadı.")
+            else:
+                RS_Welcome().show()
+                QTimer.singleShot(0, self.hide)
+        else:
+            self.label_status.setText(translations[settings.value(
+                "current_language")]["connection_denied"])
+            QTimer.singleShot(10000, sys.exit)
+
+
+class RS_Welcome(QMainWindow):
+    def __init__(self, parent=None):
+        super(RS_Welcome, self).__init__(parent)
+        starttime = datetime.datetime.now()
+        settings = QSettings("berkaygediz", "RichSpan")
+        settings.clear()
+        self.setWindowModality(Qt.ApplicationModal)
+        screen = QApplication.desktop().availableGeometry()
+        self.setGeometry(
+            QStyle.alignedRect(
+                Qt.LeftToRight,
+                Qt.AlignCenter,
+                QSize(int(screen.width() * 0.4),
+                      int(screen.height() * 0.5)),
+                screen
+            )
+        )
+
+        self.setStyleSheet("background-color: #F9E090;")
+        self.setWindowTitle("Hoş Geldiniz — RichSpan")
+        introduction = QVBoxLayout()
+        self.statusBar().showMessage("• BG Ekosistemi Servisleri'ne bağlanıldı.")
+        self.statusBar().setStyleSheet(
+            "background-color: #F9E090; color: #000000; font-weight: bold; font-size: 12px; border-radius: 10px; border: 1px solid #000000;")
+        product_label = QLabel("RichSpan 🎉")
+        product_label.setStyleSheet(
+            "background-color: #DFBB9D; color: #000000; font-size: 28px; font-weight: bold; border-radius: 10px; border: 1px solid #000000;")
+        product_label.setAlignment(Qt.AlignCenter)
+
+        intro_label = QLabel(
+            "<b>BG Ekosistemi</b> hesabınızla giriş yapın veya kayıt olun.")
+        intro_label.setStyleSheet(
+            "background-color: #F7E2D6; color: #000000; font-size: 12px; border-radius: 10px; border: 1px solid #000000;")
+        intro_label.setAlignment(Qt.AlignCenter)
+        intro_label.setFixedHeight(50)
+
+        introduction.addWidget(product_label)
+        introduction.addWidget(intro_label)
+        label_email = QLabel("E-posta:")
+        label_email.setStyleSheet(
+            "color: #A72461; font-weight: bold; font-size: 16px; margin: 10px; margin-left: 0px; margin-right: 0px; padding: 0px;")
+        textbox_email = QLineEdit()
+        textbox_email.setStyleSheet(
+            "background-color: #B3E8E5; color: #000000; border-radius: 10px; border: 1px solid #000000; margin: 10px; margin-left: 0px; margin-right: 0px; padding: 0px; font-size: 16px;")
+
+        label_password = QLabel("Şifre:")
+        label_password.setStyleSheet(
+            "color: #A72461; font-weight: bold; font-size: 16px; margin: 10px; margin-left: 0px; margin-right: 0px; padding: 0px;")
+        textbox_password = QLineEdit()
+        textbox_password.setStyleSheet(
+            "background-color: #B3E8E5; color: #000000; border-radius: 10px; border: 1px solid #000000; margin: 10px; margin-left: 0px; margin-right: 0px; padding: 0px; font-size: 16px;")
+        textbox_password.setEchoMode(QLineEdit.Password)
+
+        label_exception = QLabel()
+        label_exception.setStyleSheet(
+            "color: #A72461; font-weight: bold; font-size: 16px; margin: 10px; margin-left: 0px; margin-right: 0px; padding: 0px;")
+        label_exception.setAlignment(Qt.AlignCenter)
+
+        bottom_layout = QVBoxLayout()
+        bottom_layout.addWidget(label_email)
+        bottom_layout.addWidget(textbox_email)
+        bottom_layout.addWidget(label_password)
+        bottom_layout.addWidget(textbox_password)
+        bottom_layout.addWidget(label_exception)
+
+        button_layout = QHBoxLayout()
+
+        button_login = QPushButton("Giriş Yap")
+        button_login.setStyleSheet(
+            "background-color: #A72461; color: #FFFFFF; font-weight: bold; padding: 10px; border-radius: 10px; border: 1px solid #000000; margin: 10px;")
+
+        def register():
+            if textbox_email.text() == "" or textbox_password.text() == "":
+                error = QMessageBox()
+                error.setWindowTitle("Hata")
+                error.setText("Lütfen tüm alanları doldurun!")
+                error.setIcon(QMessageBox.Warning)
+                error.setStandardButtons(QMessageBox.Ok)
+                error.exec_()
+            else:
+                mysqlserver = serverconnect()
+                mysqlcursor = mysqlserver.cursor()
+                sqlite_file = os.path.join(os.path.dirname(
+                    os.path.abspath(__file__)), 'profile.db')
+                sqliteConnection = sqlite3.connect(sqlite_file)
+                mysqlcursor.execute(
+                    "SELECT * FROM profile WHERE email = %s", (textbox_email.text(),))
+                user_result = mysqlcursor.fetchone()
+
+                if user_result == None:
+                    mysqlcursor.execute("INSERT INTO profile (email, password) VALUES (%s, %s)", (
+                        textbox_email.text(), textbox_password.text()))
+                    mysqlserver.commit()
+                    mysqlcursor.execute(
+                        "INSERT INTO log (devicename, log) VALUES (%s, %s)", (platform.node(), "Register Successful!"))
+                    mysqlserver.commit()
+                    mysqlcursor.execute(
+                        "INSERT INTO apps (richspan, email) VALUES (%s, %s)", (0, textbox_email.text()))
+                    sqliteConnection.execute("DELETE FROM profile")
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute("INSERT INTO profile (email, password) VALUES (?, ?)", (
+                        textbox_email.text(), textbox_password.text()))
+                    sqliteConnection.connection.commit()
+                    label_exception.setText(
+                        "Kayıt başarılı! Lütfen giriş yapın.")
+                else:
+                    label_exception.setText(
+                        "Bu e-posta adresi zaten kayıtlı!")
+
+        def login():
+            if textbox_email.text() == "" or textbox_password.text() == "":
+                QMessageBox.warning(
+                    self, "Hata", "Lütfen tüm alanları doldurun!")
+            else:
+                mysqlserver = serverconnect()
+                mysqlcursor = mysqlserver.cursor()
+                sqlite_file = os.path.join(os.path.dirname(
+                    os.path.abspath(__file__)), 'profile.db')
+                sqliteConnection = sqlite3.connect(sqlite_file).cursor()
+                mysqlcursor.execute(
+                    "SELECT * FROM profile WHERE email = %s", (textbox_email.text(),))
+                user_result = mysqlcursor.fetchone()
+                mysqlcursor.execute(
+                    "SELECT * FROM profile WHERE password = %s", (textbox_password.text(),))
+                pw_result = mysqlcursor.fetchone()
+
+                if user_result and pw_result:
+                    mysqlcursor.execute(
+                        "INSERT INTO log (email, devicename, log) VALUES (%s, %s, %s)", (textbox_email.text(), platform.node(), "Login Successful!"))
+                    mysqlserver.commit()
+                    sqliteConnection.execute("DELETE FROM profile")
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute("INSERT INTO profile (email, password) VALUES (?, ?)", (
+                        textbox_email.text(), textbox_password.text()))
+                    sqliteConnection.connection.commit()
+                    label_exception.setText(
+                        "Giriş başarılı! Lütfen bekleyin.")
+                    time.sleep(1)
+                    textbox_email.setText("")
+                    textbox_password.setText("")
+                    label_exception.setText("")
+                    RS_Workspace().show()
+                    QTimer.singleShot(1000, self.hide)
+                    QTimer.singleShot(1000, RS_Welcome().hide)
+                else:
+                    label_exception.setText(
+                        "E-posta adresi veya şifre yanlış!")
+
+        button_login.clicked.connect(login)
+        button_register = QPushButton("Kayıt Ol")
+        button_register.setStyleSheet(
+            "background-color: #A72461; color: #FFFFFF; font-weight: bold; padding: 10px; border-radius: 10px; border: 1px solid #000000; margin: 10px;")
+        button_register.clicked.connect(register)
+
+        button_layout.addWidget(button_login)
+        button_layout.addWidget(button_register)
+
+        introduction.addLayout(bottom_layout)
+        introduction.addLayout(button_layout)
+
+        central_widget = QWidget()
+        central_widget.setLayout(introduction)
+
+        self.setCentralWidget(central_widget)
+        endtime = datetime.datetime.now()
+        self.statusBar().showMessage(
+            str((endtime - starttime).total_seconds()) + " ms", 2500)
+
+
 class RS_Workspace(QMainWindow):
     def __init__(self, parent=None):
         super(RS_Workspace, self).__init__(parent)
         starttime = datetime.datetime.now()
         settings = QSettings("berkaygediz", "RichSpan")
-        self.richspan_thread = RS_Threading()
-        self.richspan_thread.update_signal.connect(self.RS_updateStatistics)
-        self.default_values = {
-            'font_family': 'Arial',
-            'font_size': 14,
-            'bold': False,
-            'italic': False,
-            'underline': False,
-            'alignment': Qt.AlignLeft,
-            'text_color': '#000000',
-            'background_color': '#FFFFFF',
-            'theme': 'light',
-            'window_geometry': None,
-            'default_directory': None,
-            'file_name': None,
-            'text_content': None,
-            'is_saved': None,
-            'scroll_position': None,
-            'current_theme': 'light',
-            'current_language': 'English'
-        }
-        self.light_theme = QPalette()
-        self.dark_theme = QPalette()
-        self.light_theme.setColor(QPalette.Window, QColor(239, 213, 195))
-        self.light_theme.setColor(QPalette.WindowText, QColor(37, 38, 39))
-        self.light_theme.setColor(QPalette.Base, QColor(255, 255, 255))
-        self.light_theme.setColor(QPalette.Text, QColor(0, 0, 0))
-        self.light_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
-        self.dark_theme.setColor(QPalette.Window, QColor(58, 68, 93))
-        self.dark_theme.setColor(QPalette.WindowText, QColor(239, 213, 195))
-        self.dark_theme.setColor(QPalette.Base, QColor(94, 87, 104))
-        self.dark_theme.setColor(QPalette.Text, QColor(255, 255, 255))
-        self.dark_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
         self.setWindowIcon(QIcon("icon.png"))
-        self.selected_file = None
-        self.file_name = None
-        self.is_saved = None
-        self.default_directory = QDir().homePath()
-        self.directory = self.default_directory
-        if settings.value("current_language") == None:
-            settings.setValue("current_language", "English")
-            settings.sync()
-        self.language = settings.value("current_language")
-        self.RS_setupDock()
-        self.dock_widget.hide()
-        self.status_bar = self.statusBar()
-        self.rs_area = QTextEdit()
-        self.RS_setupArea()
-        self.rs_area.setDisabled(True)
-        self.RS_setupActions()
-        self.RS_setupToolbar()
-        self.setPalette(self.light_theme)
-        self.rs_area.textChanged.connect(self.richspan_thread.start)
-        self.showMaximized()
-        self.rs_area.setFocus()
-        self.rs_area.setAcceptRichText(True)
-        QTimer.singleShot(50, self.RS_restoreTheme)
-        QTimer.singleShot(150, self.RS_restoreState)
-        self.rs_area.setDisabled(False)
-        self.RS_updateTitle()
-        endtime = datetime.datetime.now()
-        self.status_bar.showMessage(
-            str((endtime - starttime).total_seconds()) + " ms", 2500)
+        self.setWindowModality(Qt.ApplicationModal)
+        sqlite_file = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'profile.db')
+        sqlitedb = sqlite3.connect(sqlite_file)
+        sqlitecursor = sqlitedb.cursor()
+        user_email = sqlitecursor.execute(
+            "SELECT email FROM profile").fetchone()[0]
+        mysqlserver = serverconnect()
+        mysqlcursor = mysqlserver.cursor()
+        mysqlcursor.execute(
+            "SELECT richspan FROM apps WHERE richspan = '1 'AND email = %s", (user_email,))
+        if mysqlcursor.fetchone():
+            self.richspan_thread = RS_Threading()
+            self.richspan_thread.update_signal.connect(
+                self.RS_updateStatistics)
+            self.RS_themePalette()
+            self.setWindowIcon(QIcon("icon.png"))
+            self.selected_file = None
+            self.file_name = None
+            self.is_saved = None
+            self.default_directory = QDir().homePath()
+            self.directory = self.default_directory
+            if settings.value("current_language") == None:
+                settings.setValue("current_language", "English")
+                settings.sync()
+            self.language = settings.value("current_language")
+            if settings.value("current_theme") == None:
+                settings.setValue("current_theme", "light")
+                settings.sync()
+            self.theme = settings.value("current_theme")
+            self.RS_setupDock()
+            self.dock_widget.hide()
+            self.status_bar = self.statusBar()
+            self.rs_area = QTextEdit()
+            self.RS_setupArea()
+            self.rs_area.setDisabled(True)
+            self.RS_setupActions()
+            self.RS_setupToolbar()
+            self.setPalette(self.light_theme)
+            self.rs_area.textChanged.connect(self.richspan_thread.start)
+            self.showMaximized()
+            self.rs_area.setFocus()
+            self.rs_area.setAcceptRichText(True)
+            QTimer.singleShot(50, self.RS_restoreTheme)
+            QTimer.singleShot(150, self.RS_restoreState)
+            self.rs_area.setDisabled(False)
+            self.RS_updateTitle()
+            endtime = datetime.datetime.now()
+            self.status_bar.showMessage(
+                str((endtime - starttime).total_seconds()) + " ms", 2500)
+        else:
+            QMessageBox.warning(
+                self, "Hata", "Ürünü kullanmak için satın almanız gerekmektedir!")
+            sys.exit()
 
     def closeEvent(self, event):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -139,6 +444,9 @@ class RS_Workspace(QMainWindow):
 
     def RS_updateTitle(self):
         settings = QSettings("berkaygediz", "RichSpan")
+        if settings.value("current_language") == None:
+            settings.setValue("current_language", "English")
+            settings.sync()
         file = self.file_name if self.file_name else translations[settings.value(
             "current_language")]["new_title"]
         if self.is_saved == True:
@@ -189,7 +497,7 @@ class RS_Workspace(QMainWindow):
         self.statistics_label.setText(statistics)
         self.status_bar.addPermanentWidget(self.statistics_label)
         self.new_text = self.rs_area.toPlainText()
-        if self.new_text != self.default_values['text_content']:
+        if self.new_text != default_values['text_content']:
             self.is_saved = False
         else:
             self.is_saved = True
@@ -212,7 +520,7 @@ class RS_Workspace(QMainWindow):
 
     def RS_restoreState(self):
         settings = QSettings("berkaygediz", "RichSpan")
-        geometry = settings.value("window_geometry")
+        self.geometry = settings.value("window_geometry")
         self.directory = settings.value(
             "default_directory", self.default_directory)
         self.file_name = settings.value("file_name")
@@ -221,8 +529,8 @@ class RS_Workspace(QMainWindow):
         self.language_combobox.setCurrentText(
             settings.value("current_language"))
 
-        if geometry is not None:
-            self.restoreGeometry(geometry)
+        if self.geometry is not None:
+            self.restoreGeometry(self.geometry)
 
         if self.file_name and os.path.exists(self.file_name):
             with open(self.file_name, 'r', encoding='utf-8') as file:
@@ -258,6 +566,23 @@ class RS_Workspace(QMainWindow):
             self.setPalette(self.light_theme)
         self.RS_toolbarTheme()
 
+    def RS_themePalette(self):
+        self.light_theme = QPalette()
+        self.dark_theme = QPalette()
+
+        self.light_theme.setColor(QPalette.Window, QColor(239, 213, 195))
+        self.light_theme.setColor(QPalette.WindowText, QColor(37, 38, 39))
+        self.light_theme.setColor(QPalette.Base, QColor(255, 255, 255))
+        self.light_theme.setColor(QPalette.Text, QColor(0, 0, 0))
+        self.light_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
+        self.light_theme.setColor(QPalette.ButtonText, QColor(37, 38, 39))
+
+        self.dark_theme.setColor(QPalette.Window, QColor(58, 68, 93))
+        self.dark_theme.setColor(QPalette.WindowText, QColor(239, 213, 195))
+        self.dark_theme.setColor(QPalette.Base, QColor(94, 87, 104))
+        self.dark_theme.setColor(QPalette.Text, QColor(255, 255, 255))
+        self.dark_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
+
     def RS_themeAction(self):
         if self.palette() == self.light_theme:
             self.setPalette(self.dark_theme)
@@ -282,17 +607,17 @@ class RS_Workspace(QMainWindow):
                     toolbar.setPalette(action_color)
 
     def RS_setupArea(self):
-        self.rs_area.setFontFamily(self.default_values['font_family'])
-        self.rs_area.setFontPointSize(self.default_values['font_size'])
+        self.rs_area.setFontFamily(default_values['font_family'])
+        self.rs_area.setFontPointSize(default_values['font_size'])
         self.rs_area.setFontWeight(
-            75 if self.default_values['bold'] else 50)
-        self.rs_area.setFontItalic(self.default_values['italic'])
-        self.rs_area.setFontUnderline(self.default_values['underline'])
-        self.rs_area.setAlignment(self.default_values['alignment'])
+            75 if default_values['bold'] else 50)
+        self.rs_area.setFontItalic(default_values['italic'])
+        self.rs_area.setFontUnderline(default_values['underline'])
+        self.rs_area.setAlignment(default_values['alignment'])
         self.rs_area.setTextColor(
-            QColor(self.default_values['text_color']))
+            QColor(default_values['text_color']))
         self.rs_area.setTextBackgroundColor(
-            QColor(self.default_values['background_color']))
+            QColor(default_values['background_color']))
         self.rs_area.setTabStopWidth(33)
         self.rs_area.document().setDocumentMargin(self.width() * 0.25)
 
@@ -386,6 +711,9 @@ class RS_Workspace(QMainWindow):
             translations[settings.value("current_language")]["center_title"], translations[settings.value("current_language")]["center_message"], lambda: self.align(Qt.AlignCenter))
         self.alignjustifiedevent = self.RS_createAction(
             translations[settings.value("current_language")]["justify_title"], translations[settings.value("current_language")]["justify_message"], lambda: self.align(Qt.AlignJustify))
+        self.bulletevent = self.RS_createAction("Bullets", "", self.bullet)
+        self.numberedevent = self.RS_createAction(
+            "Numbered", "", self.numbered)
         self.bold = self.RS_createAction(
             translations[settings.value("current_language")]["bold_title"], translations[settings.value("current_language")]["bold_message"], self.contentBold, QKeySequence.Bold)
         self.italic = self.RS_createAction(
@@ -406,9 +734,62 @@ class RS_Workspace(QMainWindow):
             translations[settings.value("current_language")]["image_title"], translations[settings.value("current_language")]["image_message"], self.contentAddImage, QKeySequence("Ctrl+Shift+P"))
         self.aboutaction = self.RS_createAction(
             translations[settings.value("current_language")]["about"], "", self.showAbout)
+        self.logoutaction = self.RS_createAction("Çıkış Yap", "", self.logout)
+        self.syncsettingsaction = self.RS_createAction(
+            "Ayarları Senkronize Et", "", self.syncsettings)
+
+    def syncsettings(self):
+        settings = QSettings("berkaygediz", "RichSpan")
+        sqlite_file = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'profile.db')
+        sqliteConnection = sqlite3.connect(sqlite_file).cursor()
+        user_email = sqliteConnection.execute(
+            "SELECT email FROM profile").fetchone()[0]
+        mysqlserver = serverconnect()
+        mysqlcursor = mysqlserver.cursor()
+        mysqlcursor.execute(
+            "SELECT * FROM user_settings WHERE email = %s", (user_email,))
+        user_settings = mysqlcursor.fetchone()
+        if user_settings == None:
+            sqliteConnection.execute(
+                "SELECT * FROM user_settings WHERE email = ?", (user_email,))
+            user_settings = sqliteConnection.fetchone()
+            if user_settings == None:
+                pass
+            else:
+                settings.setValue("current_theme", user_settings[1])
+                settings.setValue("current_language", user_settings[2])
+                settings.sync()
+            mysqlcursor.execute(
+                "INSERT INTO user_settings (email, theme, language) VALUES (%s, %s, %s)", (user_email, settings.value("current_theme"), settings.value("current_language")))
+            mysqlserver.commit()
+        else:
+            mysqlcursor.execute(
+                "UPDATE user_settings SET theme = %s, language = %s WHERE email = %s", (settings.value("current_theme"), settings.value("current_language"), user_email))
+            mysqlserver.commit()
+
+    def logout(self):
+        sqlite_file = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'profile.db')
+        sqliteConnection = sqlite3.connect(sqlite_file).cursor()
+        sqliteConnection.execute("DELETE FROM profile")
+        sqliteConnection.connection.commit()
+        sqliteConnection.execute("DELETE FROM log")
+        sqliteConnection.connection.commit()
+        sqliteConnection.execute("DELETE FROM apps")
+        sqliteConnection.connection.commit()
+        try:
+            settings = QSettings("berkaygediz", "RichSpan")
+            settings.clear()
+            settings.sync()
+        except:
+            pass
+        QTimer.singleShot(0, self.hide)
+        QTimer.singleShot(750, RS_ControlInfo().show)
 
     def RS_setupToolbar(self):
         settings = QSettings("berkaygediz", "RichSpan")
+
         self.toolbar = self.addToolBar(
             translations[settings.value("current_language")]["file"])
         self.RS_toolbarLabel(self.toolbar, translations[settings.value(
@@ -439,6 +820,19 @@ class RS_Workspace(QMainWindow):
         self.aboutaction = self.RS_createAction(
             translations[settings.value("current_language")]["about"], "", self.showAbout)
         self.toolbar.addAction(self.aboutaction)
+
+        self.toolbar = self.addToolBar("Account")
+        self.RS_toolbarLabel(self.toolbar, "Account: ")
+        sqlite_file = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'profile.db')
+        sqliteConnection = sqlite3.connect(sqlite_file).cursor()
+        user_email = sqliteConnection.execute(
+            "SELECT email FROM profile").fetchone()[0]
+        self.user_name = QLabel(user_email)
+        self.user_name.setStyleSheet("color: #000000;")
+        self.toolbar.addWidget(self.user_name)
+        self.toolbar.addAction(self.logoutaction)
+        self.toolbar.addAction(self.syncsettingsaction)
         self.addToolBarBreak()
 
         self.toolbar = self.addToolBar(
@@ -451,6 +845,11 @@ class RS_Workspace(QMainWindow):
         self.RS_toolbarLabel(self.toolbar, translations[settings.value(
             "current_language")]["font_title"] + ": ")
         self.toolbar.addActions([self.bold, self.italic, self.underline])
+        self.toolbar.addSeparator()
+        self.toolbar = self.addToolBar("List")
+        self.RS_toolbarLabel(
+            self.toolbar, "List:" + " ")
+        self.toolbar.addActions([self.bulletevent, self.numberedevent])
         self.addToolBarBreak()
 
         self.toolbar = self.addToolBar(
@@ -486,17 +885,17 @@ class RS_Workspace(QMainWindow):
         settings = QSettings("berkaygediz", "RichSpan")
         if self.is_saved == True:
             self.rs_area.clear()
-            self.rs_area.setFontFamily(self.default_values['font_family'])
-            self.rs_area.setFontPointSize(self.default_values['font_size'])
+            self.rs_area.setFontFamily(default_values['font_family'])
+            self.rs_area.setFontPointSize(default_values['font_size'])
             self.rs_area.setFontWeight(
-                75 if self.default_values['bold'] else 50)
-            self.rs_area.setFontItalic(self.default_values['italic'])
-            self.rs_area.setFontUnderline(self.default_values['underline'])
-            self.rs_area.setAlignment(self.default_values['alignment'])
+                75 if default_values['bold'] else 50)
+            self.rs_area.setFontItalic(default_values['italic'])
+            self.rs_area.setFontUnderline(default_values['underline'])
+            self.rs_area.setAlignment(default_values['alignment'])
             self.rs_area.setTextColor(
-                QColor(self.default_values['text_color']))
+                QColor(default_values['text_color']))
             self.rs_area.setTextBackgroundColor(
-                QColor(self.default_values['background_color']))
+                QColor(default_values['background_color']))
             self.rs_area.setTabStopWidth(33)
             self.directory = self.default_directory
             self.file_name = None
@@ -509,17 +908,17 @@ class RS_Workspace(QMainWindow):
 
             if reply == QMessageBox.Yes:
                 self.rs_area.clear()
-                self.rs_area.setFontFamily(self.default_values['font_family'])
-                self.rs_area.setFontPointSize(self.default_values['font_size'])
+                self.rs_area.setFontFamily(default_values['font_family'])
+                self.rs_area.setFontPointSize(default_values['font_size'])
                 self.rs_area.setFontWeight(
-                    75 if self.default_values['bold'] else 50)
-                self.rs_area.setFontItalic(self.default_values['italic'])
-                self.rs_area.setFontUnderline(self.default_values['underline'])
-                self.rs_area.setAlignment(self.default_values['alignment'])
+                    75 if default_values['bold'] else 50)
+                self.rs_area.setFontItalic(default_values['italic'])
+                self.rs_area.setFontUnderline(default_values['underline'])
+                self.rs_area.setAlignment(default_values['alignment'])
                 self.rs_area.setTextColor(
-                    QColor(self.default_values['text_color']))
+                    QColor(default_values['text_color']))
                 self.rs_area.setTextBackgroundColor(
-                    QColor(self.default_values['background_color']))
+                    QColor(default_values['background_color']))
                 self.rs_area.setTabStopWidth(33)
                 self.directory = self.default_directory
                 self.file_name = None
@@ -611,6 +1010,32 @@ class RS_Workspace(QMainWindow):
 
     def align(self, alignment):
         self.rs_area.setAlignment(alignment)
+
+    def bullet(self):
+        cursor = self.rs_area.textCursor()
+        cursor.beginEditBlock()
+        selected_text = cursor.selectedText()
+        char_format = cursor.charFormat()
+        cursor.removeSelectedText()
+        cursor.insertList(QTextListFormat.ListDisc)
+        cursor.insertText(selected_text)
+        new_cursor = self.rs_area.textCursor()
+        new_cursor.movePosition(QTextCursor.PreviousBlock)
+        new_cursor.mergeCharFormat(char_format)
+        cursor.endEditBlock()
+
+    def numbered(self):
+        cursor = self.rs_area.textCursor()
+        cursor.beginEditBlock()
+        selected_text = cursor.selectedText()
+        char_format = cursor.charFormat()
+        cursor.removeSelectedText()
+        cursor.insertList(QTextListFormat.ListDecimal)
+        cursor.insertText(selected_text)
+        new_cursor = self.rs_area.textCursor()
+        new_cursor.movePosition(QTextCursor.PreviousBlock)
+        new_cursor.mergeCharFormat(char_format)
+        cursor.endEditBlock()
 
     def contentBold(self):
         font = self.rs_area.currentFont()
@@ -704,10 +1129,10 @@ class RS_Workspace(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    core = RS_Workspace()
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
     app.setApplicationDisplayName("RichSpan")
-    app.setApplicationVersion("1.2.4")
+    app.setApplicationVersion("1.3.0")
+    core = RS_ControlInfo()
     core.show()
     sys.exit(app.exec_())
