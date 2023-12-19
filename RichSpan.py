@@ -1268,5 +1268,6 @@ if __name__ == "__main__":
     app.setApplicationName("RichSpan")
     app.setApplicationDisplayName("RichSpan")
     app.setApplicationVersion("1.3.10")
-    RS_ControlInfo().show()
+    ci = RS_ControlInfo()
+    ci.show()
     sys.exit(app.exec_())
