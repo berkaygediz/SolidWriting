@@ -520,21 +520,31 @@ class RS_Workspace(QMainWindow):
         statistics += "</style></head><body>"
         statistics += "<table><tr>"
         if word_count > 0 and line_count > 0 and character_count > 0 and page_count > 0 and text != "":
-            statistics += f"<th>{translations[settings.value('current_language')]['analysis']}</th>"
+            statistics += f"<th>{translations[settings.value(
+                'current_language')]['analysis']}</th>"
             avg_word_length = sum(len(word)
                                   for word in text.split()) / word_count
-            statistics += f"<td>{translations[settings.value('current_language')]['analysis_message_1'].format(avg_word_length)}</td>"
+            statistics += f"<td>{translations[settings.value(
+                'current_language')]['analysis_message_1'].format(avg_word_length)}</td>"
             avg_line_length = character_count / line_count - 1
-            statistics += f"<td>{translations[settings.value('current_language')]['analysis_message_2'].format(avg_line_length)}</td>"
+            statistics += f"<td>{translations[settings.value(
+                'current_language')]['analysis_message_2'].format(avg_line_length)}</td>"
             uppercase_count = sum(1 for char in text if char.isupper())
             lowercase_count = sum(1 for char in text if char.islower())
-            statistics += f"<td>{translations[settings.value('current_language')]['analysis_message_3'].format(uppercase_count)}</td>"
-            statistics += f"<td>{translations[settings.value('current_language')]['analysis_message_4'].format(lowercase_count)}</td>"
-        statistics += f"<th>{translations[settings.value('current_language')]['statistic']}</th>"
-        statistics += f"<td>{translations[settings.value('current_language')]['statistic_message_1'].format(line_count)}</td>"
-        statistics += f"<td>{translations[settings.value('current_language')]['statistic_message_2'].format(word_count)}</td>"
-        statistics += f"<td>{translations[settings.value('current_language')]['statistic_message_3'].format(character_count)}</td>"
-        statistics += f"<td>{translations[settings.value('current_language')]['statistic_message_4'].format(page_count)}</td>"
+            statistics += f"<td>{translations[settings.value(
+                'current_language')]['analysis_message_3'].format(uppercase_count)}</td>"
+            statistics += f"<td>{translations[settings.value(
+                'current_language')]['analysis_message_4'].format(lowercase_count)}</td>"
+        statistics += f"<th>{translations[settings.value(
+            'current_language')]['statistic']}</th>"
+        statistics += f"<td>{translations[settings.value(
+            'current_language')]['statistic_message_1'].format(line_count)}</td>"
+        statistics += f"<td>{translations[settings.value(
+            'current_language')]['statistic_message_2'].format(word_count)}</td>"
+        statistics += f"<td>{translations[settings.value(
+            'current_language')]['statistic_message_3'].format(character_count)}</td>"
+        statistics += f"<td>{translations[settings.value(
+            'current_language')]['statistic_message_4'].format(page_count)}</td>"
         statistics += "</td><th id='rs-text'>RichSpan</th>"
         statistics += "</tr></table></body></html>"
 
@@ -774,27 +784,48 @@ class RS_Workspace(QMainWindow):
                                 "th {background-color: #4CAF50; color: white;}"
                                 "</style></head><body>"
                                 "<table><tr>"
-                                f"<th>{translations[settings.value('current_language')]['help_shortcut']}</th>"
-                                f"<th>{translations[settings.value('current_language')]['help_description']}</th>"
-                                f"</tr><tr><td>Ctrl+N</td><td>{translations[settings.value('current_language')]['new_message']}</td></tr>"
-                                f"<tr><td>Ctrl+O</td><td>{translations[settings.value('current_language')]['open_message']}</td></tr>"
-                                f"<tr><td>Ctrl+S</td><td>{translations[settings.value('current_language')]['save_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Shift+S</td><td>{translations[settings.value('current_language')]['save_as_message']}</td></tr>"
-                                f"<tr><td>Ctrl+P</td><td>{translations[settings.value('current_language')]['print_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Z</td><td>{translations[settings.value('current_language')]['undo_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Y</td><td>{translations[settings.value('current_language')]['redo_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Shift+V</td><td>{translations[settings.value('current_language')]['viewmode_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Shift+T</td><td>{translations[settings.value('current_language')]['darklight_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Shift+D</td><td>{translations[settings.value('current_language')]['help_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Shift+C</td><td>{translations[settings.value('current_language')]['font_color_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Shift+B</td><td>{translations[settings.value('current_language')]['background_color_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Shift+F</td><td>{translations[settings.value('current_language')]['font_message']}</td></tr>"
-                                f"<tr><td>Ctrl++</td><td>{translations[settings.value('current_language')]['inc_font_message']}</td></tr>"
-                                f"<tr><td>Ctrl+-</td><td>{translations[settings.value('current_language')]['dec_font_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Shift+P</td><td>{translations[settings.value('current_language')]['image_message']}</td></tr>"
-                                f"<tr><td>Ctrl+Shift+W+S</td><td>{translations[settings.value('current_language')]['save_workspace_message']}</td></tr>"
-                                f"<tr><td>Ctrl+F</td><td>{translations[settings.value('current_language')]['find_message']}</td></tr>"
-                                f"<tr><td>Ctrl+H</td><td>{translations[settings.value('current_language')]['replace_message']}</td></tr>"
+                                f"<th>{translations[settings.value(
+                                    'current_language')]['help_shortcut']}</th>"
+                                f"<th>{translations[settings.value(
+                                    'current_language')]['help_description']}</th>"
+                                f"</tr><tr><td>Ctrl+N</td><td>{
+                                    translations[settings.value('current_language')]['new_message']}</td></tr>"
+                                f"<tr><td>Ctrl+O</td><td>{translations[settings.value(
+                                    'current_language')]['open_message']}</td></tr>"
+                                f"<tr><td>Ctrl+S</td><td>{translations[settings.value(
+                                    'current_language')]['save_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+S</td><td>{translations[settings.value(
+                                    'current_language')]['save_as_message']}</td></tr>"
+                                f"<tr><td>Ctrl+P</td><td>{translations[settings.value(
+                                    'current_language')]['print_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Z</td><td>{translations[settings.value(
+                                    'current_language')]['undo_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Y</td><td>{translations[settings.value(
+                                    'current_language')]['redo_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+V</td><td>{translations[settings.value(
+                                    'current_language')]['viewmode_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+T</td><td>{translations[settings.value(
+                                    'current_language')]['darklight_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+D</td><td>{
+                                    translations[settings.value('current_language')]['help_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+C</td><td>{translations[settings.value(
+                                    'current_language')]['font_color_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+B</td><td>{translations[settings.value(
+                                    'current_language')]['background_color_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+F</td><td>{
+                                    translations[settings.value('current_language')]['font_message']}</td></tr>"
+                                f"<tr><td>Ctrl++</td><td>{translations[settings.value(
+                                    'current_language')]['inc_font_message']}</td></tr>"
+                                f"<tr><td>Ctrl+-</td><td>{translations[settings.value(
+                                    'current_language')]['dec_font_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+P</td><td>{translations[settings.value(
+                                    'current_language')]['image_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+W+S</td><td>{translations[settings.value(
+                                    'current_language')]['save_workspace_message']}</td></tr>"
+                                f"<tr><td>Ctrl+F</td><td>{translations[settings.value(
+                                    'current_language')]['find_message']}</td></tr>"
+                                f"<tr><td>Ctrl+H</td><td>{translations[settings.value(
+                                    'current_language')]['replace_message']}</td></tr>"
                                 "</table></body></html>")
 
         self.dock_widget.setWidget(self.help_label)
@@ -1066,7 +1097,8 @@ class RS_Workspace(QMainWindow):
         options = QFileDialog.Options()
         settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
-        file_filter = f"{translations[settings.value('current_language')]['rsdoc']} (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)"
+        file_filter = f"{translations[settings.value(
+            'current_language')]['rsdoc']} (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)"
         selected_file, _ = QFileDialog.getOpenFileName(
             self, translations[settings.value("current_language")]["open"] + " — RichSpan ", self.directory, file_filter, options=options)
         if selected_file:
@@ -1099,7 +1131,8 @@ class RS_Workspace(QMainWindow):
         options = QFileDialog.Options()
         settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
-        file_filter = f"{translations[settings.value('current_language')]['rsdoc']} (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)"
+        file_filter = f"{translations[settings.value(
+            'current_language')]['rsdoc']} (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)"
         selected_file, _ = QFileDialog.getSaveFileName(
             self, translations[settings.value("current_language")]["save_as"] + " — RichSpan ", self.directory, file_filter, options=options)
         if selected_file:
