@@ -8,7 +8,7 @@ RichSpan is a word processor. Lightweight and easy to use, it is designed to be 
 
 ### Screenshots
 
-<img src="https://raw.githubusercontent.com/berkaygediz/RichSpan/master/richspan_banner.png" width="35%" height="35%" alt="RichSpan Banner">
+![Screenshot 1](richspan_banner.png)
 
 ### Features
 
