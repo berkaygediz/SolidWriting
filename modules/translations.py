@@ -106,6 +106,11 @@ translations = {
         "wrong_credentials": "Wrong credentials",
         "register_success": "Registration successful, please login.",
         "already_registered": "Already registered",
+        "invalid_email": "Invalid email",
+        "bullet": "Bullet",
+        "numbered": "Numbered",
+        "account": "Account",
+        "list": "List",
     },
     "Türkçe": {
         "new": "Yeni",
@@ -215,6 +220,11 @@ translations = {
         "wrong_credentials": "Yanlış kimlik bilgileri",
         "register_success": "Kayıt başarılı, lütfen giriş yapın.",
         "already_registered": "Zaten kayıtlı",
+        "invalid_email": "Geçersiz e-posta",
+        "bullet": "Madde",
+        "numbered": "Numaralandırılmış",
+        "account": "Hesap",
+        "list": "Liste",
     },
     "Azərbaycanca": {
         "new": "Yeni",
@@ -324,6 +334,11 @@ translations = {
         "wrong_credentials": "Yanlış kimlik məlumatları",
         "register_success": "Qeydiyyat uğurlu, xahiş olunur giriş edin.",
         "already_registered": "Artıq qeydiyyatdan keçilib",
+        "invalid_email": "Yanlış e-poçt",
+        "bullet": "Nöqtə",
+        "numbered": "Nömrələndirilmiş",
+        "account": "Hesab",
+        "list": "Siyahı",
     },
     "Deutsch": {
         "new": "Neu",
@@ -433,6 +448,11 @@ translations = {
         "wrong_credentials": "Falsche Anmeldedaten",
         "register_success": "Registrierung erfolgreich, bitte anmelden.",
         "already_registered": "Bereits registriert",
+        "invalid_email": "Ungültige E-Mail",
+        "bullet": "Punkt",
+        "numbered": "Nummeriert",
+        "account": "Konto",
+        "list": "Liste",
     },
     "Español": {
         "new": "Nuevo",
@@ -541,5 +561,10 @@ translations = {
         "wrong_credentials": "Credenciales incorrectas",
         "register_success": "Registro correcto, por favor inicie sesión.",
         "already_registered": "Ya registrado",
+        "invalid_email": "Correo electrónico inválido",
+        "bullet": "Viñeta",
+        "numbered": "Numerado",
+        "account": "Cuenta",
+        "list": "Lista",
     }
 }

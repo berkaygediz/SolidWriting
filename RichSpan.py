@@ -5,6 +5,9 @@ import datetime
 import base64
 import time
 import sqlite3
+import re
+import webbrowser
+import qtawesome as qta
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -118,11 +121,11 @@ class RS_ControlInfo(QMainWindow):
             sqlitedb = sqlite3.connect(sqlite_file)
             sqlitecursor = sqlitedb.cursor()
             sqlitecursor.execute(
-                "CREATE TABLE IF NOT EXISTS profile (email TEXT, password TEXT)")
+                "CREATE TABLE IF NOT EXISTS profile (nametag TEXT, email TEXT, password TEXT)")
             sqlitecursor.execute(
                 "CREATE TABLE IF NOT EXISTS apps (richspan INTEGER DEFAULT 0, email TEXT)")
             sqlitecursor.execute(
-                "CREATE TABLE IF NOT EXISTS log (email TEXT, devicename TEXT, log TEXT, logdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+                "CREATE TABLE IF NOT EXISTS log (email TEXT, devicename TEXT, product NVARCHAR(100), activity NVARCHAR(100), log TEXT, logdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
 
             profile_email = sqlitecursor.execute(
                 "SELECT email FROM profile").fetchone()
@@ -138,16 +141,23 @@ class RS_ControlInfo(QMainWindow):
                     mysqlcursor.execute(
                         "SELECT * FROM profile WHERE email = %s", (local_email,))
                     user_result = mysqlcursor.fetchone()
-
                     if user_result is not None:
-                        if local_email == user_result[1] and local_pw == user_result[2]:
-                            sqlitecursor.execute(
-                                "INSERT INTO log (email, devicename, log) VALUES (?, ?, ?)", (local_email, platform.node(), "Login Successful!"))
+                        if local_email == user_result[1] and local_pw == user_result[3]:
                             mysqlcursor.execute(
-                                "INSERT INTO log (email, devicename, log) VALUES (%s, %s, %s)", (local_email, platform.node(), "Login Successful!"))
+                                "INSERT INTO log (email, devicename, product, activity, log) VALUES (%s, %s, %s, %s, %s)", (user_result[1], platform.node(), "RichSpan", "Login", "Verified"))
                             mysql_connection.commit()
-
-                            if settings.value("current_language") is None:
+                            mysqlcursor.execute(
+                                "SELECT * FROM user_settings WHERE email = %s AND product = %s", (local_email, "RichSpan"))
+                            user_settings = mysqlcursor.fetchone()
+                            if user_settings is not None:
+                                settings.setValue(
+                                    "current_theme", user_settings[3])
+                                settings.setValue(
+                                    "current_language", user_settings[4])
+                                settings.sync()
+                            else:
+                                settings.setValue(
+                                    "current_theme", "light")
                                 settings.setValue(
                                     "current_language", "English")
                                 settings.sync()
@@ -158,20 +168,38 @@ class RS_ControlInfo(QMainWindow):
                             RS_Workspace().show()
                             QTimer.singleShot(1250, self.hide)
                         else:
+                            def logout():
+                                sqlite_file = os.path.join(os.path.dirname(
+                                    os.path.abspath(__file__)), 'richspan.db')
+                                sqliteConnection = sqlite3.connect(sqlite_file)
+                                sqlitecursor = sqliteConnection.cursor()
+                                sqlitecursor.execute(
+                                    "DROP TABLE IF EXISTS profile")
+                                sqlitecursor.connection.commit()
+                                sqlitecursor.execute(
+                                    "DROP TABLE IF EXISTS apps")
+                                sqlitecursor.connection.commit()
+                                sqlitecursor.execute(
+                                    "DROP TABLE IF EXISTS log")
+                                sqlitecursor.connection.commit()
+                                sqlitecursor.execute(
+                                    "DROP TABLE IF EXISTS user_settings")
+                                sqlitecursor.connection.commit()
+                                RS_ControlInfo().show()
+                                QTimer.singleShot(0, self.hide)
+                            self.label_status.setStyleSheet(
+                                "background-color: #252525; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
                             self.label_status.setText(
                                 translations[settings.value("current_language")]["wrong_password"])
-                            sqlitecursor.execute(
-                                "INSERT INTO log (email, devicename, log) VALUES (?, ?, ?)", (local_email, platform.node(), "Wrong Password!"))
                             mysqlcursor.execute(
-                                "INSERT INTO log (email, devicename, log) VALUES (%s, %s, %s)", (local_email, platform.node(), "Wrong Password!"))
+                                "INSERT INTO log (email, devicename, product, activity, log) VALUES (%s, %s, %s, %s, %s)", (local_email, platform.node(), "RichSpan", "Login", "Failed"))
                             mysql_connection.commit()
-                            sqlitecursor.execute(
-                                "DROP TABLE IF EXISTS profile")
-                            sqlitecursor.execute("DROP TABLE IF EXISTS apps")
-                            sqlitecursor.execute("DROP TABLE IF EXISTS log")
-                            sqlitecursor.connection.commit()
-                            RS_ControlInfo().show()
-                            QTimer.singleShot(0, self.hide)
+                            logoutbutton = QPushButton(translations[settings.value(
+                                "current_language")]["logout"])
+                            logoutbutton.setStyleSheet(
+                                "background-color: #7900FF; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
+                            logoutbutton.clicked.connect(logout)
+                            self.layout_central.addWidget(logoutbutton)
                     else:
                         self.label_status.setStyleSheet(
                             "background-color: #252525; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
@@ -193,12 +221,20 @@ class RS_ControlInfo(QMainWindow):
                 else:
                     self.label_status.setText(
                         translations[settings.value("current_language")]["connection_denied"])
+                    logoutbutton = QPushButton(translations[settings.value(
+                        "current_language")]["register"])
+                    logoutbutton.setStyleSheet(
+                        "background-color: #7900FF; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
+                    logoutbutton.clicked.connect(RS_Welcome().show)
+                    self.layout_central.addWidget(logoutbutton)
             else:
                 RS_Welcome().show()
                 QTimer.singleShot(0, self.hide)
         else:
             self.label_status.setText(translations[settings.value(
                 "current_language")]["connection_denied"])
+            self.label_status.setStyleSheet(
+                "background-color: #252525; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
             QTimer.singleShot(10000, sys.exit)
 
 
@@ -296,16 +332,20 @@ class RS_Welcome(QMainWindow):
         button_login.setStyleSheet(
             "background-color: #A72461; color: #FFFFFF; font-weight: bold; padding: 10px; border-radius: 10px; border: 1px solid #000000; margin: 10px;")
 
+        def is_valid_email(email):
+            email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+            return re.match(email_regex, email)
+
         def register():
-            if textbox_email.text() == "" or textbox_password.text() == "":
-                error = QMessageBox()
-                error.setWindowTitle(translations[settings.value(
-                    "current_language")]["error"])
-                error.setText(translations[settings.value(
+            email = textbox_email.text()
+            password = textbox_password.text()
+
+            if email == "" or password == "":
+                label_exception.setText(translations[settings.value(
                     "current_language")]["fill_all"])
-                error.setIcon(QMessageBox.Warning)
-                error.setStandardButtons(QMessageBox.Ok)
-                error.exec_()
+            elif not is_valid_email(textbox_email.text()):
+                label_exception.setText(translations[settings.value(
+                    "current_language")]["invalid_email"])
             else:
                 mysqlserver = serverconnect()
                 mysqlcursor = mysqlserver.cursor()
@@ -313,36 +353,72 @@ class RS_Welcome(QMainWindow):
                     os.path.abspath(__file__)), 'richspan.db')
                 sqliteConnection = sqlite3.connect(sqlite_file)
                 mysqlcursor.execute(
-                    "SELECT * FROM profile WHERE email = %s", (textbox_email.text(),))
+                    "SELECT email FROM profile WHERE email = %s", (email,))
                 user_result = mysqlcursor.fetchone()
 
                 if user_result == None:
                     mysqlcursor.execute("INSERT INTO profile (email, password) VALUES (%s, %s)", (
-                        textbox_email.text(), textbox_password.text()))
+                        email, password))
                     mysqlserver.commit()
                     mysqlcursor.execute(
-                        "INSERT INTO log (devicename, log) VALUES (%s, %s)", (platform.node(), "Register Successful!"))
+                        "INSERT INTO log (email, devicename, product, activity, log) VALUES (%s, %s, %s, %s, %s)", (email, platform.node(), "RichSpan", "Register", "Success"))
                     mysqlserver.commit()
                     mysqlcursor.execute(
-                        "INSERT INTO apps (richspan, email) VALUES (%s, %s)", (0, textbox_email.text()))
-                    sqliteConnection.execute("DELETE FROM profile")
-                    sqliteConnection.connection.commit()
-                    sqliteConnection.execute("INSERT INTO profile (email, password) VALUES (?, ?)", (
-                        textbox_email.text(), textbox_password.text()))
-                    sqliteConnection.connection.commit()
+                        "INSERT INTO apps (richspan, email) VALUES (%s, %s)", (0, email))
+                    mysqlserver.commit()
+                    language = settings.value("current_language")
+                    mysqlcursor.execute(
+                        "INSERT INTO user_settings (email, product, theme, language) VALUES (%s, %s, %s, %s)", (email, "RichSpan", "light", language))
+                    mysqlserver.commit()
+                    sqliteConnection.execute("DROP TABLE IF EXISTS profile")
+                    sqliteConnection.commit()
+                    sqliteConnection.execute("DROP TABLE IF EXISTS apps")
+                    sqliteConnection.commit()
+                    sqliteConnection.execute("DROP TABLE IF EXISTS log")
+                    sqliteConnection.commit()
+                    sqliteConnection.execute(
+                        "CREATE TABLE IF NOT EXISTS profile (email TEXT, password TEXT)")
+                    sqliteConnection.commit()
+                    sqliteConnection.execute(
+                        "CREATE TABLE IF NOT EXISTS apps (richspan INTEGER DEFAULT 0, email TEXT)")
+                    sqliteConnection.commit()
+                    sqliteConnection.execute(
+                        "CREATE TABLE IF NOT EXISTS log (email TEXT, devicename TEXT, log TEXT, logdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+                    sqliteConnection.commit()
+                    sqliteConnection.execute(
+                        "CREATE TABLE IF NOT EXISTS user_settings (email TEXT, theme TEXT, language TEXT)")
+                    sqliteConnection.commit()
+                    sqliteConnection.execute("INSERT INTO profile (nametag, email, password) VALUES (?, ?, ?)", (
+                        email.split('@')[0], email, password))
+                    sqliteConnection.commit()
+                    sqliteConnection.execute(
+                        "INSERT INTO apps (richspan, email) VALUES (?, ?)", (0, email))
+                    sqliteConnection.commit()
+                    sqliteConnection.execute(
+                        "INSERT INTO log (email, devicename, product, activity, log) VALUES (?, ?, ?, ?, ?)", (email, platform.node(), "RichSpan", "Register", "Success"))
+                    sqliteConnection.commit()
+                    sqliteConnection.execute(
+                        "INSERT INTO user_settings (email, theme, language) VALUES (?, ?, ?)", (email, "light", language))
+                    sqliteConnection.commit()
+                    time.sleep(1)
                     label_exception.setText(translations[settings.value(
                         "current_language")]["register_success"])
+                    QTimer.singleShot(3500, self.hide)
+                    RS_Workspace().show()
                 else:
                     label_exception.setText(
                         translations[settings.value("current_language")]["already_registered"])
 
         def login():
-            if textbox_email.text() == "" or textbox_password.text() == "":
-                if settings.value("current_language") == None:
-                    settings.setValue("current_language", "English")
-                    settings.sync()
-                QMessageBox.warning(
-                    self, translations[settings.value("current_language")]["error"], translations[settings.value("current_language")]["fill_all"])
+            email = textbox_email.text()
+            password = textbox_password.text()
+
+            if email == "" or password == "":
+                label_exception.setText(translations[settings.value(
+                    "current_language")]["fill_all"])
+            elif not is_valid_email(email):
+                label_exception.setText(translations[settings.value(
+                    "current_language")]["invalid_email"])
             else:
                 mysqlserver = serverconnect()
                 mysqlcursor = mysqlserver.cursor()
@@ -350,29 +426,56 @@ class RS_Welcome(QMainWindow):
                     os.path.abspath(__file__)), 'richspan.db')
                 sqliteConnection = sqlite3.connect(sqlite_file).cursor()
                 mysqlcursor.execute(
-                    "SELECT * FROM profile WHERE email = %s", (textbox_email.text(),))
+                    "SELECT email FROM profile WHERE email = %s", (email,))
                 user_result = mysqlcursor.fetchone()
                 mysqlcursor.execute(
-                    "SELECT * FROM profile WHERE password = %s", (textbox_password.text(),))
+                    "SELECT password FROM profile WHERE password = %s", (password,))
                 pw_result = mysqlcursor.fetchone()
 
                 if user_result and pw_result:
-                    mysqlcursor.execute(
-                        "INSERT INTO log (email, devicename, log) VALUES (%s, %s, %s)", (textbox_email.text(), platform.node(), "Login Successful!"))
+                    mysqlcursor.execute("INSERT INTO log (email, devicename, product, activity, log) VALUES (%s, %s, %s, %s, %s)", (
+                        email, platform.node(), "RichSpan", "Login", "Success"))
                     mysqlserver.commit()
-                    sqliteConnection.execute("DELETE FROM profile")
+                    sqliteConnection.execute("DROP TABLE IF EXISTS profile")
                     sqliteConnection.connection.commit()
-                    sqliteConnection.execute("INSERT INTO profile (email, password) VALUES (?, ?)", (
-                        textbox_email.text(), textbox_password.text()))
+                    sqliteConnection.execute("DROP TABLE IF EXISTS apps")
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute("DROP TABLE IF EXISTS log")
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute(
+                        "DROP TABLE IF EXISTS user_settings")
+                    sqliteConnection.execute(
+                        "CREATE TABLE IF NOT EXISTS profile (nametag TEXT, email TEXT, password TEXT)")
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute(
+                        "CREATE TABLE IF NOT EXISTS apps (richspan INTEGER DEFAULT 0, email TEXT)")
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute(
+                        "CREATE TABLE IF NOT EXISTS log (email TEXT, devicename TEXT, product NVARCHAR(100), activity NVARCHAR(100), log TEXT, logdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute(
+                        "CREATE TABLE IF NOT EXISTS user_settings (email TEXT, theme TEXT, language TEXT)")
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute(
+                        "INSERT INTO profile (nametag, email, password) VALUES (?, ?, ?)", (email.split('@')[0], email, password))
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute(
+                        "INSERT INTO apps (richspan, email) VALUES (?, ?)", (0, email))
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute(
+                        "INSERT INTO user_settings (email, theme, language) VALUES (?, ?, ?)", (email, "light", "English"))
+                    sqliteConnection.connection.commit()
+                    sqliteConnection.execute(
+                        "INSERT INTO log (email, devicename, product, activity, log) VALUES (?, ?, ?, ?, ?)", (email, platform.node(), "RichSpan", "Login", "Success"))
                     sqliteConnection.connection.commit()
                     time.sleep(1)
                     textbox_email.setText("")
                     textbox_password.setText("")
                     label_exception.setText("")
+                    QTimer.singleShot(3500, self.hide)
                     RS_Workspace().show()
-                    QTimer.singleShot(1000, self.hide)
-                    QTimer.singleShot(1000, RS_Welcome().hide)
                 else:
+                    settings.setValue("current_language", "English")
                     label_exception.setText(
                         translations[settings.value("current_language")]["wrong_credentials"])
 
@@ -396,6 +499,75 @@ class RS_Welcome(QMainWindow):
         endtime = datetime.datetime.now()
         self.statusBar().showMessage(
             str((endtime - starttime).total_seconds()) + " ms", 2500)
+
+
+class RS_ActivationStatus(QMainWindow):
+    def __init__(self, parent=None):
+        super(RS_ActivationStatus, self).__init__(parent)
+        self.setWindowFlags(Qt.Dialog)
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setGeometry(QStyle.alignedRect(Qt.LeftToRight, Qt.AlignCenter, self.size(
+        ), QApplication.desktop().availableGeometry()))
+
+        layout = QVBoxLayout()
+
+        self.activation_label = QLabel()
+        self.activation_label.setWordWrap(True)
+        self.activation_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.activation_label.setTextFormat(Qt.RichText)
+        self.activation_label.setText("<center>"
+                                      "<b>RichSpan</b><br>"
+                                      "Activate your product or delete your account<br><br>"
+                                      "</center>")
+        button_layout = QHBoxLayout()
+
+        self.activation_button = QPushButton("Activate")
+        self.activation_button.setStyleSheet(
+            "background-color: #7900FF; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
+
+        def activateSite():
+            webbrowser.open('http://localhost/bg-ecosystem-web/activate.php')
+        self.activation_button.clicked.connect(activateSite)
+
+        self.delete_button = QPushButton("Delete")
+        self.delete_button.setStyleSheet(
+            "background-color: #7900FF; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
+
+        def deleteAccount():
+            webbrowser.open('http://localhost/bg-ecosystem-web/profile.php')
+        self.delete_button.clicked.connect(deleteAccount)
+
+        self.logout_button = QPushButton("Logout")
+        self.logout_button.setStyleSheet(
+            "background-color: #7900FF; color: #FFFFFF; font-weight: bold; font-size: 16px; border-radius: 30px; border: 1px solid #000000;")
+
+        def logout():
+            sqlite_file = os.path.join(os.path.dirname(
+                os.path.abspath(__file__)), 'richspan.db')
+            sqliteConnection = sqlite3.connect(sqlite_file)
+            sqlitecursor = sqliteConnection.cursor()
+            sqlitecursor.execute("DROP TABLE IF EXISTS profile")
+            sqlitecursor.connection.commit()
+            sqlitecursor.execute("DROP TABLE IF EXISTS apps")
+            sqlitecursor.connection.commit()
+            sqlitecursor.execute("DROP TABLE IF EXISTS log")
+            sqlitecursor.connection.commit()
+            sqlitecursor.execute("DROP TABLE IF EXISTS user_settings")
+            sqlitecursor.connection.commit()
+            RS_ControlInfo().show()
+            QTimer.singleShot(0, self.hide)
+        self.logout_button.clicked.connect(logout)
+
+        button_layout.addWidget(self.activation_button)
+        button_layout.addWidget(self.delete_button)
+        button_layout.addWidget(self.logout_button)
+
+        layout.addWidget(self.activation_label)
+        layout.addLayout(button_layout)
+
+        central_widget = QWidget()
+        central_widget.setLayout(layout)
+        self.setCentralWidget(central_widget)
 
 
 class RS_Workspace(QMainWindow):
@@ -428,14 +600,6 @@ class RS_Workspace(QMainWindow):
             self.is_saved = None
             self.default_directory = QDir().homePath()
             self.directory = self.default_directory
-            if settings.value("current_language") == None:
-                settings.setValue("current_language", "English")
-                settings.sync()
-            self.language = settings.value("current_language")
-            if settings.value("current_theme") == None:
-                settings.setValue("current_theme", "light")
-                settings.sync()
-            self.theme = settings.value("current_theme")
             self.RS_setupDock()
             self.dock_widget.hide()
             self.status_bar = self.statusBar()
@@ -457,9 +621,9 @@ class RS_Workspace(QMainWindow):
             self.status_bar.showMessage(
                 str((endtime - starttime).total_seconds()) + " ms", 2500)
         else:
-            QMessageBox.warning(
-                self, "Hata", "Ürünü kullanmak için satın almanız gerekmektedir!")
-            sys.exit()
+            activation = RS_ActivationStatus()
+            activation.show()
+            QTimer.singleShot(0, self.hide)
 
     def closeEvent(self, event):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -484,6 +648,7 @@ class RS_Workspace(QMainWindow):
         settings.setValue("current_language", language)
         settings.sync()
         self.RS_updateTitle()
+        self.RS_updateStatistics()
         self.RS_toolbarTranslate()
 
     def RS_updateTitle(self):
@@ -623,7 +788,7 @@ class RS_Workspace(QMainWindow):
         self.light_theme = QPalette()
         self.dark_theme = QPalette()
 
-        self.light_theme.setColor(QPalette.Window, QColor(239, 213, 195))
+        self.light_theme.setColor(QPalette.Window, QColor(89, 111, 183))
         self.light_theme.setColor(QPalette.WindowText, QColor(37, 38, 39))
         self.light_theme.setColor(QPalette.Base, QColor(255, 255, 255))
         self.light_theme.setColor(QPalette.Text, QColor(0, 0, 0))
@@ -637,17 +802,19 @@ class RS_Workspace(QMainWindow):
         self.dark_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
 
     def RS_themeAction(self):
+        settings = QSettings("berkaygediz", "RichSpan")
         if self.palette() == self.light_theme:
             self.setPalette(self.dark_theme)
+            settings.setValue("current_theme", "dark")
         else:
             self.setPalette(self.light_theme)
-
+            settings.setValue("current_theme", "light")
         self.RS_toolbarTheme()
 
     def RS_toolbarTheme(self):
         palette = self.palette()
         if palette == self.light_theme:
-            text_color = QColor(37, 38, 39)
+            text_color = QColor(255, 255, 255)
         else:
             text_color = QColor(255, 255, 255)
 
@@ -661,10 +828,6 @@ class RS_Workspace(QMainWindow):
 
     def RS_toolbarTranslate(self):
         settings = QSettings("berkaygediz", "RichSpan")
-        if settings.value("current_language") == None:
-            settings.setValue("current_language", "English")
-            settings.sync()
-        self.language = settings.value("current_language")
         self.newaction.setText(translations[settings.value(
             "current_language")]["new"])
         self.newaction.setStatusTip(translations[settings.value(
@@ -749,6 +912,72 @@ class RS_Workspace(QMainWindow):
             "current_language")]["background_color"])
         self.backgroundcolor.setStatusTip(translations[settings.value(
             "current_language")]["background_color_message"])
+        self.dock_widget.setWindowTitle(translations[settings.value(
+            "current_language")]["help"])
+        self.dock_widget.setWidget(self.help_label)
+        self.help_label.setText("<html><head><style>"
+                                "table {border-collapse: collapse; width: 100%;}"
+                                "th, td {text-align: left; padding: 8px;}"
+                                "tr:nth-child(even) {background-color: #f2f2f2;}"
+                                "tr:hover {background-color: #ddd;}"
+                                "th {background-color: #4CAF50; color: white;}"
+                                "</style></head><body>"
+                                "<table><tr>"
+                                f"<th>{translations[settings.value(
+                                    'current_language')]['help_shortcut']}</th>"
+                                f"<th>{translations[settings.value(
+                                    'current_language')]['help_description']}</th>"
+                                f"</tr><tr><td>Ctrl+N</td><td>{
+                                    translations[settings.value('current_language')]['new_message']}</td></tr>"
+                                f"<tr><td>Ctrl+O</td><td>{translations[settings.value(
+                                    'current_language')]['open_message']}</td></tr>"
+                                f"<tr><td>Ctrl+S</td><td>{translations[settings.value(
+                                    'current_language')]['save_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+S</td><td>{translations[settings.value(
+                                    'current_language')]['save_as_message']}</td></tr>"
+                                f"<tr><td>Ctrl+P</td><td>{translations[settings.value(
+                                    'current_language')]['print_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Z</td><td>{translations[settings.value(
+                                    'current_language')]['undo_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Y</td><td>{translations[settings.value(
+                                    'current_language')]['redo_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+V</td><td>{translations[settings.value(
+                                    'current_language')]['viewmode_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+T</td><td>{translations[settings.value(
+                                    'current_language')]['darklight_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+D</td><td>{
+                                    translations[settings.value('current_language')]['help_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+C</td><td>{translations[settings.value(
+                                    'current_language')]['font_color_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+B</td><td>{translations[settings.value(
+                                    'current_language')]['background_color_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+F</td><td>{
+                                    translations[settings.value('current_language')]['font_message']}</td></tr>"
+                                f"<tr><td>Ctrl++</td><td>{translations[settings.value(
+                                    'current_language')]['inc_font_message']}</td></tr>"
+                                f"<tr><td>Ctrl+-</td><td>{translations[settings.value(
+                                    'current_language')]['dec_font_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+P</td><td>{translations[settings.value(
+                                    'current_language')]['image_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+W+S</td><td>{translations[settings.value(
+                                    'current_language')]['save_workspace_message']}</td></tr>"
+                                f"<tr><td>Ctrl+F</td><td>{translations[settings.value(
+                                    'current_language')]['find_message']}</td></tr>"
+                                f"<tr><td>Ctrl+H</td><td>{translations[settings.value(
+                                    'current_language')]['replace_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+U</td><td>{translations[settings.value(
+                                    'current_language')]['bullet']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+O</td><td>{translations[settings.value(
+                                    'current_language')]['numbered']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+R</td><td>{translations[settings.value(
+                                    'current_language')]['right']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+L</td><td>{translations[settings.value(
+                                    'current_language')]['left']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+E</td><td>{translations[settings.value(
+                                    'current_language')]['center']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+J</td><td>{translations[settings.value(
+                                    'current_language')]['justify']}</td></tr>"
+                                "</table></body></html>")
 
     def RS_setupArea(self):
         self.rs_area.setFontFamily(default_values['font_family'])
@@ -769,6 +998,8 @@ class RS_Workspace(QMainWindow):
 
     def RS_setupDock(self):
         settings = QSettings("berkaygediz", "RichSpan")
+        settings.setValue("current_language", "English")
+        settings.sync()
         self.dock_widget = QDockWidget(translations[settings.value(
             "current_language")]["help"], self)
         self.statistics_label = QLabel()
@@ -826,6 +1057,18 @@ class RS_Workspace(QMainWindow):
                                     'current_language')]['find_message']}</td></tr>"
                                 f"<tr><td>Ctrl+H</td><td>{translations[settings.value(
                                     'current_language')]['replace_message']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+U</td><td>{translations[settings.value(
+                                    'current_language')]['bullet']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+O</td><td>{translations[settings.value(
+                                    'current_language')]['numbered']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+R</td><td>{translations[settings.value(
+                                    'current_language')]['right']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+L</td><td>{translations[settings.value(
+                                    'current_language')]['left']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+E</td><td>{translations[settings.value(
+                                    'current_language')]['center']}</td></tr>"
+                                f"<tr><td>Ctrl+Shift+J</td><td>{translations[settings.value(
+                                    'current_language')]['justify']}</td></tr>"
                                 "</table></body></html>")
 
         self.dock_widget.setWidget(self.help_label)
@@ -838,36 +1081,50 @@ class RS_Workspace(QMainWindow):
         label = QLabel(f"<b>{text}</b>")
         toolbar.addWidget(label)
 
-    def RS_createAction(self, text, status_tip, function, shortcut=None):
+    def RS_createAction(self, text, status_tip, function, shortcut=None, icon=None):
         action = QAction(text, self)
         action.setStatusTip(status_tip)
         action.triggered.connect(function)
         if shortcut:
             action.setShortcut(shortcut)
+        if icon:
+            action.setIcon(QIcon(icon))
         return action
 
     def RS_setupActions(self):
         settings = QSettings("berkaygediz", "RichSpan")
+        icon_theme = "white"
+        if self.palette() == self.light_theme:
+            icon_theme = "black"
+        actionicon = qta.icon('fa5.file', color=icon_theme)
         self.newaction = self.RS_createAction(
-            translations[settings.value("current_language")]["new"], translations[settings.value("current_language")]["new_message"], self.new, QKeySequence.New)
+            translations[settings.value("current_language")]["new"], translations[settings.value("current_language")]["new_message"], self.new, QKeySequence.New, actionicon)
+        actionicon = qta.icon('fa5.folder-open', color=icon_theme)
         self.openaction = self.RS_createAction(
-            translations[settings.value("current_language")]["open"], translations[settings.value("current_language")]["open_message"], self.open, QKeySequence.Open)
+            translations[settings.value("current_language")]["open"], translations[settings.value("current_language")]["open_message"], self.open, QKeySequence.Open, actionicon)
+        actionicon = qta.icon('fa5s.save', color=icon_theme)
         self.saveaction = self.RS_createAction(
-            translations[settings.value("current_language")]["save"], translations[settings.value("current_language")]["save_message"], self.save, QKeySequence.Save)
+            translations[settings.value("current_language")]["save"], translations[settings.value("current_language")]["save_message"], self.save, QKeySequence.Save, actionicon)
+        actionicon = qta.icon('fa5.save', color=icon_theme)
         self.saveasaction = self.RS_createAction(
-            translations[settings.value("current_language")]["save_as"], translations[settings.value("current_language")]["save_as_message"], self.saveAs, QKeySequence.SaveAs)
+            translations[settings.value("current_language")]["save_as"], translations[settings.value("current_language")]["save_as_message"], self.saveAs, QKeySequence.SaveAs, actionicon)
+        actionicon = qta.icon('fa5s.print', color=icon_theme)
         self.printaction = self.RS_createAction(
-            translations[settings.value("current_language")]["print"], translations[settings.value("current_language")]["print_message"], self.print, QKeySequence.Print)
+            translations[settings.value("current_language")]["print"], translations[settings.value("current_language")]["print_message"], self.print, QKeySequence.Print, actionicon)
         self.saveworkspaceaction = self.RS_createAction(
             translations[settings.value("current_language")]["save_workspace"], translations[settings.value("current_language")]["save_workspace_message"], self.RS_saveState, QKeySequence("Ctrl+Shift+W+S"))
+        actionicon = qta.icon('fa5s.search', color=icon_theme)
         self.findaction = self.RS_createAction(
-            translations[settings.value("current_language")]["find"], translations[settings.value("current_language")]["find_message"], self.find, QKeySequence.Find)
+            translations[settings.value("current_language")]["find"], translations[settings.value("current_language")]["find_message"], self.find, QKeySequence.Find, actionicon)
+        actionicon = qta.icon('fa5s.exchange-alt', color=icon_theme)
         self.replaceaction = self.RS_createAction(
-            translations[settings.value("current_language")]["replace"], translations[settings.value("current_language")]["replace_message"], self.replace, QKeySequence.Replace)
+            translations[settings.value("current_language")]["replace"], translations[settings.value("current_language")]["replace_message"], self.replace, QKeySequence.Replace, actionicon)
+        actionicon = qta.icon('fa5s.undo-alt', color=icon_theme)
         self.undoaction = self.RS_createAction(
-            translations[settings.value("current_language")]["undo"], translations[settings.value("current_language")]["undo_message"], self.rs_area.undo, QKeySequence.Undo)
+            translations[settings.value("current_language")]["undo"], translations[settings.value("current_language")]["undo_message"], self.rs_area.undo, QKeySequence.Undo, actionicon)
+        actionicon = qta.icon('fa5s.redo-alt', color=icon_theme)
         self.redoaction = self.RS_createAction(
-            translations[settings.value("current_language")]["redo"], translations[settings.value("current_language")]["redo_message"], self.rs_area.redo, QKeySequence.Redo)
+            translations[settings.value("current_language")]["redo"], translations[settings.value("current_language")]["redo_message"], self.rs_area.redo, QKeySequence.Redo, actionicon)
         self.alignrightevent = self.RS_createAction(
             translations[settings.value("current_language")]["right"], translations[settings.value("current_language")]["right_message"], lambda: self.align(Qt.AlignRight))
         self.alignleftevent = self.RS_createAction(
@@ -876,33 +1133,46 @@ class RS_Workspace(QMainWindow):
             translations[settings.value("current_language")]["center"], translations[settings.value("current_language")]["center_message"], lambda: self.align(Qt.AlignCenter))
         self.alignjustifiedevent = self.RS_createAction(
             translations[settings.value("current_language")]["justify"], translations[settings.value("current_language")]["justify_message"], lambda: self.align(Qt.AlignJustify))
-        self.bulletevent = self.RS_createAction("Bullets", "", self.bullet)
-        self.numberedevent = self.RS_createAction(
-            "Numbered", "", self.numbered)
+        actionicon = qta.icon('fa5s.list-ul', color=icon_theme)
+        self.bulletevent = self.RS_createAction(translations[settings.value(
+            "current_language")]["bullet"], "", self.bullet, QKeySequence("Ctrl+Shift+U"), actionicon)
+        actionicon = qta.icon('fa5s.list-ol', color=icon_theme)
+        self.numberedevent = self.RS_createAction(translations[settings.value(
+            "current_language")]["numbered"], "", self.numbered, QKeySequence("Ctrl+Shift+O"), actionicon)
+        actionicon = qta.icon('fa5s.bold', color=icon_theme)
         self.bold = self.RS_createAction(
-            translations[settings.value("current_language")]["bold"], translations[settings.value("current_language")]["bold_message"], self.contentBold, QKeySequence.Bold)
+            translations[settings.value("current_language")]["bold"], translations[settings.value("current_language")]["bold_message"], self.contentBold, QKeySequence.Bold, actionicon)
+        actionicon = qta.icon('fa5s.italic', color=icon_theme)
         self.italic = self.RS_createAction(
-            translations[settings.value("current_language")]["italic"], translations[settings.value("current_language")]["italic_message"], self.contentItalic, QKeySequence.Italic)
+            translations[settings.value("current_language")]["italic"], translations[settings.value("current_language")]["italic_message"], self.contentItalic, QKeySequence.Italic, actionicon)
+        actionicon = qta.icon('fa5s.underline', color=icon_theme)
         self.underline = self.RS_createAction(
-            translations[settings.value("current_language")]["underline"], translations[settings.value("current_language")]["underline_message"], self.contentUnderline, QKeySequence.Underline)
+            translations[settings.value("current_language")]["underline"], translations[settings.value("current_language")]["underline_message"], self.contentUnderline, QKeySequence.Underline, actionicon)
+        actionicon = qta.icon('fa5s.palette', color=icon_theme)
         self.color = self.RS_createAction(
-            translations[settings.value("current_language")]["font_color"], translations[settings.value("current_language")]["font_color_message"], self.contentColor, QKeySequence("Ctrl+Shift+C"))
+            translations[settings.value("current_language")]["font_color"], translations[settings.value("current_language")]["font_color_message"], self.contentColor, QKeySequence("Ctrl+Shift+C"), actionicon)
+        actionicon = qta.icon('fa5s.fill-drip', color=icon_theme)
         self.backgroundcolor = self.RS_createAction(
-            translations[settings.value("current_language")]["background_color"], translations[settings.value("current_language")]["background_color_message"], self.contentBGColor, QKeySequence("Ctrl+Shift+B"))
+            translations[settings.value("current_language")]["background_color"], translations[settings.value("current_language")]["background_color_message"], self.contentBGColor, QKeySequence("Ctrl+Shift+B"), actionicon)
+        actionicon = qta.icon('fa5s.font', color=icon_theme)
         self.fontfamily = self.RS_createAction(
-            translations[settings.value("current_language")]["font"], translations[settings.value("current_language")]["font_message"], self.contentFont, QKeySequence("Ctrl+Shift+F"))
+            translations[settings.value("current_language")]["font"], translations[settings.value("current_language")]["font_message"], self.contentFont, QKeySequence("Ctrl+Shift+F"), actionicon)
         self.inc_fontaction = self.RS_createAction(
             "A+", translations[settings.value("current_language")]["inc_font_message"], self.inc_font, QKeySequence("Ctrl++"))
         self.dec_fontaction = self.RS_createAction(
             "A-", translations[settings.value("current_language")]["dec_font_message"], self.dec_font, QKeySequence("Ctrl+-"))
+        actionicon = qta.icon('fa5s.image', color=icon_theme)
         self.addimage = self.RS_createAction(
-            translations[settings.value("current_language")]["image"], translations[settings.value("current_language")]["image_message"], self.contentAddImage, QKeySequence("Ctrl+Shift+P"))
+            translations[settings.value("current_language")]["image"], translations[settings.value("current_language")]["image_message"], self.contentAddImage, QKeySequence("Ctrl+Shift+P"), actionicon)
+        actionicon = qta.icon('fa5s.info-circle', color=icon_theme)
         self.aboutaction = self.RS_createAction(
-            translations[settings.value("current_language")]["about"], "", self.showAbout)
+            translations[settings.value("current_language")]["about"], "", self.showAbout, QKeySequence("Ctrl+Shift+I"), actionicon)
+        actionicon = qta.icon('fa5s.sign-out-alt', color=icon_theme)
         self.logoutaction = self.RS_createAction(
-            translations[settings.value("current_language")]["logout"], "", self.logout)
+            translations[settings.value("current_language")]["logout"], "", self.logout, QKeySequence("Ctrl+Shift+L"), actionicon)
+        actionicon = qta.icon('fa5s.sync', color=icon_theme)
         self.syncsettingsaction = self.RS_createAction(translations[settings.value(
-            "current_language")]["sync_settings"], "", self.syncsettings)
+            "current_language")]["sync_settings"], "", self.syncsettings, QKeySequence("Ctrl+Shift+S+Y"), actionicon)
 
     def syncsettings(self):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -911,38 +1181,31 @@ class RS_Workspace(QMainWindow):
         sqliteConnection = sqlite3.connect(sqlite_file).cursor()
         user_email = sqliteConnection.execute(
             "SELECT email FROM profile").fetchone()[0]
-        mysqlserver = serverconnect()
-        mysqlcursor = mysqlserver.cursor()
-        mysqlcursor.execute(
-            "SELECT * FROM user_settings WHERE email = %s", (user_email,))
-        user_settings = mysqlcursor.fetchone()
-        if user_settings == None:
-            sqliteConnection.execute(
-                "SELECT * FROM user_settings WHERE email = ?", (user_email,))
-            user_settings = sqliteConnection.fetchone()
-            if user_settings == None:
-                pass
-            else:
-                settings.setValue("current_theme", user_settings[1])
-                settings.setValue("current_language", user_settings[2])
-                settings.sync()
-            mysqlcursor.execute(
-                "INSERT INTO user_settings (email, theme, language) VALUES (%s, %s, %s)", (user_email, settings.value("current_theme"), settings.value("current_language")))
+        sqliteConnection.connection.commit()
+        sqliteConnection.connection.close()
+        try:
+            mysqlserver = serverconnect()
+            mysqlcursor = mysqlserver.cursor()
+
+            mysqlcursor.execute("UPDATE user_settings SET theme = %s, language = %s WHERE email = %s AND product = %s", (
+                settings.value("current_theme"), settings.value("current_language"), user_email, "RichSpan"))
             mysqlserver.commit()
-        else:
-            mysqlcursor.execute(
-                "UPDATE user_settings SET theme = %s, language = %s WHERE email = %s", (settings.value("current_theme"), settings.value("current_language"), user_email))
-            mysqlserver.commit()
+            mysqlserver.close()
+            QMessageBox.information(self, "RichSpan",
+                                    "Settings synced successfully.")
+        except:
+            QMessageBox.critical(self, "RichSpan",
+                                 "Error while syncing settings. Please try again later.")
 
     def logout(self):
         sqlite_file = os.path.join(os.path.dirname(
             os.path.abspath(__file__)), 'richspan.db')
         sqliteConnection = sqlite3.connect(sqlite_file).cursor()
-        sqliteConnection.execute("DROP TABLE profile")
+        sqliteConnection.execute("DROP TABLE IF EXISTS profile")
         sqliteConnection.connection.commit()
-        sqliteConnection.execute("DROP TABLE apps")
+        sqliteConnection.execute("DROP TABLE IF EXISTS apps")
         sqliteConnection.connection.commit()
-        sqliteConnection.execute("DROP TABLE log")
+        sqliteConnection.execute("DROP TABLE IF EXISTS log")
         sqliteConnection.connection.commit()
         try:
             settings = QSettings("berkaygediz", "RichSpan")
@@ -961,20 +1224,23 @@ class RS_Workspace(QMainWindow):
         self.RS_toolbarLabel(self.toolbar, translations[settings.value(
             "current_language")]["file"] + ": ")
         self.toolbar.addActions([self.newaction, self.openaction, self.saveaction, self.saveasaction,
-                                self.printaction, self.saveworkspaceaction, self.undoaction, self.redoaction, self.findaction, self.replaceaction])
+                                self.printaction, self.undoaction, self.redoaction, self.findaction, self.replaceaction, self.saveworkspaceaction])
 
         self.toolbar = self.addToolBar(
             translations[settings.value("current_language")]["ui"])
         self.RS_toolbarLabel(
             self.toolbar, translations[settings.value("current_language")]["ui"] + ": ")
+        actionicon = qta.icon('fa5b.affiliatetheme', color="white")
         self.theme_action = self.RS_createAction(
-            translations[settings.value("current_language")]["darklight"], translations[settings.value("current_language")]["darklight_message"], self.RS_themeAction, QKeySequence("Ctrl+Shift+T"), )
+            translations[settings.value("current_language")]["darklight"], translations[settings.value("current_language")]["darklight_message"], self.RS_themeAction, QKeySequence("Ctrl+Shift+T"), actionicon)
         self.toolbar.addAction(self.theme_action)
+        actionicon = qta.icon('fa5s.question-circle', color="white")
         self.hide_dock_widget_action = self.RS_createAction(
-            translations[settings.value("current_language")]["help"], translations[settings.value("current_language")]["help_message"], self.RS_toggleDock, QKeySequence("Ctrl+Shift+D"), )
+            translations[settings.value("current_language")]["help"], translations[settings.value("current_language")]["help_message"], self.RS_toggleDock, QKeySequence("Ctrl+Shift+D"), actionicon)
         self.toolbar.addAction(self.hide_dock_widget_action)
+        actionicon = qta.icon('fa5s.eye', color="white")
         self.toggle_view_action = self.RS_createAction(
-            translations[settings.value("current_language")]["viewmode"], translations[settings.value("current_language")]["viewmode_message"], self.RS_toggleViewmode, QKeySequence("Ctrl+Shift+V"), )
+            translations[settings.value("current_language")]["viewmode"], translations[settings.value("current_language")]["viewmode_message"], self.RS_toggleViewmode, QKeySequence("Ctrl+Shift+V"), actionicon)
         self.toolbar.addAction(self.toggle_view_action)
         self.language_combobox = QComboBox(self)
         self.language_combobox.addItems(
@@ -983,19 +1249,44 @@ class RS_Workspace(QMainWindow):
             self.RS_changeLanguage)
         self.toolbar.addWidget(self.language_combobox)
 
+        sqlite_file = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'richspan.db')
+        sqliteConnection = sqlite3.connect(sqlite_file).cursor()
+        user_email = sqliteConnection.execute(
+            "SELECT email FROM profile").fetchone()[0]
+        sqliteConnection.connection.commit()
+        sqliteConnection.connection.close()
+        mysqlserver = serverconnect()
+        mysqlcursor = mysqlserver.cursor()
+        mysqlcursor.execute(
+            "SELECT * FROM user_settings WHERE email = %s AND product = %s", (user_email, "RichSpan"))
+        user_settings = mysqlcursor.fetchone()
+        mysqlserver.close()
+        if user_settings is not None:
+            settings.setValue("current_theme", user_settings[3])
+            settings.setValue("current_language", user_settings[4])
+            self.language_combobox.setCurrentText(user_settings[4])
+            settings.sync()
+        else:
+            settings.setValue("current_theme", "light")
+            settings.setValue("current_language", "English")
+            settings.sync()
+
         self.aboutaction = self.RS_createAction(
             translations[settings.value("current_language")]["about"], "", self.showAbout)
         self.toolbar.addAction(self.aboutaction)
 
-        self.toolbar = self.addToolBar("Account")
-        self.RS_toolbarLabel(self.toolbar, "Account: ")
+        self.toolbar = self.addToolBar(translations[settings.value(
+            "current_language")]["account"])
+        self.RS_toolbarLabel(self.toolbar, translations[settings.value(
+            "current_language")]["account"] + ": ")
         sqlite_file = os.path.join(os.path.dirname(
             os.path.abspath(__file__)), 'richspan.db')
         sqliteConnection = sqlite3.connect(sqlite_file).cursor()
         user_email = sqliteConnection.execute(
             "SELECT email FROM profile").fetchone()[0]
         self.user_name = QLabel(user_email)
-        self.user_name.setStyleSheet("color: #000000;")
+        self.user_name.setStyleSheet("color: white; font-weight: bold;")
         self.toolbar.addWidget(self.user_name)
         self.toolbar.addAction(self.logoutaction)
         self.toolbar.addAction(self.syncsettingsaction)
@@ -1012,9 +1303,10 @@ class RS_Workspace(QMainWindow):
             "current_language")]["font"] + ": ")
         self.toolbar.addActions([self.bold, self.italic, self.underline])
         self.toolbar.addSeparator()
-        self.toolbar = self.addToolBar("List")
+        self.toolbar = self.addToolBar(translations[settings.value(
+            "current_language")]["list"])
         self.RS_toolbarLabel(
-            self.toolbar, "List:" + " ")
+            self.toolbar, translations[settings.value("current_language")]["list"] + ": ")
         self.toolbar.addActions([self.bulletevent, self.numberedevent])
         self.addToolBarBreak()
 
