@@ -791,17 +791,18 @@ class RS_Workspace(QMainWindow):
         self.dark_theme = QPalette()
 
         self.light_theme.setColor(QPalette.Window, QColor(89, 111, 183))
-        self.light_theme.setColor(QPalette.WindowText, QColor(37, 38, 39))
+        self.light_theme.setColor(QPalette.WindowText, QColor(255, 255, 255))
         self.light_theme.setColor(QPalette.Base, QColor(255, 255, 255))
         self.light_theme.setColor(QPalette.Text, QColor(0, 0, 0))
         self.light_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
         self.light_theme.setColor(QPalette.ButtonText, QColor(0, 0, 0))
 
         self.dark_theme.setColor(QPalette.Window, QColor(58, 68, 93))
-        self.dark_theme.setColor(QPalette.WindowText, QColor(239, 213, 195))
+        self.dark_theme.setColor(QPalette.WindowText, QColor(255, 255, 255))
         self.dark_theme.setColor(QPalette.Base, QColor(94, 87, 104))
         self.dark_theme.setColor(QPalette.Text, QColor(255, 255, 255))
         self.dark_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
+        self.dark_theme.setColor(QPalette.ButtonText, QColor(255, 255, 255))
 
     def RS_themeAction(self):
         settings = QSettings("berkaygediz", "RichSpan")
