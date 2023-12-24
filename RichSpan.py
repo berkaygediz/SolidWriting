@@ -149,6 +149,8 @@ class RS_ControlInfo(QMainWindow):
                             mysqlcursor.execute(
                                 "SELECT * FROM user_settings WHERE email = %s AND product = %s", (local_email, "RichSpan"))
                             user_settings = mysqlcursor.fetchone()
+                            mysql_connection.commit()
+                            mysql_connection.close()
                             if user_settings is not None:
                                 settings.setValue(
                                     "current_theme", user_settings[3])
@@ -793,7 +795,7 @@ class RS_Workspace(QMainWindow):
         self.light_theme.setColor(QPalette.Base, QColor(255, 255, 255))
         self.light_theme.setColor(QPalette.Text, QColor(0, 0, 0))
         self.light_theme.setColor(QPalette.Highlight, QColor(221, 216, 184))
-        self.light_theme.setColor(QPalette.ButtonText, QColor(37, 38, 39))
+        self.light_theme.setColor(QPalette.ButtonText, QColor(0, 0, 0))
 
         self.dark_theme.setColor(QPalette.Window, QColor(58, 68, 93))
         self.dark_theme.setColor(QPalette.WindowText, QColor(239, 213, 195))
@@ -1255,12 +1257,12 @@ class RS_Workspace(QMainWindow):
         user_email = sqliteConnection.execute(
             "SELECT email FROM profile").fetchone()[0]
         sqliteConnection.connection.commit()
-        sqliteConnection.connection.close()
         mysqlserver = serverconnect()
         mysqlcursor = mysqlserver.cursor()
         mysqlcursor.execute(
             "SELECT * FROM user_settings WHERE email = %s AND product = %s", (user_email, "RichSpan"))
         user_settings = mysqlcursor.fetchone()
+        mysqlserver.commit()
         mysqlserver.close()
         if user_settings is not None:
             settings.setValue("current_theme", user_settings[3])
@@ -1272,19 +1274,12 @@ class RS_Workspace(QMainWindow):
             settings.setValue("current_language", "English")
             settings.sync()
 
-        self.aboutaction = self.RS_createAction(
-            translations[settings.value("current_language")]["about"], "", self.showAbout)
         self.toolbar.addAction(self.aboutaction)
 
         self.toolbar = self.addToolBar(translations[settings.value(
             "current_language")]["account"])
         self.RS_toolbarLabel(self.toolbar, translations[settings.value(
             "current_language")]["account"] + ": ")
-        sqlite_file = os.path.join(os.path.dirname(
-            os.path.abspath(__file__)), 'richspan.db')
-        sqliteConnection = sqlite3.connect(sqlite_file).cursor()
-        user_email = sqliteConnection.execute(
-            "SELECT email FROM profile").fetchone()[0]
         self.user_name = QLabel(user_email)
         self.user_name.setStyleSheet("color: white; font-weight: bold;")
         self.toolbar.addWidget(self.user_name)
