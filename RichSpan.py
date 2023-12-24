@@ -1588,7 +1588,7 @@ if __name__ == "__main__":
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
     app.setApplicationDisplayName("RichSpan")
-    app.setApplicationVersion("1.3.10")
+    app.setApplicationVersion("1.3.18")
     ci = RS_ControlInfo()
     ci.show()
     sys.exit(app.exec_())
