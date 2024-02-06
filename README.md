@@ -6,7 +6,7 @@
 
 RichSpan is a word processor. Lightweight and easy to use, it is designed to be a simple alternative to other word processors. It is written in Python and uses the PyQt5 library for the graphical user interface. It is cross-platform and can be used on Windows, macOS, and Linux.
 
-### Screenshots
+## Screenshots
 
 ![Screenshot 1](richspan_banner.png)
 
@@ -28,7 +28,6 @@ RichSpan is a word processor. Lightweight and easy to use, it is designed to be 
 - [x] Dark mode
 - [x] Multi language (English, Turkish, German, Spanish, Azerbaijani)
 - [x] Enumaration and bullet list
-- [x] Synchronization
 
 ### Prerequisites
 

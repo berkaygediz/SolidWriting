@@ -566,5 +566,5 @@ translations = {
         "numbered": "Numerado",
         "account": "Cuenta",
         "list": "Lista",
-    }
+    },
 }
