@@ -78,6 +78,9 @@ class RS_Workspace(QMainWindow):
         super(RS_Workspace, self).__init__(parent)
         starttime = datetime.datetime.now()
         settings = QSettings("berkaygediz", "RichSpan")
+        if settings.value("current_language") == None:
+            settings.setValue("current_language", "English")
+            settings.sync()
         self.setWindowIcon(QIcon("icon.png"))
         self.setWindowModality(Qt.ApplicationModal)
         self.richspan_thread = RS_Threading()
@@ -142,9 +145,6 @@ class RS_Workspace(QMainWindow):
 
     def RS_updateTitle(self):
         settings = QSettings("berkaygediz", "RichSpan")
-        if settings.value("current_language") == None:
-            settings.setValue("current_language", "English")
-            settings.sync()
         file = (
             self.file_name
             if self.file_name
