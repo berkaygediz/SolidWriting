@@ -8,7 +8,7 @@ RichSpan is a word processor. Lightweight and easy to use, it is designed to be 
 
 ## Screenshots
 
-![Screenshot 1](richspan_banner.png)
+![Screenshot](richspan_banner_1.png)
 
 ### Features
 
@@ -28,6 +28,8 @@ RichSpan is a word processor. Lightweight and easy to use, it is designed to be 
 - [x] Dark mode
 - [x] Multi language (English, Turkish, German, Spanish, Azerbaijani)
 - [x] Enumaration and bullet list
+- [x] Power saver
+- [x] Hardware acceleration
 
 ### Prerequisites
 
