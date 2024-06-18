@@ -44,16 +44,16 @@ RichSpan is a word processor. Lightweight and easy to use, it is designed to be 
 git clone https://github.com/berkaygediz/RichSpan.git
 ```
 
-2. Install PyQt5:
+2. Install requirements:
 
 ```bash
-pip install PyQt5
+pip install -r .\requirements.txt
 ```
 
 ### Usage
 
 ```bash
-python main.py
+python RichSpan.py
 ```
 
 ## Contributing
@@ -62,4 +62,4 @@ Contributions to the RichSpan project are welcome. Please read [CONTRIBUTING.md]
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU GPLv3, GNU LGPLv3 & Mozilla Public License Version 2.0.
