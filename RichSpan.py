@@ -54,7 +54,7 @@ class RS_About(QMainWindow):
     def __init__(self, parent=None):
         super(RS_About, self).__init__(parent)
         self.setWindowFlags(Qt.Dialog)
-        self.setWindowIcon(QIcon("icon.ico"))
+        self.setWindowIcon(QIcon("richspan_icon.png"))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setGeometry(
             QStyle.alignedRect(
@@ -72,8 +72,8 @@ class RS_About(QMainWindow):
             "<center>"
             f"<b>{app.applicationDisplayName()}</b><br><br>"
             "A word processor application<br>"
-            "Made by Berkay Gediz<br>"
-            "Apache License 2.0<br><br><br>"
+            "Made by Berkay Gediz<br><br>"
+            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><br>"
             "OpenGL: <b>ON</b></center>"
         )
         self.setCentralWidget(self.about_label)
@@ -90,7 +90,7 @@ class RS_Workspace(QMainWindow):
         if settings.value("adaptiveResponse") == None:
             settings.setValue("adaptiveResponse", 1)
             settings.sync()
-        self.setWindowIcon(QIcon("icon.ico"))
+        self.setWindowIcon(QIcon("richspan_icon.png"))
         self.setWindowModality(Qt.ApplicationModal)
 
         centralWidget = QGLWidget(self)
@@ -1043,7 +1043,7 @@ class RS_Workspace(QMainWindow):
         selected_file, _ = QFileDialog.getSaveFileName(
             self,
             translations[settings.value("appLanguage")]["save_as"]
-            + f" — {app.applicationDisplayName()} ",
+            + f" — {app.applicationDisplayName()}",
             self.directory,
             file_filter,
             options=options,
@@ -1070,9 +1070,9 @@ class RS_Workspace(QMainWindow):
                     document.setPlainText(self.rs_area.toPlainText())
                     file.write(document.toPlainText())
 
-            self.status_bar.showMessage("Saved.", 2000)
-            self.is_saved = True
-            self.RS_updateTitle()
+        self.status_bar.showMessage("Saved.", 2000)
+        self.is_saved = True
+        self.RS_updateTitle()
 
     def print(self):
         printer = QPrinter(QPrinter.HighResolution)
@@ -1215,7 +1215,7 @@ if __name__ == "__main__":
     elif __file__:
         applicationPath = os.path.dirname(__file__)
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(os.path.join(applicationPath, "icon.ico")))
+    app.setWindowIcon(QIcon(os.path.join(applicationPath, "richspan_icon.png")))
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
     app.setApplicationDisplayName("RichSpan 2024.06")
