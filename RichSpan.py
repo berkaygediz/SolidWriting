@@ -4,6 +4,9 @@ import os
 import sys
 import time
 
+import chardet
+import mammoth
+import psutil
 import qtawesome as qta
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -31,6 +34,9 @@ fallbackValues = {
     "appTheme": "light",
     "appLanguage": "English",
     "adaptiveResponse": 1,
+    "readFilter": "General File (*.rsdoc *.docx);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
+    "writeFilter": "RichSpan Document (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
+    "mediaFilter": "Portable Network Graphics (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;GIF (*.gif)",
 }
 
 
@@ -73,7 +79,7 @@ class RS_About(QMainWindow):
             f"<b>{app.applicationDisplayName()}</b><br><br>"
             "A word processor application<br>"
             "Made by Berkay Gediz<br><br>"
-            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><br>"
+            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, chardet, psutil, qtawesome<br><br>"
             "OpenGL: <b>ON</b></center>"
         )
         self.setCentralWidget(self.about_label)
@@ -182,11 +188,20 @@ class RS_Workspace(QMainWindow):
             if self.file_name
             else translations[settings.value("appLanguage")]["new"]
         )
-        if self.is_saved == True:
-            asterisk = ""
+        if file.endswith(".docx"):
+            textMode = " - Read Only"
         else:
-            asterisk = "*"
-        self.setWindowTitle(f"{file}{asterisk} — {app.applicationDisplayName()}")
+            textMode = ""
+        if len(textMode) == 0:
+            if self.is_saved == True:
+                asterisk = ""
+            else:
+                asterisk = "*"
+        else:
+            asterisk = ""
+        self.setWindowTitle(
+            f"{file}{asterisk}{textMode} — {app.applicationDisplayName()}"
+        )
 
     def RS_updateStatistics(self):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -276,15 +291,29 @@ class RS_Workspace(QMainWindow):
             self.restoreGeometry(self.geometry)
 
         if self.file_name and os.path.exists(self.file_name):
-            with open(self.file_name, "r", encoding="utf-8") as file:
-                if self.file_name.endswith((".rsdoc")):
-                    self.rs_area.setHtml(file.read())
-                elif self.file_name.endswith((".html", ".htm")):
-                    self.rs_area.setHtml(file.read())
-                elif self.file_name.endswith((".md")):
-                    self.rs_area.setMarkdown(file.read())
-                else:
-                    self.rs_area.setPlainText(file.read())
+            automaticEncoding = RS_Workspace.RS_detectEncoding(self.file_name)
+            if self.file_name.endswith(".docx"):
+                with open(
+                    self.file_name,
+                    "rb",
+                ) as file:
+                    try:
+                        conversionLayer = mammoth.convert_to_html(file)
+                        self.rs_area.setHtml(conversionLayer.value)
+                    except:
+                        None
+
+            else:
+                with open(self.file_name, "r", encoding=automaticEncoding) as file:
+                    if self.file_name.endswith((".rsdoc")):
+                        self.rs_area.setHtml(file.read())
+                    elif self.file_name.endswith((".html", ".htm")):
+                        self.rs_area.setHtml(file.read())
+
+                    elif self.file_name.endswith((".md")):
+                        self.rs_area.setMarkdown(file.read())
+                    else:
+                        self.rs_area.setPlainText(file.read())
 
         scroll_position = settings.value("scrollPosition")
         if scroll_position is not None:
@@ -384,12 +413,6 @@ class RS_Workspace(QMainWindow):
         self.redoaction.setStatusTip(
             translations[settings.value("appLanguage")]["redo_message"]
         )
-        self.toggle_view_action.setText(
-            translations[settings.value("appLanguage")]["viewmode"]
-        )
-        self.toggle_view_action.setStatusTip(
-            translations[settings.value("appLanguage")]["viewmode_message"]
-        )
         self.theme_action.setText(
             translations[settings.value("appLanguage")]["darklight"]
         )
@@ -466,7 +489,6 @@ class RS_Workspace(QMainWindow):
             f"<tr><td>Ctrl+P</td><td>{translations[settings.value('appLanguage')]['print_message']}</td></tr>"
             f"<tr><td>Ctrl+Z</td><td>{translations[settings.value('appLanguage')]['undo_message']}</td></tr>"
             f"<tr><td>Ctrl+Y</td><td>{translations[settings.value('appLanguage')]['redo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+V</td><td>{translations[settings.value('appLanguage')]['viewmode_message']}</td></tr>"
             f"<tr><td>Ctrl+Shift+T</td><td>{translations[settings.value('appLanguage')]['darklight_message']}</td></tr>"
             f"<tr><td>Ctrl+Shift+D</td><td>{translations[settings.value('appLanguage')]['help_message']}</td></tr>"
             f"<tr><td>Ctrl+Shift+C</td><td>{translations[settings.value('appLanguage')]['font_color_message']}</td></tr>"
@@ -535,7 +557,6 @@ class RS_Workspace(QMainWindow):
             f"<tr><td>Ctrl+P</td><td>{translations[settings.value('appLanguage')]['print_message']}</td></tr>"
             f"<tr><td>Ctrl+Z</td><td>{translations[settings.value('appLanguage')]['undo_message']}</td></tr>"
             f"<tr><td>Ctrl+Y</td><td>{translations[settings.value('appLanguage')]['redo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+V</td><td>{translations[settings.value('appLanguage')]['viewmode_message']}</td></tr>"
             f"<tr><td>Ctrl+Shift+T</td><td>{translations[settings.value('appLanguage')]['darklight_message']}</td></tr>"
             f"<tr><td>Ctrl+Shift+D</td><td>{translations[settings.value('appLanguage')]['help_message']}</td></tr>"
             f"<tr><td>Ctrl+Shift+C</td><td>{translations[settings.value('appLanguage')]['font_color_message']}</td></tr>"
@@ -600,7 +621,7 @@ class RS_Workspace(QMainWindow):
             QKeySequence.New,
             actionicon,
         )
-        actionicon = qta.icon("fa5.folder-open", color=icon_theme)
+        actionicon = qta.icon("fa5.folder-open", color="gold")
         self.openaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["open"],
             translations[settings.value("appLanguage")]["open_message"],
@@ -608,7 +629,7 @@ class RS_Workspace(QMainWindow):
             QKeySequence.Open,
             actionicon,
         )
-        actionicon = qta.icon("fa5s.save", color=icon_theme)
+        actionicon = qta.icon("fa5s.save", color="#00BFFF")
         self.saveaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["save"],
             translations[settings.value("appLanguage")]["save_message"],
@@ -616,7 +637,7 @@ class RS_Workspace(QMainWindow):
             QKeySequence.Save,
             actionicon,
         )
-        actionicon = qta.icon("fa5.save", color=icon_theme)
+        actionicon = qta.icon("fa5.save", color="#00BFFF")
         self.saveasaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["save_as"],
             translations[settings.value("appLanguage")]["save_as_message"],
@@ -778,11 +799,9 @@ class RS_Workspace(QMainWindow):
             QKeySequence("Ctrl+Shift+I"),
             actionicon,
         )
-        actionicon = qta.icon("fa5s.leaf", color=icon_theme)
 
     def RS_setupToolbar(self):
         settings = QSettings("berkaygediz", "RichSpan")
-        icon_theme = "white"
         self.toolbar = self.addToolBar(
             translations[settings.value("appLanguage")]["file"]
         )
@@ -810,7 +829,7 @@ class RS_Workspace(QMainWindow):
         self.RS_toolbarLabel(
             self.toolbar, translations[settings.value("appLanguage")]["ui"] + ": "
         )
-        actionicon = qta.icon("fa5b.affiliatetheme", color="white")
+        actionicon = qta.icon("fa5b.affiliatetheme", color="#acadac")
         self.theme_action = self.RS_createAction(
             translations[settings.value("appLanguage")]["darklight"],
             translations[settings.value("appLanguage")]["darklight_message"],
@@ -822,21 +841,25 @@ class RS_Workspace(QMainWindow):
         self.theme_action.setChecked(settings.value("appTheme") == "dark")
 
         self.toolbar.addAction(self.theme_action)
-        actionicon = qta.icon("fa5s.leaf", color=icon_theme)
-        self.powersaveraction = QAction("Power Saver", self, checkable=True)
+        actionicon = qta.icon("fa5s.leaf", color="lime")
+        self.powersaveraction = QAction("Hybrid Power Saver", self, checkable=True)
         self.powersaveraction.setIcon(QIcon(actionicon))
-        self.powersaveraction.setStatusTip(
-            "Experimental power saver function. Restart required."
-        )
-        self.powersaveraction.toggled.connect(self.RS_powerSaver)
+        self.powersaveraction.setStatusTip("Hybrid (Ultra/Standard) power saver.")
+        self.powersaveraction.toggled.connect(self.RS_hybridSaver)
 
         self.toolbar.addAction(self.powersaveraction)
-        response_exponential = settings.value(
-            "adaptiveResponse", fallbackValues["adaptiveResponse"]
-        )
-        self.powersaveraction.setChecked(response_exponential == 12)
+        if settings.value("adaptiveResponse") == None:
+            response_exponential = settings.setValue(
+                "adaptiveResponse", fallbackValues["adaptiveResponse"]
+            )
+        else:
+            response_exponential = settings.value(
+                "adaptiveResponse",
+            )
+
+        self.powersaveraction.setChecked(response_exponential > 1)
         self.toolbar.addAction(self.powersaveraction)
-        actionicon = qta.icon("fa5s.question-circle", color="white")
+        actionicon = qta.icon("fa.connectdevelop", color="white")
         self.hide_dock_widget_action = self.RS_createAction(
             translations[settings.value("appLanguage")]["help"] + " && LLM",
             translations[settings.value("appLanguage")]["help_message"],
@@ -845,22 +868,22 @@ class RS_Workspace(QMainWindow):
             actionicon,
         )
         self.toolbar.addAction(self.hide_dock_widget_action)
-        actionicon = qta.icon("fa5s.eye", color="white")
-        self.toggle_view_action = self.RS_createAction(
-            translations[settings.value("appLanguage")]["viewmode"],
-            translations[settings.value("appLanguage")]["viewmode_message"],
-            self.RS_toggleViewmode,
-            QKeySequence("Ctrl+Shift+V"),
-            actionicon,
-        )
-        self.toolbar.addAction(self.toggle_view_action)
+        self.toolbar.addAction(self.aboutaction)
         self.language_combobox = QComboBox(self)
         self.language_combobox.addItems(
-            ["English", "Türkçe", "Azərbaycanca", "Deutsch", "Español"]
+            [
+                "English",
+                "Deutsch",
+                "Español",
+                "Türkçe",
+                "Azərbaycanca",
+                "Uzbek",
+                "Chinese",
+                "Arabic",
+            ]
         )
         self.language_combobox.currentIndexChanged.connect(self.RS_changeLanguage)
         self.toolbar.addWidget(self.language_combobox)
-        self.toolbar.addAction(self.aboutaction)
 
         self.addToolBarBreak()
 
@@ -928,25 +951,35 @@ class RS_Workspace(QMainWindow):
         else:
             self.dock_widget.hide()
 
-    def RS_toggleViewmode(self):
-        if self.rs_area.isReadOnly():
-            self.rs_area.setReadOnly(False)
-            self.rs_area.setHtml(self.rs_area.toPlainText())
-            self.toggle_view_action.setText("Rich Text")
-        else:
-            self.rs_area.setReadOnly(True)
-            self.rs_area.setPlainText(self.rs_area.toHtml())
-            self.toggle_view_action.setText("Plain Text")
-
-    def RS_powerSaver(self, checked):
+    def RS_hybridSaver(self, checked):
+        settings = QSettings("berkaygediz", "RichSpan")
         if checked:
-            self.adaptiveResponse = 12
+            battery = psutil.sensors_battery()
+            if battery:
+                if battery.percent <= 35 and not battery.power_plugged:
+                    # Ultra
+                    self.adaptiveResponse = 12
+                else:
+                    # Standard
+                    self.adaptiveResponse = 6
+            else:
+                # Global Standard
+                self.adaptiveResponse = 3
         else:
             self.adaptiveResponse = fallbackValues["adaptiveResponse"]
 
-        settings = QSettings("berkaygediz", "RichSpan")
         settings.setValue("adaptiveResponse", self.adaptiveResponse)
         settings.sync()
+
+    def RS_detectEncoding(file_path):
+        with open(file_path, "rb") as file:
+            detector = chardet.universaldetector.UniversalDetector()
+            for line in file:
+                detector.feed(line)
+                if detector.done:
+                    break
+            detector.close()
+        return detector.result["encoding"]
 
     def new(self):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -1000,27 +1033,39 @@ class RS_Workspace(QMainWindow):
         options = QFileDialog.Options()
         settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
-        file_filter = f"{translations[settings.value('appLanguage')]['rsdoc']} (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)"
         selected_file, _ = QFileDialog.getOpenFileName(
             self,
             translations[settings.value("appLanguage")]["open"]
             + f" — {app.applicationDisplayName()} ",
             self.directory,
-            file_filter,
+            fallbackValues["readFilter"],
             options=options,
         )
         if selected_file:
             self.file_name = selected_file
-            with open(self.file_name, "r", encoding="utf-8") as file:
-                file_content = file.read()
-                if self.file_name.endswith((".rsdoc")):
-                    self.rs_area.setHtml(file_content)
-                elif self.file_name.endswith((".html", ".htm")):
-                    self.rs_area.setHtml(file_content)
-                elif self.file_name.endswith((".md")):
-                    self.rs_area.setMarkdown(file_content)
-                else:
-                    self.rs_area.setPlainText(file_content)
+            automaticEncoding = RS_Workspace.RS_detectEncoding(selected_file)
+            if self.file_name.endswith(".docx"):
+                with open(
+                    self.file_name,
+                    "rb",
+                ) as file:
+                    try:
+                        conversionLayer = mammoth.convert_to_html(file)
+                        self.rs_area.setHtml(conversionLayer.value)
+                    except:
+                        QMessageBox.warning(self, None, "Conversion failed.")
+            else:
+                with open(self.file_name, "r", encoding=automaticEncoding) as file:
+                    if self.file_name.endswith((".rsdoc")):
+                        self.rs_area.setHtml(file.read())
+                    elif self.file_name.endswith((".html", ".htm")):
+                        self.rs_area.setHtml(file.read())
+
+                    elif self.file_name.endswith((".md")):
+                        self.rs_area.setMarkdown(file.read())
+                    else:
+                        self.rs_area.setPlainText(file.read())
+
             self.directory = os.path.dirname(self.file_name)
             self.is_saved = True
             self.RS_updateTitle()
@@ -1039,13 +1084,12 @@ class RS_Workspace(QMainWindow):
         options = QFileDialog.Options()
         settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
-        file_filter = f"{translations[settings.value('appLanguage')]['rsdoc']} (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md')"
         selected_file, _ = QFileDialog.getSaveFileName(
             self,
             translations[settings.value("appLanguage")]["save_as"]
             + f" — {app.applicationDisplayName()}",
             self.directory,
-            file_filter,
+            fallbackValues["writeFilter"],
             options=options,
         )
         if selected_file:
@@ -1060,15 +1104,19 @@ class RS_Workspace(QMainWindow):
         if not self.file_name:
             self.saveAs()
         else:
-            with open(self.file_name, "w", encoding="utf-8") as file:
-                if self.file_name.lower().endswith((".rsdoc", ".html", ".htm")):
-                    file.write(self.rs_area.toHtml())
-                elif self.file_name.lower().endswith((".md")):
-                    file.write(self.rs_area.toMarkdown())
-                else:
-                    document = QTextDocument()
-                    document.setPlainText(self.rs_area.toPlainText())
-                    file.write(document.toPlainText())
+            automaticEncoding = RS_Workspace.RS_detectEncoding(self.file_name)
+            if self.file_name.lower().endswith(".docx"):
+                None
+            else:
+                with open(self.file_name, "w", encoding=automaticEncoding) as file:
+                    if self.file_name.lower().endswith((".rsdoc", ".html", ".htm")):
+                        file.write(self.rs_area.toHtml())
+                    elif self.file_name.lower().endswith((".md")):
+                        file.write(self.rs_area.toMarkdown())
+                    else:
+                        document = QTextDocument()
+                        document.setPlainText(self.rs_area.toPlainText())
+                        file.write(document.toPlainText())
 
         self.status_bar.showMessage("Saved.", 2000)
         self.is_saved = True
@@ -1149,9 +1197,8 @@ class RS_Workspace(QMainWindow):
     def contentAddImage(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        file_filter = "Portable Network Graphics (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;GIF (*.gif)"
         selected_file, _ = QFileDialog.getOpenFileName(
-            self, "Open", self.directory, file_filter, options=options
+            self, "Open", self.directory, fallbackValues["mediaFilter"], options=options
         )
         if selected_file:
             with open(selected_file, "rb") as file:
@@ -1218,8 +1265,8 @@ if __name__ == "__main__":
     app.setWindowIcon(QIcon(os.path.join(applicationPath, "richspan_icon.png")))
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
-    app.setApplicationDisplayName("RichSpan 2024.06")
-    app.setApplicationVersion("1.4.2024.06-1")
+    app.setApplicationDisplayName("RichSpan 2024.08")
+    app.setApplicationVersion("1.4.2024.08-1")
     ws = RS_Workspace()
     ws.show()
     sys.exit(app.exec_())

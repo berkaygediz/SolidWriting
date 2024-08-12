@@ -1,4 +1,5 @@
 # RichSpan - A Lightweight Word Processor
+
 ![Screenshot](richspan_banner_1.png)
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/berkaygediz/richspan)
@@ -8,26 +9,30 @@
 RichSpan is a lightweight word processor designed as a simple alternative to traditional word processing software. It is written in Python with a graphical user interface based on PyQt5, ensuring cross-platform compatibility across Windows, macOS, and Linux.
 
 ## Features
-      
+
 - [x] **Cross-Platform**: Compatible with Windows, macOS, and Linux.
 - [x] **Statistics**: Provides statistical information about the document.
 - [x] **Find & Replace**: Search and replace functionality within the document.
 - [x] **Printing**: Allows print or exporting documents to PDF format.
-- [x] **Document Operations**: Supports .txt, .html, and .rsdoc (RichSpan Document) file formats.
+- [x] **Document Operations**: Supports .txt, .html, .docx (partial) and .rsdoc (RichSpan Document) file formats.
 - [x] **Text Formatting**: Customize text with color, background color, bold, italic, underline, alignment, font, font size, and font color.
 - [x] **Undo and Redo**: Provides undo and redo functionalities for editing operations.
 - [x] **User Experience**: Features drag and drop functionality, supports dark mode, and provides alerts for unsaved changes.
 - [x] **Base64 Image Support**: Supports embedding images using Base64 encoding.
 - [x] **Customizable Toolbar**: Allows customization of the user interface toolbar.
 - [x] **Performance**: Fast and lightweight with threading support and hardware acceleration.
-- [x] **Multilingual**: Available in English, Turkish, German, Spanish, Azerbaijani.
+- [x] **Multilingual**: Available in English, Turkish, German, Spanish, Azerbaijani, Uzbek, Chinese, Arabic.
 - [x] **Enumeration and Bullet List**: Includes support for creating numbered and bulleted lists.
-- [x] **Power Saver**: Optimized for power consumption.
+- [x] **Adaptive Power Saver**: Optimized for power consumption. Hybrid ultra and standard power saving mode.
 
 ## Prerequisites
 
-- Python 3.6+
+- Python 3.12+
 - PyQt5
+- QtAwesome
+- mammoth
+- chardet
+- psutil
 
 ## Installation
 
