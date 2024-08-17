@@ -8,11 +8,13 @@ import chardet
 import mammoth
 import psutil
 import qtawesome as qta
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtOpenGL import *
-from PyQt5.QtPrintSupport import *
-from PyQt5.QtWidgets import *
+from langdetect import DetectorFactory, detect
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtOpenGL import *
+from PySide6.QtOpenGLWidgets import *
+from PySide6.QtPrintSupport import *
+from PySide6.QtWidgets import *
 
 from modules.translations import *
 
@@ -41,19 +43,24 @@ fallbackValues = {
 
 
 class RS_Threading(QThread):
-    update_signal = pyqtSignal()
+    update_signal = Signal()
 
     def __init__(self, adaptiveResponse, parent=None):
         super(RS_Threading, self).__init__(parent)
         self.adaptiveResponse = float(adaptiveResponse)
         self.running = False
+        self.mutex = QMutex()
 
     def run(self):
         if not self.running:
+            self.mutex.lock()
             self.running = True
+            self.mutex.unlock()
             time.sleep(0.15 * self.adaptiveResponse)
             self.update_signal.emit()
+            self.mutex.lock()
             self.running = False
+            self.mutex.unlock()
 
 
 class RS_About(QMainWindow):
@@ -67,7 +74,7 @@ class RS_About(QMainWindow):
                 Qt.LeftToRight,
                 Qt.AlignCenter,
                 self.size(),
-                QApplication.desktop().availableGeometry(),
+                QApplication.primaryScreen().availableGeometry(),
             )
         )
         self.about_label = QLabel()
@@ -96,10 +103,11 @@ class RS_Workspace(QMainWindow):
         if settings.value("adaptiveResponse") == None:
             settings.setValue("adaptiveResponse", 1)
             settings.sync()
-        self.setWindowIcon(QIcon("richspan_icon.png"))
+        self.setWindowIcon(QIcon("richspan_icon.ico"))
         self.setWindowModality(Qt.ApplicationModal)
+        self.setMinimumSize(768, 540)
 
-        centralWidget = QGLWidget(self)
+        centralWidget = QOpenGLWidget(self)
 
         layout = QVBoxLayout(centralWidget)
         self.hardwareAcceleration = QOpenGLWidget()
@@ -129,15 +137,18 @@ class RS_Workspace(QMainWindow):
         self.rs_area.setDisabled(True)
         self.RS_setupActions()
         self.RS_setupToolbar()
+        self.adaptiveResponse = settings.value("adaptiveResponse")
 
         self.setPalette(self.light_theme)
-        self.rs_area.textChanged.connect(self.richspan_thread.start)
+        self.text_changed_timer = QTimer()
+        self.text_changed_timer.setInterval(150 * self.adaptiveResponse)
+        self.text_changed_timer.timeout.connect(self.RS_threadStart)
+        self.rs_area.textChanged.connect(self.RS_textChanged)
+        self.thread_running = False
 
         self.showMaximized()
         self.rs_area.setFocus()
         self.rs_area.setAcceptRichText(True)
-
-        self.adaptiveResponse = settings.value("adaptiveResponse")
 
         QTimer.singleShot(50 * self.adaptiveResponse, self.RS_restoreTheme)
         QTimer.singleShot(150 * self.adaptiveResponse, self.RS_restoreState)
@@ -147,8 +158,7 @@ class RS_Workspace(QMainWindow):
 
         endtime = datetime.datetime.now()
         self.status_bar.showMessage(
-            str((endtime - starttime).total_seconds()) + " ms",
-            2500 * self.adaptiveResponse,
+            str((endtime - starttime).total_seconds()) + " ms", 2500
         )
 
     def closeEvent(self, event):
@@ -203,7 +213,18 @@ class RS_Workspace(QMainWindow):
             f"{file}{asterisk}{textMode} — {app.applicationDisplayName()}"
         )
 
+    def RS_threadStart(self):
+        if not self.thread_running:
+            self.richspan_thread.start()
+            self.thread_running = True
+
+    def RS_textChanged(self):
+        if not self.text_changed_timer.isActive():
+            self.text_changed_timer.start()
+
     def RS_updateStatistics(self):
+        self.text_changed_timer.stop()
+        self.thread_running = False
         settings = QSettings("berkaygediz", "RichSpan")
         text = self.rs_area.toPlainText()
         character_count = len(text)
@@ -212,11 +233,12 @@ class RS_Workspace(QMainWindow):
 
         statistics = f"<html><head><style>"
         statistics += "table {border-collapse: collapse; width: 100%;}"
-        statistics += "th, td {text-align: left; padding: 8px;}"
+        statistics += "th, td {text-align: left; padding: 10px;}"
         statistics += "tr:nth-child(even) {background-color: #f2f2f2;}"
         statistics += ".highlight {background-color: #E2E3E1; color: #000000}"
         statistics += "tr:hover {background-color: #ddd;}"
-        statistics += "th {background-color: #0379FF; color: white;}"
+        statistics += "th { background-color: #0379FF; color: white;}"
+        statistics += "td { color: white;}"
         statistics += "#rs-text { background-color: #E2E3E1; color: #000000; }"
         statistics += "</style></head><body>"
         statistics += "<table><tr>"
@@ -234,6 +256,11 @@ class RS_Workspace(QMainWindow):
             lowercase_count = sum(1 for char in text if char.islower())
             statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_3'].format(uppercase_count)}</td>"
             statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_4'].format(lowercase_count)}</td>"
+            if word_count > 8:
+                DetectorFactory.seed = 0
+                lang = detect(text)
+                statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_5'].format(lang)}</td>"
+
         else:
             self.rs_area.setFontFamily(fallbackValues["fontFamily"])
             self.rs_area.setFontPointSize(fallbackValues["fontSize"])
@@ -345,8 +372,9 @@ class RS_Workspace(QMainWindow):
         self.light_theme.setColor(QPalette.Window, QColor(3, 65, 135))
         self.light_theme.setColor(QPalette.WindowText, QColor(255, 255, 255))
         self.light_theme.setColor(QPalette.Base, QColor(255, 255, 255))
-        self.light_theme.setColor(QPalette.Text, QColor(230, 230, 230))
+        self.light_theme.setColor(QPalette.Text, QColor(0, 0, 0))
         self.light_theme.setColor(QPalette.Highlight, QColor(105, 117, 156))
+        self.light_theme.setColor(QPalette.Button, QColor(0, 0, 0))
         self.light_theme.setColor(QPalette.ButtonText, QColor(255, 255, 255))
 
         self.dark_theme.setColor(QPalette.Window, QColor(35, 39, 52))
@@ -354,6 +382,7 @@ class RS_Workspace(QMainWindow):
         self.dark_theme.setColor(QPalette.Base, QColor(80, 85, 122))
         self.dark_theme.setColor(QPalette.Text, QColor(255, 255, 255))
         self.dark_theme.setColor(QPalette.Highlight, QColor(105, 117, 156))
+        self.dark_theme.setColor(QPalette.Button, QColor(0, 0, 0))
         self.dark_theme.setColor(QPalette.ButtonText, QColor(255, 255, 255))
 
     def RS_themeAction(self):
@@ -468,18 +497,20 @@ class RS_Workspace(QMainWindow):
             ]
         )
         self.dock_widget.setWindowTitle(
-            translations[settings.value("appLanguage")]["help"]
+            translations[settings.value("appLanguage")]["help"] + " && AI"
         )
         self.dock_widget.setWidget(self.helpText)
         self.helpText.setText(
             "<html><head><style>"
-            "table {border-collapse: collapse; width: 100%;}"
+            "table { width: 100%; }"
             "th, td {text-align: left; padding: 8px;}"
             "tr:nth-child(even) {background-color: #f2f2f2;}"
             "tr:hover {background-color: #ddd;}"
             "th {background-color: #4CAF50; color: white;}"
+            "td {background-color: #000000; color: white;}"
+            "p {background-color: red; color: white; padding: 12px; }"
             "</style></head><body>"
-            "<table><tr>"
+            "<table width='100%'><tr>"
             f"<th>{translations[settings.value('appLanguage')]['help_shortcut']}</th>"
             f"<th>{translations[settings.value('appLanguage')]['help_description']}</th>"
             f"</tr><tr><td>Ctrl+N</td><td>{translations[settings.value('appLanguage')]['new_message']}</td></tr>"
@@ -505,7 +536,7 @@ class RS_Workspace(QMainWindow):
             f"<tr><td>Ctrl+Shift+L</td><td>{translations[settings.value('appLanguage')]['left']}</td></tr>"
             f"<tr><td>Ctrl+Shift+E</td><td>{translations[settings.value('appLanguage')]['center']}</td></tr>"
             f"<tr><td>Ctrl+Shift+J</td><td>{translations[settings.value('appLanguage')]['justify']}</td></tr>"
-            "</table></body></html>"
+            "</table><center><p>NOTE: <b>AI</b> support planned.</p></center></body></html>"
         )
 
     def RS_setupArea(self):
@@ -519,21 +550,21 @@ class RS_Workspace(QMainWindow):
         self.rs_area.setTextBackgroundColor(
             QColor(fallbackValues["contentBackgroundColor"])
         )
-        self.rs_area.setTabStopWidth(33)
+        self.rs_area.setTabStopDistance(27)
         self.rs_area.document().setDocumentMargin(self.width() * 0.25)
 
     def RS_setupDock(self):
         settings = QSettings("berkaygediz", "RichSpan")
         settings.sync()
         self.dock_widget = QDockWidget(
-            translations[settings.value("appLanguage")]["help"] + " && LLM", self
+            translations[settings.value("appLanguage")]["help"] + " && AI", self
         )
-        self.dock_widget.setObjectName("Help & LLM")
+        self.dock_widget.setObjectName("Help & AI")
         self.dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_widget)
 
         self.scrollableArea = QScrollArea()
-        self.LLM_QVBox = QVBoxLayout()
+        self.AI_QVBox = QVBoxLayout()
         self.statistics_label = QLabel()
         self.helpText = QLabel()
         self.helpText.setWordWrap(True)
@@ -541,13 +572,15 @@ class RS_Workspace(QMainWindow):
         self.helpText.setTextFormat(Qt.RichText)
         self.helpText.setText(
             "<html><head><style>"
-            "table {border-collapse: collapse; width: 100%;}"
+            "table { width: 100%; }"
             "th, td {text-align: left; padding: 8px;}"
             "tr:nth-child(even) {background-color: #f2f2f2;}"
             "tr:hover {background-color: #ddd;}"
             "th {background-color: #4CAF50; color: white;}"
+            "td {background-color: #000000; color: white;}"
+            "p {background-color: red; color: white; padding: 12px; }"
             "</style></head><body>"
-            "<table><tr>"
+            "<table width='100%'><tr>"
             f"<th>{translations[settings.value('appLanguage')]['help_shortcut']}</th>"
             f"<th>{translations[settings.value('appLanguage')]['help_description']}</th>"
             f"</tr><tr><td>Ctrl+N</td><td>{translations[settings.value('appLanguage')]['new_message']}</td></tr>"
@@ -573,9 +606,9 @@ class RS_Workspace(QMainWindow):
             f"<tr><td>Ctrl+Shift+L</td><td>{translations[settings.value('appLanguage')]['left']}</td></tr>"
             f"<tr><td>Ctrl+Shift+E</td><td>{translations[settings.value('appLanguage')]['center']}</td></tr>"
             f"<tr><td>Ctrl+Shift+J</td><td>{translations[settings.value('appLanguage')]['justify']}</td></tr>"
-            "</table><p>NOTE: <b>LLM</b> support planned.</p></body></html>"
+            "</table><center><p>NOTE: <b>AI</b> support planned.</p></center></body></html>"
         )
-        self.LLM_QVBox.addWidget(self.helpText)
+        self.AI_QVBox.addWidget(self.helpText)
 
         self.dock_widget.setObjectName("Help")
         self.dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
@@ -591,7 +624,7 @@ class RS_Workspace(QMainWindow):
         self.scrollableArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.scrollableArea.setWidgetResizable(True)
         scroll_contents = QWidget()
-        scroll_contents.setLayout(self.LLM_QVBox)
+        scroll_contents.setLayout(self.AI_QVBox)
         self.scrollableArea.setWidget(scroll_contents)
 
     def RS_toolbarLabel(self, toolbar, text):
@@ -605,7 +638,9 @@ class RS_Workspace(QMainWindow):
         if shortcut:
             action.setShortcut(shortcut)
         if icon:
-            action.setIcon(QIcon(icon))
+            action.setIcon(
+                QIcon("")
+            )  # qtawesome is library based on qt5 --> icon = Qt5.QtGui.QIcon
         return action
 
     def RS_setupActions(self):
@@ -843,7 +878,7 @@ class RS_Workspace(QMainWindow):
         self.toolbar.addAction(self.theme_action)
         actionicon = qta.icon("fa5s.leaf", color="lime")
         self.powersaveraction = QAction("Hybrid Power Saver", self, checkable=True)
-        self.powersaveraction.setIcon(QIcon(actionicon))
+        # self.powersaveraction.setIcon(QIcon(actionicon))
         self.powersaveraction.setStatusTip("Hybrid (Ultra/Standard) power saver.")
         self.powersaveraction.toggled.connect(self.RS_hybridSaver)
 
@@ -861,7 +896,7 @@ class RS_Workspace(QMainWindow):
         self.toolbar.addAction(self.powersaveraction)
         actionicon = qta.icon("fa.connectdevelop", color="white")
         self.hide_dock_widget_action = self.RS_createAction(
-            translations[settings.value("appLanguage")]["help"] + " && LLM",
+            translations[settings.value("appLanguage")]["help"] + " && AI",
             translations[settings.value("appLanguage")]["help_message"],
             self.RS_toggleDock,
             QKeySequence("Ctrl+Shift+D"),
@@ -870,6 +905,7 @@ class RS_Workspace(QMainWindow):
         self.toolbar.addAction(self.hide_dock_widget_action)
         self.toolbar.addAction(self.aboutaction)
         self.language_combobox = QComboBox(self)
+        self.language_combobox.setStyleSheet("background-color:#000000; color:#FFFFFF;")
         self.language_combobox.addItems(
             [
                 "English",
@@ -879,7 +915,12 @@ class RS_Workspace(QMainWindow):
                 "Azərbaycanca",
                 "Uzbek",
                 "Chinese",
+                "Korean",
+                "Japanese",
                 "Arabic",
+                "Russian",
+                "French",
+                "Greek",
             ]
         )
         self.language_combobox.currentIndexChanged.connect(self.RS_changeLanguage)
@@ -995,7 +1036,7 @@ class RS_Workspace(QMainWindow):
             self.rs_area.setTextBackgroundColor(
                 QColor(fallbackValues["contentBackgroundColor"])
             )
-            self.rs_area.setTabStopWidth(33)
+            self.rs_area.setTabStopDistance(27)
             self.directory = self.default_directory
             self.file_name = None
             self.is_saved = False
@@ -1021,7 +1062,7 @@ class RS_Workspace(QMainWindow):
                 self.rs_area.setTextBackgroundColor(
                     QColor(fallbackValues["contentBackgroundColor"])
                 )
-                self.rs_area.setTabStopWidth(33)
+                self.rs_area.setTabStopDistance(27)
                 self.directory = self.default_directory
                 self.file_name = None
                 self.is_saved = False
@@ -1124,14 +1165,15 @@ class RS_Workspace(QMainWindow):
 
     def print(self):
         printer = QPrinter(QPrinter.HighResolution)
-        printer.setOrientation(QPrinter.Portrait)
-        printer.setPageMargins(10, 10, 10, 10, QPrinter.Millimeter)
+        printer.setPageOrientation(QPageLayout.Orientation.Portrait)
+        printer.setPageMargins(QMargins(10, 10, 10, 10), QPageLayout.Millimeter)
+
         printer.setFullPage(True)
         printer.setDocName(self.file_name)
 
         preview_dialog = QPrintPreviewDialog(printer, self)
         preview_dialog.paintRequested.connect(self.rs_area.print_)
-        preview_dialog.exec_()
+        preview_dialog.exec()
 
     def showAbout(self):
         self.about_window = RS_About()
@@ -1269,4 +1311,4 @@ if __name__ == "__main__":
     app.setApplicationVersion("1.4.2024.08-1")
     ws = RS_Workspace()
     ws.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
