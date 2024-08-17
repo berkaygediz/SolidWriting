@@ -84,9 +84,9 @@ class RS_About(QMainWindow):
         self.about_label.setText(
             "<center>"
             f"<b>{app.applicationDisplayName()}</b><br><br>"
-            "A word processor application<br>"
+            "Real-time computing and formatting supported word processor<br><br>"
             "Made by Berkay Gediz<br><br>"
-            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, chardet, psutil, qtawesome<br><br>"
+            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, Mimino666/langdetect, PySide6, chardet, psutil, qtawesome<br><br>"
             "OpenGL: <b>ON</b></center>"
         )
         self.setCentralWidget(self.about_label)
@@ -257,9 +257,12 @@ class RS_Workspace(QMainWindow):
             statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_3'].format(uppercase_count)}</td>"
             statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_4'].format(lowercase_count)}</td>"
             if word_count > 8:
-                DetectorFactory.seed = 0
-                lang = detect(text)
-                statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_5'].format(lang)}</td>"
+                try:
+                    DetectorFactory.seed = 0
+                    lang = detect(text)
+                    statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_5'].format(lang)}</td>"
+                except:
+                    None
 
         else:
             self.rs_area.setFontFamily(fallbackValues["fontFamily"])
@@ -1308,7 +1311,7 @@ if __name__ == "__main__":
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
     app.setApplicationDisplayName("RichSpan 2024.08")
-    app.setApplicationVersion("1.4.2024.08-1")
+    app.setApplicationVersion("1.4.2024.08-2")
     ws = RS_Workspace()
     ws.show()
     sys.exit(app.exec())
