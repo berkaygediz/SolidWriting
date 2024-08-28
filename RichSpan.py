@@ -1,5 +1,6 @@
 import base64
 import datetime
+import mimetypes
 import os
 import sys
 import time
@@ -95,6 +96,12 @@ class RS_About(QMainWindow):
 class RS_Workspace(QMainWindow):
     def __init__(self, parent=None):
         super(RS_Workspace, self).__init__(parent)
+        self.setWindowIcon(QIcon("richspan_icon.ico"))
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setMinimumSize(768, 540)
+        QTimer.singleShot(0, self.initUI)
+
+    def initUI(self):
         starttime = datetime.datetime.now()
         settings = QSettings("berkaygediz", "RichSpan")
         if settings.value("appLanguage") == None:
@@ -103,9 +110,6 @@ class RS_Workspace(QMainWindow):
         if settings.value("adaptiveResponse") == None:
             settings.setValue("adaptiveResponse", 1)
             settings.sync()
-        self.setWindowIcon(QIcon("richspan_icon.ico"))
-        self.setWindowModality(Qt.ApplicationModal)
-        self.setMinimumSize(768, 540)
 
         centralWidget = QOpenGLWidget(self)
 
@@ -1240,17 +1244,26 @@ class RS_Workspace(QMainWindow):
             self.rs_area.setCurrentFont(font)
 
     def contentAddImage(self):
+        settings = QSettings("berkaygediz", "RichSpan")
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
         selected_file, _ = QFileDialog.getOpenFileName(
-            self, "Open", self.directory, fallbackValues["mediaFilter"], options=options
+            self,
+            translations[settings.value("appLanguage")]["open"],
+            self.directory,
+            fallbackValues["mediaFilter"],
+            options=options,
         )
         if selected_file:
+            mime_type, _ = mimetypes.guess_type(selected_file)
+            if mime_type is None:
+                mime_type = "image/png"
+
             with open(selected_file, "rb") as file:
                 data = file.read()
-                data = base64.b64encode(data)
-                data = data.decode("utf-8")
-                self.rs_area.insertHtml(f'<img src="data:image/png;base64,{data}"/>')
+                data = base64.b64encode(data).decode("utf-8")
+                img_tag = f'<img src="data:{mime_type};base64,{data}"/>'
+                self.rs_area.insertHtml(img_tag)
 
     def inc_font(self):
         font = self.rs_area.currentFont()
