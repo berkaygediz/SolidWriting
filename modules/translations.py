@@ -1,5 +1,5 @@
 translations = {
-    "English": {
+    "1252": {
         "new": "New",
         "open": "Open",
         "save": "Save",
@@ -110,8 +110,10 @@ translations = {
         "numbered": "Numbered",
         "account": "Account",
         "list": "List",
+        "powersaver": "Power Saver",
+        "powersaver_message": "Hybrid (Ultra/Standard) power saver",
     },
-    "Türkçe": {
+    "1055": {
         "new": "Yeni",
         "open": "Aç",
         "save": "Kaydet",
@@ -223,8 +225,10 @@ translations = {
         "numbered": "Numaralandırılmış",
         "account": "Hesap",
         "list": "Liste",
+        "powersaver": "Güç Tasarrufu",
+        "powersaver_message": "Hibrit (Ultra/Standart) güç tasarrufu.",
     },
-    "Azərbaycanca": {
+    "1068": {
         "new": "Yeni",
         "open": "Aç",
         "save": "Kaydet",
@@ -336,8 +340,10 @@ translations = {
         "numbered": "Nömrələndirilmiş",
         "account": "Hesab",
         "list": "Siyahı",
+        "powersaver": "Enerji qənaəti",
+        "powersaver_message": "Hibrid (Ultra/Standart) enerji qənaəti",
     },
-    "Deutsch": {
+    "1031": {
         "new": "Neu",
         "open": "Öffnen",
         "save": "Speichern",
@@ -449,8 +455,10 @@ translations = {
         "numbered": "Nummeriert",
         "account": "Konto",
         "list": "Liste",
+        "powersaver": "Energiesparmodus",
+        "powersaver_message": "Hybrid (Ultra/Standard) Energiesparmodus",
     },
-    "Español": {
+    "1034": {
         "new": "Nuevo",
         "open": "Abrir",
         "save": "Guardar",
@@ -561,8 +569,10 @@ translations = {
         "numbered": "Numerado",
         "account": "Cuenta",
         "list": "Lista",
+        "powersaver": "Ahorro de energía",
+        "powersaver_message": "Ahorro de energía híbrido (Ultra/Estándar).",
     },
-    "Chinese": {
+    "2052": {
         "new": "新建",
         "open": "打开",
         "save": "保存",
@@ -664,8 +674,10 @@ translations = {
         "numbered": "编号",
         "account": "账户",
         "list": "列表",
+        "powersaver": "节能",
+        "powersaver_message": "混合（超高效/标准）节能",
     },
-    "Korean": {
+    "1042": {
         "new": "새로 만들기",
         "open": "열기",
         "save": "저장",
@@ -767,8 +779,10 @@ translations = {
         "numbered": "번호 매기기",
         "account": "계정",
         "list": "목록",
+        "powersaver": "전력 절약",
+        "powersaver_message": "하이브리드 (울트라/표준) 전력 절약",
     },
-    "Japanese": {
+    "1041": {
         "new": "新規",
         "open": "開く",
         "save": "保存",
@@ -870,8 +884,10 @@ translations = {
         "numbered": "番号付き",
         "account": "アカウント",
         "list": "リスト",
+        "powersaver": "省エネルギー",
+        "powersaver_message": "ハイブリッド（ウルトラ/スタンダード）省エネルギー",
     },
-    "Arabic": {
+    "1025": {
         "new": "جديد",
         "open": "فتح",
         "save": "حفظ",
@@ -973,8 +989,10 @@ translations = {
         "numbered": "مرقم",
         "account": "حساب",
         "list": "قائمة",
+        "powersaver": "توفير الطاقة",
+        "powersaver_message": "توفير الطاقة الهجين (ألترا/قياسي)",
     },
-    "Uzbek": {
+    "1091": {
         "new": "Yangi",
         "open": "Ochish",
         "save": "Saqlash",
@@ -1076,8 +1094,10 @@ translations = {
         "numbered": "Raqamlangan",
         "account": "Hisob",
         "list": "Ro'yxat",
+        "powersaver": "Quvvat tejash",
+        "powersaver_message": "Gibrid (Ultra/Standart) quvvat tejash.",
     },
-    "Russian": {
+    "1049": {
         "new": "Новый",
         "open": "Открыть",
         "save": "Сохранить",
@@ -1179,8 +1199,10 @@ translations = {
         "numbered": "Нумерованный",
         "account": "Аккаунт",
         "list": "Список",
+        "powersaver": "Энергосбережение",
+        "powersaver_message": "Гибридное (Ультра/Стандартное) энергосбережение.",
     },
-    "French": {
+    "1036": {
         "new": "Nouveau",
         "open": "Ouvrir",
         "save": "Enregistrer",
@@ -1282,8 +1304,10 @@ translations = {
         "numbered": "Numéroté",
         "account": "Compte",
         "list": "Liste",
+        "powersaver": "Économie d'énergie",
+        "powersaver_message": "Économie d'énergie hybride (Ultra/Standard).",
     },
-    "Greek": {
+    "1032": {
         "new": "Νέο",
         "open": "Άνοιγμα",
         "save": "Αποθήκευση",
@@ -1385,5 +1409,7 @@ translations = {
         "numbered": "Αριθμημένος",
         "account": "Λογαριασμός",
         "list": "Λίστα",
+        "powersaver": "Εξοικονόμηση ενέργειας",
+        "powersaver_message": "Υβριδική (Ultra/Κανονική) εξοικονόμηση ενέργειας.",
     },
 }

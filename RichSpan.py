@@ -1,5 +1,6 @@
 import base64
 import datetime
+import locale
 import mimetypes
 import os
 import sys
@@ -8,7 +9,6 @@ import time
 import chardet
 import mammoth
 import psutil
-import qtawesome as qta
 from langdetect import DetectorFactory, detect
 from PySide6.QtCore import *
 from PySide6.QtGui import *
@@ -35,11 +35,29 @@ fallbackValues = {
     "isSaved": None,
     "scrollPosition": None,
     "appTheme": "light",
-    "appLanguage": "English",
+    "appLanguage": "1252",
     "adaptiveResponse": 1,
     "readFilter": "General File (*.rsdoc *.docx);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
     "writeFilter": "RichSpan Document (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
     "mediaFilter": "Portable Network Graphics (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;GIF (*.gif)",
+}
+
+
+# Locale ID (LCID)
+languages = {
+    "1252": "English",
+    "1031": "Deutsch",
+    "1034": "Español",
+    "1055": "Türkçe",
+    "1068": "Azərbaycanca",
+    "1091": "Uzbek",
+    "2052": "中文",  # Chinese
+    "1042": "한국어",  # Korean
+    "1041": "日本語",  # Japanese
+    "1025": "العربية",  # Saudi Arabia
+    "1049": "Русский",  # Russia
+    "1036": "Français",
+    "1032": "Ελληνικά",  # Greek
 }
 
 
@@ -87,7 +105,7 @@ class RS_About(QMainWindow):
             f"<b>{app.applicationDisplayName()}</b><br><br>"
             "Real-time computing and formatting supported word processor<br><br>"
             "Made by Berkay Gediz<br><br>"
-            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, Mimino666/langdetect, PySide6, chardet, psutil, qtawesome<br><br>"
+            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, Mimino666/langdetect, PySide6, chardet, psutil<br><br>"
             "OpenGL: <b>ON</b></center>"
         )
         self.setCentralWidget(self.about_label)
@@ -96,16 +114,17 @@ class RS_About(QMainWindow):
 class RS_Workspace(QMainWindow):
     def __init__(self, parent=None):
         super(RS_Workspace, self).__init__(parent)
-        self.setWindowIcon(QIcon("richspan_icon.ico"))
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self.setMinimumSize(768, 540)
         QTimer.singleShot(0, self.initUI)
 
     def initUI(self):
         starttime = datetime.datetime.now()
+        self.setWindowIcon(QIcon("richspan_icon.ico"))
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setMinimumSize(768, 540)
+        system_language = locale.getlocale()[1]
         settings = QSettings("berkaygediz", "RichSpan")
-        if settings.value("appLanguage") == None:
-            settings.setValue("appLanguage", "English")
+        if system_language not in languages.keys():
+            settings.setValue("appLanguage", "1252")
             settings.sync()
         if settings.value("adaptiveResponse") == None:
             settings.setValue("adaptiveResponse", 1)
@@ -187,9 +206,8 @@ class RS_Workspace(QMainWindow):
             event.accept()
 
     def RS_changeLanguage(self):
-        language = self.language_combobox.currentText()
         settings = QSettings("berkaygediz", "RichSpan")
-        settings.setValue("appLanguage", language)
+        settings.setValue("appLanguage", self.language_combobox.currentData())
         settings.sync()
         self.RS_updateTitle()
         self.RS_updateStatistics()
@@ -260,7 +278,7 @@ class RS_Workspace(QMainWindow):
             lowercase_count = sum(1 for char in text if char.islower())
             statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_3'].format(uppercase_count)}</td>"
             statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_4'].format(lowercase_count)}</td>"
-            if word_count > 8:
+            if word_count > 20:
                 try:
                     DetectorFactory.seed = 0
                     lang = detect(text)
@@ -308,7 +326,7 @@ class RS_Workspace(QMainWindow):
         settings.setValue(
             "appTheme", "dark" if self.palette() == self.dark_theme else "light"
         )
-        settings.setValue("appLanguage", self.language_combobox.currentText())
+        settings.setValue("appLanguage", self.language_combobox.currentData())
         settings.setValue("adaptiveResponse", self.adaptiveResponse)
         settings.sync()
 
@@ -319,7 +337,8 @@ class RS_Workspace(QMainWindow):
         self.file_name = settings.value("fileName")
         self.rs_area.setHtml(settings.value("content"))
         self.is_saved = settings.value("isSaved")
-        self.language_combobox.setCurrentText(settings.value("appLanguage"))
+        index = self.language_combobox.findData(settings.value("appLanguage"))
+        self.language_combobox.setCurrentIndex(index)
 
         if self.geometry is not None:
             self.restoreGeometry(self.geometry)
@@ -455,6 +474,18 @@ class RS_Workspace(QMainWindow):
         self.theme_action.setStatusTip(
             translations[settings.value("appLanguage")]["darklight_message"]
         )
+        self.powersaveraction.setText(
+            translations[settings.value("appLanguage")]["powersaver"]
+        )
+        self.powersaveraction.setStatusTip(
+            translations[settings.value("appLanguage")]["powersaver_message"]
+        )
+        self.hide_dock_widget_action.setText(
+            f"{translations[settings.value("appLanguage")]["help"]} && AI"
+        )
+        self.hide_dock_widget_action.setStatusTip(
+            translations[settings.value("appLanguage")]["help_message"]
+        )
         self.findaction.setText(translations[settings.value("appLanguage")]["find"])
         self.findaction.setStatusTip(
             translations[settings.value("appLanguage")]["find_message"]
@@ -491,6 +522,36 @@ class RS_Workspace(QMainWindow):
         self.alignjustifiedevent.setStatusTip(
             translations[settings.value("appLanguage")]["justify_message"]
         )
+        self.bold.setText(
+            translations[settings.value("appLanguage")]["bold"]
+        )
+        self.bold.setStatusTip(
+            translations[settings.value("appLanguage")]["bold_message"]
+        )
+        self.italic.setText(
+            translations[settings.value("appLanguage")]["italic"]
+        )
+        self.italic.setStatusTip(
+            translations[settings.value("appLanguage")]["italic_message"]
+        )
+        self.underline.setText(
+            translations[settings.value("appLanguage")]["underline"]
+        )
+        self.underline.setStatusTip(
+            translations[settings.value("appLanguage")]["underline_message"]
+        )
+        self.bulletevent.setText(
+            translations[settings.value("appLanguage")]["bullet"]
+        )
+        self.bulletevent.setStatusTip(
+            translations[settings.value("appLanguage")]["bullet"]
+        )
+        self.numberedevent.setText(
+            translations[settings.value("appLanguage")]["numbered"]
+        )
+        self.numberedevent.setStatusTip(
+            translations[settings.value("appLanguage")]["numbered"]
+        )
         self.color.setText(translations[settings.value("appLanguage")]["font_color"])
         self.color.setStatusTip(
             translations[settings.value("appLanguage")]["font_color_message"]
@@ -503,8 +564,24 @@ class RS_Workspace(QMainWindow):
                 "contentBackgroundColor_message"
             ]
         )
+        self.fontfamily.setText(
+            translations[settings.value("appLanguage")]["font"]
+        )
+        self.fontfamily.setStatusTip(
+            translations[settings.value("appLanguage")][
+                "font_message"
+            ]
+        )
         self.dock_widget.setWindowTitle(
             translations[settings.value("appLanguage")]["help"] + " && AI"
+        )
+        self.addimage.setText(
+            translations[settings.value("appLanguage")]["image"]
+        )
+        self.addimage.setStatusTip(
+            translations[settings.value("appLanguage")][
+                "image_message"
+            ]
         )
         self.dock_widget.setWidget(self.helpText)
         self.helpText.setText(
@@ -647,7 +724,7 @@ class RS_Workspace(QMainWindow):
         if icon:
             action.setIcon(
                 QIcon("")
-            )  # qtawesome is library based on qt5 --> icon = Qt5.QtGui.QIcon
+            )
         return action
 
     def RS_setupActions(self):
@@ -655,77 +732,68 @@ class RS_Workspace(QMainWindow):
         icon_theme = "white"
         if self.palette() == self.light_theme:
             icon_theme = "black"
-        actionicon = qta.icon("fa5.file", color=icon_theme)
         self.newaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["new"],
             translations[settings.value("appLanguage")]["new_message"],
             self.new,
             QKeySequence.New,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5.folder-open", color="gold")
         self.openaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["open"],
             translations[settings.value("appLanguage")]["open_message"],
             self.open,
             QKeySequence.Open,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.save", color="#00BFFF")
         self.saveaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["save"],
             translations[settings.value("appLanguage")]["save_message"],
             self.save,
             QKeySequence.Save,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5.save", color="#00BFFF")
         self.saveasaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["save_as"],
             translations[settings.value("appLanguage")]["save_as_message"],
             self.saveAs,
             QKeySequence.SaveAs,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.print", color=icon_theme)
         self.printaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["print"],
             translations[settings.value("appLanguage")]["print_message"],
             self.print,
             QKeySequence.Print,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.search", color=icon_theme)
         self.findaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["find"],
             translations[settings.value("appLanguage")]["find_message"],
             self.find,
             QKeySequence.Find,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.exchange-alt", color=icon_theme)
         self.replaceaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["replace"],
             translations[settings.value("appLanguage")]["replace_message"],
             self.replace,
             QKeySequence.Replace,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.undo-alt", color=icon_theme)
         self.undoaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["undo"],
             translations[settings.value("appLanguage")]["undo_message"],
             self.rs_area.undo,
             QKeySequence.Undo,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.redo-alt", color=icon_theme)
         self.redoaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["redo"],
             translations[settings.value("appLanguage")]["redo_message"],
             self.rs_area.redo,
             QKeySequence.Redo,
-            actionicon,
+            "",
         )
         self.alignrightevent = self.RS_createAction(
             translations[settings.value("appLanguage")]["right"],
@@ -747,55 +815,48 @@ class RS_Workspace(QMainWindow):
             translations[settings.value("appLanguage")]["justify_message"],
             lambda: self.align(Qt.AlignJustify),
         )
-        actionicon = qta.icon("fa5s.list-ul", color=icon_theme)
         self.bulletevent = self.RS_createAction(
             translations[settings.value("appLanguage")]["bullet"],
             "",
             self.bullet,
             QKeySequence("Ctrl+Shift+U"),
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.list-ol", color=icon_theme)
         self.numberedevent = self.RS_createAction(
             translations[settings.value("appLanguage")]["numbered"],
             "",
             self.numbered,
             QKeySequence("Ctrl+Shift+O"),
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.bold", color=icon_theme)
         self.bold = self.RS_createAction(
             translations[settings.value("appLanguage")]["bold"],
             translations[settings.value("appLanguage")]["bold_message"],
             self.contentBold,
             QKeySequence.Bold,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.italic", color=icon_theme)
         self.italic = self.RS_createAction(
             translations[settings.value("appLanguage")]["italic"],
             translations[settings.value("appLanguage")]["italic_message"],
             self.contentItalic,
             QKeySequence.Italic,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.underline", color=icon_theme)
         self.underline = self.RS_createAction(
             translations[settings.value("appLanguage")]["underline"],
             translations[settings.value("appLanguage")]["underline_message"],
             self.contentUnderline,
             QKeySequence.Underline,
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.palette", color=icon_theme)
         self.color = self.RS_createAction(
             translations[settings.value("appLanguage")]["font_color"],
             translations[settings.value("appLanguage")]["font_color_message"],
             self.contentColor,
             QKeySequence("Ctrl+Shift+C"),
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.fill-drip", color=icon_theme)
         self.backgroundcolor = self.RS_createAction(
             translations[settings.value("appLanguage")]["contentBackgroundColor"],
             translations[settings.value("appLanguage")][
@@ -803,15 +864,14 @@ class RS_Workspace(QMainWindow):
             ],
             self.contentBGColor,
             QKeySequence("Ctrl+Shift+B"),
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.font", color=icon_theme)
         self.fontfamily = self.RS_createAction(
             translations[settings.value("appLanguage")]["font"],
             translations[settings.value("appLanguage")]["font_message"],
             self.contentFont,
             QKeySequence("Ctrl+Shift+F"),
-            actionicon,
+            "",
         )
         self.inc_fontaction = self.RS_createAction(
             "A+",
@@ -825,21 +885,19 @@ class RS_Workspace(QMainWindow):
             self.dec_font,
             QKeySequence("Ctrl+-"),
         )
-        actionicon = qta.icon("fa5s.image", color=icon_theme)
         self.addimage = self.RS_createAction(
             translations[settings.value("appLanguage")]["image"],
             translations[settings.value("appLanguage")]["image_message"],
             self.contentAddImage,
             QKeySequence("Ctrl+Shift+P"),
-            actionicon,
+            "",
         )
-        actionicon = qta.icon("fa5s.info-circle", color=icon_theme)
         self.aboutaction = self.RS_createAction(
             translations[settings.value("appLanguage")]["about"],
             "",
             self.showAbout,
             QKeySequence("Ctrl+Shift+I"),
-            actionicon,
+            "",
         )
 
     def RS_setupToolbar(self):
@@ -871,22 +929,19 @@ class RS_Workspace(QMainWindow):
         self.RS_toolbarLabel(
             self.toolbar, translations[settings.value("appLanguage")]["ui"] + ": "
         )
-        actionicon = qta.icon("fa5b.affiliatetheme", color="#acadac")
         self.theme_action = self.RS_createAction(
             translations[settings.value("appLanguage")]["darklight"],
             translations[settings.value("appLanguage")]["darklight_message"],
             self.RS_themeAction,
             QKeySequence("Ctrl+Shift+T"),
-            actionicon,
+            "",
         )
         self.theme_action.setCheckable(True)
         self.theme_action.setChecked(settings.value("appTheme") == "dark")
 
         self.toolbar.addAction(self.theme_action)
-        actionicon = qta.icon("fa5s.leaf", color="lime")
-        self.powersaveraction = QAction("Hybrid Power Saver", self, checkable=True)
-        # self.powersaveraction.setIcon(QIcon(actionicon))
-        self.powersaveraction.setStatusTip("Hybrid (Ultra/Standard) power saver.")
+        self.powersaveraction = QAction(translations[settings.value("appLanguage")]["powersaver"], self, checkable=True)
+        self.powersaveraction.setStatusTip(translations[settings.value("appLanguage")]["powersaver_message"])
         self.powersaveraction.toggled.connect(self.RS_hybridSaver)
 
         self.toolbar.addAction(self.powersaveraction)
@@ -901,35 +956,20 @@ class RS_Workspace(QMainWindow):
 
         self.powersaveraction.setChecked(response_exponential > 1)
         self.toolbar.addAction(self.powersaveraction)
-        actionicon = qta.icon("fa.connectdevelop", color="white")
         self.hide_dock_widget_action = self.RS_createAction(
             translations[settings.value("appLanguage")]["help"] + " && AI",
             translations[settings.value("appLanguage")]["help_message"],
             self.RS_toggleDock,
             QKeySequence("Ctrl+Shift+D"),
-            actionicon,
+            "",
         )
         self.toolbar.addAction(self.hide_dock_widget_action)
         self.toolbar.addAction(self.aboutaction)
         self.language_combobox = QComboBox(self)
         self.language_combobox.setStyleSheet("background-color:#000000; color:#FFFFFF;")
-        self.language_combobox.addItems(
-            [
-                "English",
-                "Deutsch",
-                "Español",
-                "Türkçe",
-                "Azərbaycanca",
-                "Uzbek",
-                "Chinese",
-                "Korean",
-                "Japanese",
-                "Arabic",
-                "Russian",
-                "French",
-                "Greek",
-            ]
-        )
+        for lcid, name in languages.items():
+            self.language_combobox.addItem(name, lcid)
+
         self.language_combobox.currentIndexChanged.connect(self.RS_changeLanguage)
         self.toolbar.addWidget(self.language_combobox)
 
@@ -1323,8 +1363,8 @@ if __name__ == "__main__":
     app.setWindowIcon(QIcon(os.path.join(applicationPath, "richspan_icon.png")))
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
-    app.setApplicationDisplayName("RichSpan 2024.08")
-    app.setApplicationVersion("1.4.2024.08-2")
+    app.setApplicationDisplayName("RichSpan 2024.09")
+    app.setApplicationVersion("1.4.2024.09-1")
     ws = RS_Workspace()
     ws.show()
     sys.exit(app.exec())
