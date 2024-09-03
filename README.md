@@ -28,9 +28,7 @@ RichSpan is a lightweight word processor designed as a simple alternative to tra
 ## Prerequisites
 
 - Python 3.12+
-- PyQt5
 - PySide6
-- QtAwesome
 - mammoth
 - chardet
 - psutil
