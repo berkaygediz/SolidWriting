@@ -4,7 +4,6 @@ import locale
 import mimetypes
 import os
 import sys
-import time
 
 import chardet
 import mammoth
@@ -17,69 +16,9 @@ from PySide6.QtOpenGLWidgets import *
 from PySide6.QtPrintSupport import *
 from PySide6.QtWidgets import *
 
-from modules.translations import *
-
-fallbackValues = {
-    "fontFamily": "Helvetica",
-    "fontSize": 14,
-    "bold": False,
-    "italic": False,
-    "underline": False,
-    "contentAlign": Qt.AlignmentFlag.AlignLeft,
-    "contentColor": "#000000",
-    "contentBackgroundColor": "transparent",
-    "windowScale": None,
-    "defaultDirectory": None,
-    "fileName": None,
-    "content": None,
-    "isSaved": None,
-    "scrollPosition": None,
-    "appTheme": "light",
-    "appLanguage": "1252",
-    "adaptiveResponse": 1,
-    "readFilter": "General File (*.rsdoc *.docx);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
-    "writeFilter": "RichSpan Document (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
-    "mediaFilter": "Portable Network Graphics (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;GIF (*.gif)",
-}
-
-
-# Locale ID (LCID)
-languages = {
-    "1252": "English",
-    "1031": "Deutsch",
-    "1034": "Español",
-    "1055": "Türkçe",
-    "1068": "Azərbaycanca",
-    "1091": "Uzbek",
-    "2052": "中文",  # Chinese
-    "1042": "한국어",  # Korean
-    "1041": "日本語",  # Japanese
-    "1025": "العربية",  # Saudi Arabia
-    "1049": "Русский",  # Russia
-    "1036": "Français",
-    "1032": "Ελληνικά",  # Greek
-}
-
-
-class RS_Threading(QThread):
-    update_signal = Signal()
-
-    def __init__(self, adaptiveResponse, parent=None):
-        super(RS_Threading, self).__init__(parent)
-        self.adaptiveResponse = float(adaptiveResponse)
-        self.running = False
-        self.mutex = QMutex()
-
-    def run(self):
-        if not self.running:
-            self.mutex.lock()
-            self.running = True
-            self.mutex.unlock()
-            time.sleep(0.15 * self.adaptiveResponse)
-            self.update_signal.emit()
-            self.mutex.lock()
-            self.running = False
-            self.mutex.unlock()
+from modules.formatting import *
+from modules.globals import *
+from modules.threading import *
 
 
 class RS_About(QMainWindow):
@@ -137,10 +76,10 @@ class RS_Workspace(QMainWindow):
         layout.addWidget(self.hardwareAcceleration)
         self.setCentralWidget(centralWidget)
 
-        self.richspan_thread = RS_Threading(
+        self.richspan_thread = ThreadingEngine(
             adaptiveResponse=settings.value("adaptiveResponse")
         )
-        self.richspan_thread.update_signal.connect(self.RS_updateStatistics)
+        self.richspan_thread.update.connect(self.RS_updateStatistics)
 
         self.RS_themePalette()
         self.selected_file = None
@@ -818,42 +757,42 @@ class RS_Workspace(QMainWindow):
         self.bulletevent = self.RS_createAction(
             translations[settings.value("appLanguage")]["bullet"],
             "",
-            self.bullet,
+            FormattingEngine.bullet,
             QKeySequence("Ctrl+Shift+U"),
             "",
         )
         self.numberedevent = self.RS_createAction(
             translations[settings.value("appLanguage")]["numbered"],
             "",
-            self.numbered,
+            FormattingEngine.numbered,
             QKeySequence("Ctrl+Shift+O"),
             "",
         )
         self.bold = self.RS_createAction(
             translations[settings.value("appLanguage")]["bold"],
             translations[settings.value("appLanguage")]["bold_message"],
-            self.contentBold,
+            FormattingEngine.contentBold,
             QKeySequence.Bold,
             "",
         )
         self.italic = self.RS_createAction(
             translations[settings.value("appLanguage")]["italic"],
             translations[settings.value("appLanguage")]["italic_message"],
-            self.contentItalic,
+            FormattingEngine.contentItalic,
             QKeySequence.Italic,
             "",
         )
         self.underline = self.RS_createAction(
             translations[settings.value("appLanguage")]["underline"],
             translations[settings.value("appLanguage")]["underline_message"],
-            self.contentUnderline,
+            FormattingEngine.contentUnderline,
             QKeySequence.Underline,
             "",
         )
         self.color = self.RS_createAction(
             translations[settings.value("appLanguage")]["font_color"],
             translations[settings.value("appLanguage")]["font_color_message"],
-            self.contentColor,
+            FormattingEngine.contentColor,
             QKeySequence("Ctrl+Shift+C"),
             "",
         )
@@ -862,27 +801,27 @@ class RS_Workspace(QMainWindow):
             translations[settings.value("appLanguage")][
                 "contentBackgroundColor_message"
             ],
-            self.contentBGColor,
+            FormattingEngine.contentBGColor,
             QKeySequence("Ctrl+Shift+B"),
             "",
         )
         self.fontfamily = self.RS_createAction(
             translations[settings.value("appLanguage")]["font"],
             translations[settings.value("appLanguage")]["font_message"],
-            self.contentFont,
+            FormattingEngine.contentFont,
             QKeySequence("Ctrl+Shift+F"),
             "",
         )
         self.inc_fontaction = self.RS_createAction(
             "A+",
             translations[settings.value("appLanguage")]["inc_font_message"],
-            self.inc_font,
+            FormattingEngine.inc_font,
             QKeySequence("Ctrl++"),
         )
         self.dec_fontaction = self.RS_createAction(
             "A-",
             translations[settings.value("appLanguage")]["dec_font_message"],
-            self.dec_font,
+            FormattingEngine.dec_font,
             QKeySequence("Ctrl+-"),
         )
         self.addimage = self.RS_createAction(
@@ -1221,68 +1160,7 @@ class RS_Workspace(QMainWindow):
         preview_dialog = QPrintPreviewDialog(printer, self)
         preview_dialog.paintRequested.connect(self.rs_area.print_)
         preview_dialog.exec()
-
-    def showAbout(self):
-        self.about_window = RS_About()
-        self.about_window.show()
-
-    def align(self, alignment):
-        self.rs_area.setAlignment(alignment)
-
-    def bullet(self):
-        cursor = self.rs_area.textCursor()
-        cursor.beginEditBlock()
-        selected_text = cursor.selectedText()
-        char_format = cursor.charFormat()
-        cursor.removeSelectedText()
-        cursor.insertList(QTextListFormat.ListDisc)
-        cursor.insertText(selected_text)
-        new_cursor = self.rs_area.textCursor()
-        new_cursor.movePosition(QTextCursor.PreviousBlock)
-        new_cursor.mergeCharFormat(char_format)
-        cursor.endEditBlock()
-
-    def numbered(self):
-        cursor = self.rs_area.textCursor()
-        cursor.beginEditBlock()
-        selected_text = cursor.selectedText()
-        char_format = cursor.charFormat()
-        cursor.removeSelectedText()
-        cursor.insertList(QTextListFormat.ListDecimal)
-        cursor.insertText(selected_text)
-        new_cursor = self.rs_area.textCursor()
-        new_cursor.movePosition(QTextCursor.PreviousBlock)
-        new_cursor.mergeCharFormat(char_format)
-        cursor.endEditBlock()
-
-    def contentBold(self):
-        font = self.rs_area.currentFont()
-        font.setBold(not font.bold())
-        self.rs_area.setCurrentFont(font)
-
-    def contentItalic(self):
-        font = self.rs_area.currentFont()
-        font.setItalic(not font.italic())
-        self.rs_area.setCurrentFont(font)
-
-    def contentUnderline(self):
-        font = self.rs_area.currentFont()
-        font.setUnderline(not font.underline())
-        self.rs_area.setCurrentFont(font)
-
-    def contentColor(self):
-        color = QColorDialog.getColor()
-        self.rs_area.setTextColor(color)
-
-    def contentBGColor(self):
-        color = QColorDialog.getColor()
-        self.rs_area.setTextBackgroundColor(color)
-
-    def contentFont(self):
-        font, ok = QFontDialog.getFont(self.rs_area.currentFont(), self)
-        if ok:
-            self.rs_area.setCurrentFont(font)
-
+        
     def contentAddImage(self):
         settings = QSettings("berkaygediz", "RichSpan")
         options = QFileDialog.Options()
@@ -1305,15 +1183,9 @@ class RS_Workspace(QMainWindow):
                 img_tag = f'<img src="data:{mime_type};base64,{data}"/>'
                 self.rs_area.insertHtml(img_tag)
 
-    def inc_font(self):
-        font = self.rs_area.currentFont()
-        font.setPointSize(font.pointSize() + 1)
-        self.rs_area.setCurrentFont(font)
-
-    def dec_font(self):
-        font = self.rs_area.currentFont()
-        font.setPointSize(font.pointSize() - 1)
-        self.rs_area.setCurrentFont(font)
+    def showAbout(self):
+        self.about_window = RS_About()
+        self.about_window.show()
 
     def find(self):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -1364,7 +1236,7 @@ if __name__ == "__main__":
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
     app.setApplicationDisplayName("RichSpan 2024.09")
-    app.setApplicationVersion("1.4.2024.09-1")
+    app.setApplicationVersion("1.4.2024.09-2")
     ws = RS_Workspace()
     ws.show()
     sys.exit(app.exec())

@@ -1,3 +1,46 @@
+from PySide6.QtCore import *
+
+fallbackValues = {
+    "fontFamily": "Helvetica",
+    "fontSize": 14,
+    "bold": False,
+    "italic": False,
+    "underline": False,
+    "contentAlign": Qt.AlignmentFlag.AlignLeft,
+    "contentColor": "#000000",
+    "contentBackgroundColor": "transparent",
+    "windowScale": None,
+    "defaultDirectory": None,
+    "fileName": None,
+    "content": None,
+    "isSaved": None,
+    "scrollPosition": None,
+    "appTheme": "light",
+    "appLanguage": "1252",
+    "adaptiveResponse": 1,
+    "readFilter": "General File (*.rsdoc *.docx);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
+    "writeFilter": "RichSpan Document (*.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
+    "mediaFilter": "General (*.png *.jpg *.jpeg *.bmp);;Animation (*.gif)",
+}
+
+
+# Locale ID (LCID)
+languages = {
+    "1252": "English",
+    "1031": "Deutsch",
+    "1034": "Español",
+    "1055": "Türkçe",
+    "1068": "Azərbaycanca",
+    "1091": "Uzbek",
+    "2052": "中文",  # Chinese
+    "1042": "한국어",  # Korean
+    "1041": "日本語",  # Japanese
+    "1025": "العربية",  # Saudi Arabia
+    "1049": "Русский",  # Russia
+    "1036": "Français",
+    "1032": "Ελληνικά",  # Greek
+}
+
 translations = {
     "1252": {
         "new": "New",

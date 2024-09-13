@@ -1,6 +1,6 @@
 # RichSpan - A Lightweight Word Processor
 
-![Screenshot](richspan_banner_1.png)
+![Screenshot](images/richspan_banner_1.png)
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/berkaygediz/richspan)
 ![GitHub repo size](https://img.shields.io/github/repo-size/berkaygediz/richspan)
@@ -33,6 +33,7 @@ RichSpan is a lightweight word processor designed as a simple alternative to tra
 - chardet
 - psutil
 - langdetect
+- pyinstaller
 
 ## Installation
 
@@ -46,6 +47,12 @@ RichSpan is a lightweight word processor designed as a simple alternative to tra
 
    ```bash
    pip install -r requirements.txt
+   ```
+
+3. Creating a executable file (Unsigned):
+
+   ```bash
+   pyinstaller --noconfirm --onefile --windowed --icon "richspan_icon.ico" --name "RichSpan" --clean --optimize "2" --add-data "richspan_icon.png;."  "RichSpan.py"
    ```
 
 ## Usage
