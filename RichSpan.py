@@ -16,7 +16,6 @@ from PySide6.QtOpenGLWidgets import *
 from PySide6.QtPrintSupport import *
 from PySide6.QtWidgets import *
 
-from modules.formatting import *
 from modules.globals import *
 from modules.threading import *
 
@@ -79,44 +78,44 @@ class RS_Workspace(QMainWindow):
         self.richspan_thread = ThreadingEngine(
             adaptiveResponse=settings.value("adaptiveResponse")
         )
-        self.richspan_thread.update.connect(self.RS_updateStatistics)
+        self.richspan_thread.update.connect(self.updateStatistics)
 
-        self.RS_themePalette()
+        self.themePalette()
         self.selected_file = None
         self.file_name = None
         self.is_saved = None
         self.default_directory = QDir().homePath()
         self.directory = self.default_directory
 
-        self.RS_setupDock()
+        self.initDock()
         self.dock_widget.hide()
 
         self.status_bar = self.statusBar()
-        self.rs_area = QTextEdit()
-        self.RS_setupArea()
-        layout.addWidget(self.rs_area)
+        self.DocumentArea = QTextEdit()
+        self.initArea()
+        layout.addWidget(self.DocumentArea)
 
-        self.rs_area.setDisabled(True)
-        self.RS_setupActions()
-        self.RS_setupToolbar()
+        self.DocumentArea.setDisabled(True)
+        self.initActions()
+        self.initToolbar()
         self.adaptiveResponse = settings.value("adaptiveResponse")
 
         self.setPalette(self.light_theme)
         self.text_changed_timer = QTimer()
         self.text_changed_timer.setInterval(150 * self.adaptiveResponse)
-        self.text_changed_timer.timeout.connect(self.RS_threadStart)
-        self.rs_area.textChanged.connect(self.RS_textChanged)
+        self.text_changed_timer.timeout.connect(self.threadStart)
+        self.DocumentArea.textChanged.connect(self.textChanged)
         self.thread_running = False
 
         self.showMaximized()
-        self.rs_area.setFocus()
-        self.rs_area.setAcceptRichText(True)
+        self.DocumentArea.setFocus()
+        self.DocumentArea.setAcceptRichText(True)
 
-        QTimer.singleShot(50 * self.adaptiveResponse, self.RS_restoreTheme)
-        QTimer.singleShot(150 * self.adaptiveResponse, self.RS_restoreState)
+        QTimer.singleShot(50 * self.adaptiveResponse, self.restoreTheme)
+        QTimer.singleShot(150 * self.adaptiveResponse, self.restoreState)
 
-        self.rs_area.setDisabled(False)
-        self.RS_updateTitle()
+        self.DocumentArea.setDisabled(False)
+        self.updateTitle()
 
         endtime = datetime.datetime.now()
         self.status_bar.showMessage(
@@ -135,24 +134,24 @@ class RS_Workspace(QMainWindow):
             )
 
             if reply == QMessageBox.Yes:
-                self.RS_saveState()
+                self.saveState()
                 event.accept()
             else:
-                self.RS_saveState()
+                self.saveState()
                 event.ignore()
         else:
-            self.RS_saveState()
+            self.saveState()
             event.accept()
 
-    def RS_changeLanguage(self):
+    def changeLanguage(self):
         settings = QSettings("berkaygediz", "RichSpan")
         settings.setValue("appLanguage", self.language_combobox.currentData())
         settings.sync()
-        self.RS_updateTitle()
-        self.RS_updateStatistics()
-        self.RS_toolbarTranslate()
+        self.updateTitle()
+        self.updateStatistics()
+        self.toolbarTranslate()
 
-    def RS_updateTitle(self):
+    def updateTitle(self):
         settings = QSettings("berkaygediz", "RichSpan")
         file = (
             self.file_name
@@ -174,20 +173,20 @@ class RS_Workspace(QMainWindow):
             f"{file}{asterisk}{textMode} — {app.applicationDisplayName()}"
         )
 
-    def RS_threadStart(self):
+    def threadStart(self):
         if not self.thread_running:
             self.richspan_thread.start()
             self.thread_running = True
 
-    def RS_textChanged(self):
+    def textChanged(self):
         if not self.text_changed_timer.isActive():
             self.text_changed_timer.start()
 
-    def RS_updateStatistics(self):
+    def updateStatistics(self):
         self.text_changed_timer.stop()
         self.thread_running = False
         settings = QSettings("berkaygediz", "RichSpan")
-        text = self.rs_area.toPlainText()
+        text = self.DocumentArea.toPlainText()
         character_count = len(text)
         word_count = len(text.split())
         line_count = text.count("\n") + 1
@@ -226,14 +225,14 @@ class RS_Workspace(QMainWindow):
                     None
 
         else:
-            self.rs_area.setFontFamily(fallbackValues["fontFamily"])
-            self.rs_area.setFontPointSize(fallbackValues["fontSize"])
-            self.rs_area.setFontWeight(75 if fallbackValues["bold"] else 50)
-            self.rs_area.setFontItalic(fallbackValues["italic"])
-            self.rs_area.setFontUnderline(fallbackValues["underline"])
-            self.rs_area.setAlignment(fallbackValues["contentAlign"])
-            self.rs_area.setTextColor(QColor(fallbackValues["contentColor"]))
-            self.rs_area.setTextBackgroundColor(
+            self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
+            self.DocumentArea.setFontPointSize(fallbackValues["fontSize"])
+            self.DocumentArea.setFontWeight(75 if fallbackValues["bold"] else 50)
+            self.DocumentArea.setFontItalic(fallbackValues["italic"])
+            self.DocumentArea.setFontUnderline(fallbackValues["underline"])
+            self.DocumentArea.setAlignment(fallbackValues["contentAlign"])
+            self.DocumentArea.setTextColor(QColor(fallbackValues["contentColor"]))
+            self.DocumentArea.setTextBackgroundColor(
                 QColor(fallbackValues["contentBackgroundColor"])
             )
         statistics += (
@@ -247,21 +246,21 @@ class RS_Workspace(QMainWindow):
 
         self.statistics_label.setText(statistics)
         self.status_bar.addPermanentWidget(self.statistics_label)
-        self.new_text = self.rs_area.toPlainText()
+        self.new_text = self.DocumentArea.toPlainText()
         if self.new_text != fallbackValues["content"]:
             self.is_saved = False
         else:
             self.is_saved = True
-        self.RS_updateTitle()
+        self.updateTitle()
 
-    def RS_saveState(self):
+    def saveState(self):
         settings = QSettings("berkaygediz", "RichSpan")
         settings.setValue("windowScale", self.saveGeometry())
         settings.setValue("defaultDirectory", self.directory)
         settings.setValue("fileName", self.file_name)
-        settings.setValue("content", self.rs_area.toHtml())
+        settings.setValue("content", self.DocumentArea.toHtml())
         settings.setValue("isSaved", self.is_saved)
-        settings.setValue("scrollPosition", self.rs_area.verticalScrollBar().value())
+        settings.setValue("scrollPosition", self.DocumentArea.verticalScrollBar().value())
         settings.setValue(
             "appTheme", "dark" if self.palette() == self.dark_theme else "light"
         )
@@ -269,12 +268,12 @@ class RS_Workspace(QMainWindow):
         settings.setValue("adaptiveResponse", self.adaptiveResponse)
         settings.sync()
 
-    def RS_restoreState(self):
+    def restoreState(self):
         settings = QSettings("berkaygediz", "RichSpan")
         self.geometry = settings.value("windowScale")
         self.directory = settings.value("defaultDirectory", self.default_directory)
         self.file_name = settings.value("fileName")
-        self.rs_area.setHtml(settings.value("content"))
+        self.DocumentArea.setHtml(settings.value("content"))
         self.is_saved = settings.value("isSaved")
         index = self.language_combobox.findData(settings.value("appLanguage"))
         self.language_combobox.setCurrentIndex(index)
@@ -283,7 +282,7 @@ class RS_Workspace(QMainWindow):
             self.restoreGeometry(self.geometry)
 
         if self.file_name and os.path.exists(self.file_name):
-            automaticEncoding = RS_Workspace.RS_detectEncoding(self.file_name)
+            automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
             if self.file_name.endswith(".docx"):
                 with open(
                     self.file_name,
@@ -291,27 +290,27 @@ class RS_Workspace(QMainWindow):
                 ) as file:
                     try:
                         conversionLayer = mammoth.convert_to_html(file)
-                        self.rs_area.setHtml(conversionLayer.value)
+                        self.DocumentArea.setHtml(conversionLayer.value)
                     except:
                         None
 
             else:
                 with open(self.file_name, "r", encoding=automaticEncoding) as file:
                     if self.file_name.endswith((".rsdoc")):
-                        self.rs_area.setHtml(file.read())
+                        self.DocumentArea.setHtml(file.read())
                     elif self.file_name.endswith((".html", ".htm")):
-                        self.rs_area.setHtml(file.read())
+                        self.DocumentArea.setHtml(file.read())
 
                     elif self.file_name.endswith((".md")):
-                        self.rs_area.setMarkdown(file.read())
+                        self.DocumentArea.setMarkdown(file.read())
                     else:
-                        self.rs_area.setPlainText(file.read())
+                        self.DocumentArea.setPlainText(file.read())
 
         scroll_position = settings.value("scrollPosition")
         if scroll_position is not None:
-            self.rs_area.verticalScrollBar().setValue(int(scroll_position))
+            self.DocumentArea.verticalScrollBar().setValue(int(scroll_position))
         else:
-            self.rs_area.verticalScrollBar().setValue(0)
+            self.DocumentArea.verticalScrollBar().setValue(0)
 
         if self.file_name:
             self.is_saved = True
@@ -319,18 +318,18 @@ class RS_Workspace(QMainWindow):
             self.is_saved = False
 
         self.adaptiveResponse = settings.value("adaptiveResponse")
-        self.RS_restoreTheme()
-        self.RS_updateTitle()
+        self.restoreTheme()
+        self.updateTitle()
 
-    def RS_restoreTheme(self):
+    def restoreTheme(self):
         settings = QSettings("berkaygediz", "RichSpan")
         if settings.value("appTheme") == "dark":
             self.setPalette(self.dark_theme)
         else:
             self.setPalette(self.light_theme)
-        self.RS_toolbarTheme()
+        self.toolbarTheme()
 
-    def RS_themePalette(self):
+    def themePalette(self):
         self.light_theme = QPalette()
         self.dark_theme = QPalette()
 
@@ -350,7 +349,7 @@ class RS_Workspace(QMainWindow):
         self.dark_theme.setColor(QPalette.Button, QColor(0, 0, 0))
         self.dark_theme.setColor(QPalette.ButtonText, QColor(255, 255, 255))
 
-    def RS_themeAction(self):
+    def themeAction(self):
         settings = QSettings("berkaygediz", "RichSpan")
         if self.palette() == self.light_theme:
             self.setPalette(self.dark_theme)
@@ -358,9 +357,9 @@ class RS_Workspace(QMainWindow):
         else:
             self.setPalette(self.light_theme)
             settings.setValue("appTheme", "light")
-        self.RS_toolbarTheme()
+        self.toolbarTheme()
 
-    def RS_toolbarTheme(self):
+    def toolbarTheme(self):
         palette = self.palette()
         if palette == self.light_theme:
             text_color = QColor(255, 255, 255)
@@ -375,7 +374,7 @@ class RS_Workspace(QMainWindow):
                     action_color.setColor(QPalette.WindowText, text_color)
                     toolbar.setPalette(action_color)
 
-    def RS_toolbarTranslate(self):
+    def toolbarTranslate(self):
         settings = QSettings("berkaygediz", "RichSpan")
         self.newaction.setText(translations[settings.value("appLanguage")]["new"])
         self.newaction.setStatusTip(
@@ -562,21 +561,21 @@ class RS_Workspace(QMainWindow):
             "</table><center><p>NOTE: <b>AI</b> support planned.</p></center></body></html>"
         )
 
-    def RS_setupArea(self):
-        self.rs_area.setFontFamily(fallbackValues["fontFamily"])
-        self.rs_area.setFontPointSize(fallbackValues["fontSize"])
-        self.rs_area.setFontWeight(75 if fallbackValues["bold"] else 50)
-        self.rs_area.setFontItalic(fallbackValues["italic"])
-        self.rs_area.setFontUnderline(fallbackValues["underline"])
-        self.rs_area.setAlignment(fallbackValues["contentAlign"])
-        self.rs_area.setTextColor(QColor(fallbackValues["contentColor"]))
-        self.rs_area.setTextBackgroundColor(
+    def initArea(self):
+        self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
+        self.DocumentArea.setFontPointSize(fallbackValues["fontSize"])
+        self.DocumentArea.setFontWeight(75 if fallbackValues["bold"] else 50)
+        self.DocumentArea.setFontItalic(fallbackValues["italic"])
+        self.DocumentArea.setFontUnderline(fallbackValues["underline"])
+        self.DocumentArea.setAlignment(fallbackValues["contentAlign"])
+        self.DocumentArea.setTextColor(QColor(fallbackValues["contentColor"]))
+        self.DocumentArea.setTextBackgroundColor(
             QColor(fallbackValues["contentBackgroundColor"])
         )
-        self.rs_area.setTabStopDistance(27)
-        self.rs_area.document().setDocumentMargin(self.width() * 0.25)
+        self.DocumentArea.setTabStopDistance(27)
+        self.DocumentArea.document().setDocumentMargin(self.width() * 0.25)
 
-    def RS_setupDock(self):
+    def initDock(self):
         settings = QSettings("berkaygediz", "RichSpan")
         settings.sync()
         self.dock_widget = QDockWidget(
@@ -650,11 +649,11 @@ class RS_Workspace(QMainWindow):
         scroll_contents.setLayout(self.AI_QVBox)
         self.scrollableArea.setWidget(scroll_contents)
 
-    def RS_toolbarLabel(self, toolbar, text):
+    def toolbarLabel(self, toolbar, text):
         label = QLabel(f"<b>{text}</b>")
         toolbar.addWidget(label)
 
-    def RS_createAction(self, text, status_tip, function, shortcut=None, icon=None):
+    def createAction(self, text, status_tip, function, shortcut=None, icon=None):
         action = QAction(text, self)
         action.setStatusTip(status_tip)
         action.triggered.connect(function)
@@ -666,185 +665,182 @@ class RS_Workspace(QMainWindow):
             )
         return action
 
-    def RS_setupActions(self):
+    def initActions(self):
         settings = QSettings("berkaygediz", "RichSpan")
-        icon_theme = "white"
-        if self.palette() == self.light_theme:
-            icon_theme = "black"
-        self.newaction = self.RS_createAction(
+        self.newaction = self.createAction(
             translations[settings.value("appLanguage")]["new"],
             translations[settings.value("appLanguage")]["new_message"],
-            self.new,
+            self.New,
             QKeySequence.New,
             "",
         )
-        self.openaction = self.RS_createAction(
+        self.openaction = self.createAction(
             translations[settings.value("appLanguage")]["open"],
             translations[settings.value("appLanguage")]["open_message"],
-            self.open,
+            self.Open,
             QKeySequence.Open,
             "",
         )
-        self.saveaction = self.RS_createAction(
+        self.saveaction = self.createAction(
             translations[settings.value("appLanguage")]["save"],
             translations[settings.value("appLanguage")]["save_message"],
-            self.save,
+            self.Save,
             QKeySequence.Save,
             "",
         )
-        self.saveasaction = self.RS_createAction(
+        self.saveasaction = self.createAction(
             translations[settings.value("appLanguage")]["save_as"],
             translations[settings.value("appLanguage")]["save_as_message"],
-            self.saveAs,
+            self.SaveAs,
             QKeySequence.SaveAs,
             "",
         )
-        self.printaction = self.RS_createAction(
+        self.printaction = self.createAction(
             translations[settings.value("appLanguage")]["print"],
             translations[settings.value("appLanguage")]["print_message"],
-            self.print,
+            self.PrintDocument,
             QKeySequence.Print,
             "",
         )
-        self.findaction = self.RS_createAction(
+        self.findaction = self.createAction(
             translations[settings.value("appLanguage")]["find"],
             translations[settings.value("appLanguage")]["find_message"],
             self.find,
             QKeySequence.Find,
             "",
         )
-        self.replaceaction = self.RS_createAction(
+        self.replaceaction = self.createAction(
             translations[settings.value("appLanguage")]["replace"],
             translations[settings.value("appLanguage")]["replace_message"],
             self.replace,
             QKeySequence.Replace,
             "",
         )
-        self.undoaction = self.RS_createAction(
+        self.undoaction = self.createAction(
             translations[settings.value("appLanguage")]["undo"],
             translations[settings.value("appLanguage")]["undo_message"],
-            self.rs_area.undo,
+            self.DocumentArea.undo,
             QKeySequence.Undo,
             "",
         )
-        self.redoaction = self.RS_createAction(
+        self.redoaction = self.createAction(
             translations[settings.value("appLanguage")]["redo"],
             translations[settings.value("appLanguage")]["redo_message"],
-            self.rs_area.redo,
+            self.DocumentArea.redo,
             QKeySequence.Redo,
             "",
         )
-        self.alignrightevent = self.RS_createAction(
+        self.alignrightevent = self.createAction(
             translations[settings.value("appLanguage")]["right"],
             translations[settings.value("appLanguage")]["right_message"],
-            lambda: self.align(Qt.AlignRight),
+            lambda: self.Align(Qt.AlignRight),
         )
-        self.alignleftevent = self.RS_createAction(
+        self.alignleftevent = self.createAction(
             translations[settings.value("appLanguage")]["left"],
             translations[settings.value("appLanguage")]["left_message"],
-            lambda: self.align(Qt.AlignLeft),
+            lambda: self.Align(Qt.AlignLeft),
         )
-        self.aligncenterevent = self.RS_createAction(
+        self.aligncenterevent = self.createAction(
             translations[settings.value("appLanguage")]["center"],
             translations[settings.value("appLanguage")]["center_message"],
-            lambda: self.align(Qt.AlignCenter),
+            lambda: self.Align(Qt.AlignCenter),
         )
-        self.alignjustifiedevent = self.RS_createAction(
+        self.alignjustifiedevent = self.createAction(
             translations[settings.value("appLanguage")]["justify"],
             translations[settings.value("appLanguage")]["justify_message"],
-            lambda: self.align(Qt.AlignJustify),
+            lambda: self.Align(Qt.AlignJustify),
         )
-        self.bulletevent = self.RS_createAction(
+        self.bulletevent = self.createAction(
             translations[settings.value("appLanguage")]["bullet"],
             "",
-            FormattingEngine.bullet,
+            self.Bullet,
             QKeySequence("Ctrl+Shift+U"),
             "",
         )
-        self.numberedevent = self.RS_createAction(
+        self.numberedevent = self.createAction(
             translations[settings.value("appLanguage")]["numbered"],
             "",
-            FormattingEngine.numbered,
+            self.Numbered,
             QKeySequence("Ctrl+Shift+O"),
             "",
         )
-        self.bold = self.RS_createAction(
+        self.bold = self.createAction(
             translations[settings.value("appLanguage")]["bold"],
             translations[settings.value("appLanguage")]["bold_message"],
-            FormattingEngine.contentBold,
+            self.ContentBold,
             QKeySequence.Bold,
             "",
         )
-        self.italic = self.RS_createAction(
+        self.italic = self.createAction(
             translations[settings.value("appLanguage")]["italic"],
             translations[settings.value("appLanguage")]["italic_message"],
-            FormattingEngine.contentItalic,
+            self.ContentItalic,
             QKeySequence.Italic,
             "",
         )
-        self.underline = self.RS_createAction(
+        self.underline = self.createAction(
             translations[settings.value("appLanguage")]["underline"],
             translations[settings.value("appLanguage")]["underline_message"],
-            FormattingEngine.contentUnderline,
+            self.ContentUnderline,
             QKeySequence.Underline,
             "",
         )
-        self.color = self.RS_createAction(
+        self.color = self.createAction(
             translations[settings.value("appLanguage")]["font_color"],
             translations[settings.value("appLanguage")]["font_color_message"],
-            FormattingEngine.contentColor,
+            self.ContentColor,
             QKeySequence("Ctrl+Shift+C"),
             "",
         )
-        self.backgroundcolor = self.RS_createAction(
+        self.backgroundcolor = self.createAction(
             translations[settings.value("appLanguage")]["contentBackgroundColor"],
             translations[settings.value("appLanguage")][
                 "contentBackgroundColor_message"
             ],
-            FormattingEngine.contentBGColor,
+            self.ContentBGColor,
             QKeySequence("Ctrl+Shift+B"),
             "",
         )
-        self.fontfamily = self.RS_createAction(
+        self.fontfamily = self.createAction(
             translations[settings.value("appLanguage")]["font"],
             translations[settings.value("appLanguage")]["font_message"],
-            FormattingEngine.contentFont,
+            self.ContentFont,
             QKeySequence("Ctrl+Shift+F"),
             "",
         )
-        self.inc_fontaction = self.RS_createAction(
+        self.inc_fontaction = self.createAction(
             "A+",
             translations[settings.value("appLanguage")]["inc_font_message"],
-            FormattingEngine.inc_font,
+            self.incFont,
             QKeySequence("Ctrl++"),
         )
-        self.dec_fontaction = self.RS_createAction(
+        self.dec_fontaction = self.createAction(
             "A-",
             translations[settings.value("appLanguage")]["dec_font_message"],
-            FormattingEngine.dec_font,
+            self.decFont,
             QKeySequence("Ctrl+-"),
         )
-        self.addimage = self.RS_createAction(
+        self.addimage = self.createAction(
             translations[settings.value("appLanguage")]["image"],
             translations[settings.value("appLanguage")]["image_message"],
-            self.contentAddImage,
+            self.addImage,
             QKeySequence("Ctrl+Shift+P"),
             "",
         )
-        self.aboutaction = self.RS_createAction(
+        self.aboutaction = self.createAction(
             translations[settings.value("appLanguage")]["about"],
             "",
-            self.showAbout,
+            self.viewAbout,
             QKeySequence("Ctrl+Shift+I"),
             "",
         )
 
-    def RS_setupToolbar(self):
+    def initToolbar(self):
         settings = QSettings("berkaygediz", "RichSpan")
         self.toolbar = self.addToolBar(
             translations[settings.value("appLanguage")]["file"]
         )
-        self.RS_toolbarLabel(
+        self.toolbarLabel(
             self.toolbar,
             translations[settings.value("appLanguage")]["file"] + ": ",
         )
@@ -865,13 +861,13 @@ class RS_Workspace(QMainWindow):
         self.toolbar = self.addToolBar(
             translations[settings.value("appLanguage")]["ui"]
         )
-        self.RS_toolbarLabel(
+        self.toolbarLabel(
             self.toolbar, translations[settings.value("appLanguage")]["ui"] + ": "
         )
-        self.theme_action = self.RS_createAction(
+        self.theme_action = self.createAction(
             translations[settings.value("appLanguage")]["darklight"],
             translations[settings.value("appLanguage")]["darklight_message"],
-            self.RS_themeAction,
+            self.themeAction,
             QKeySequence("Ctrl+Shift+T"),
             "",
         )
@@ -881,7 +877,7 @@ class RS_Workspace(QMainWindow):
         self.toolbar.addAction(self.theme_action)
         self.powersaveraction = QAction(translations[settings.value("appLanguage")]["powersaver"], self, checkable=True)
         self.powersaveraction.setStatusTip(translations[settings.value("appLanguage")]["powersaver_message"])
-        self.powersaveraction.toggled.connect(self.RS_hybridSaver)
+        self.powersaveraction.toggled.connect(self.hybridSaver)
 
         self.toolbar.addAction(self.powersaveraction)
         if settings.value("adaptiveResponse") == None:
@@ -895,10 +891,10 @@ class RS_Workspace(QMainWindow):
 
         self.powersaveraction.setChecked(response_exponential > 1)
         self.toolbar.addAction(self.powersaveraction)
-        self.hide_dock_widget_action = self.RS_createAction(
+        self.hide_dock_widget_action = self.createAction(
             translations[settings.value("appLanguage")]["help"] + " && AI",
             translations[settings.value("appLanguage")]["help_message"],
-            self.RS_toggleDock,
+            self.toggleDock,
             QKeySequence("Ctrl+Shift+D"),
             "",
         )
@@ -909,7 +905,7 @@ class RS_Workspace(QMainWindow):
         for lcid, name in languages.items():
             self.language_combobox.addItem(name, lcid)
 
-        self.language_combobox.currentIndexChanged.connect(self.RS_changeLanguage)
+        self.language_combobox.currentIndexChanged.connect(self.changeLanguage)
         self.toolbar.addWidget(self.language_combobox)
 
         self.addToolBarBreak()
@@ -917,7 +913,7 @@ class RS_Workspace(QMainWindow):
         self.toolbar = self.addToolBar(
             translations[settings.value("appLanguage")]["edit"]
         )
-        self.RS_toolbarLabel(
+        self.toolbarLabel(
             self.toolbar,
             translations[settings.value("appLanguage")]["edit"] + ": ",
         )
@@ -930,7 +926,7 @@ class RS_Workspace(QMainWindow):
             ]
         )
         self.toolbar.addSeparator()
-        self.RS_toolbarLabel(
+        self.toolbarLabel(
             self.toolbar,
             translations[settings.value("appLanguage")]["font"] + ": ",
         )
@@ -939,7 +935,7 @@ class RS_Workspace(QMainWindow):
         self.toolbar = self.addToolBar(
             translations[settings.value("appLanguage")]["list"]
         )
-        self.RS_toolbarLabel(
+        self.toolbarLabel(
             self.toolbar,
             translations[settings.value("appLanguage")]["list"] + ": ",
         )
@@ -949,7 +945,7 @@ class RS_Workspace(QMainWindow):
         self.toolbar = self.addToolBar(
             translations[settings.value("appLanguage")]["color"]
         )
-        self.RS_toolbarLabel(
+        self.toolbarLabel(
             self.toolbar,
             translations[settings.value("appLanguage")]["color"] + ": ",
         )
@@ -966,19 +962,19 @@ class RS_Workspace(QMainWindow):
         self.toolbar = self.addToolBar(
             translations[settings.value("appLanguage")]["multimedia"]
         )
-        self.RS_toolbarLabel(
+        self.toolbarLabel(
             self.toolbar,
             translations[settings.value("appLanguage")]["multimedia"] + ": ",
         )
         self.toolbar.addActions([self.addimage])
 
-    def RS_toggleDock(self):
+    def toggleDock(self):
         if self.dock_widget.isHidden():
             self.dock_widget.show()
         else:
             self.dock_widget.hide()
 
-    def RS_hybridSaver(self, checked):
+    def hybridSaver(self, checked):
         settings = QSettings("berkaygediz", "RichSpan")
         if checked:
             battery = psutil.sensors_battery()
@@ -998,7 +994,7 @@ class RS_Workspace(QMainWindow):
         settings.setValue("adaptiveResponse", self.adaptiveResponse)
         settings.sync()
 
-    def RS_detectEncoding(file_path):
+    def detectEncoding(file_path):
         with open(file_path, "rb") as file:
             detector = chardet.universaldetector.UniversalDetector()
             for line in file:
@@ -1008,25 +1004,25 @@ class RS_Workspace(QMainWindow):
             detector.close()
         return detector.result["encoding"]
 
-    def new(self):
+    def New(self):
         settings = QSettings("berkaygediz", "RichSpan")
         if self.is_saved == True:
-            self.rs_area.clear()
-            self.rs_area.setFontFamily(fallbackValues["fontFamily"])
-            self.rs_area.setFontPointSize(fallbackValues["fontSize"])
-            self.rs_area.setFontWeight(75 if fallbackValues["bold"] else 50)
-            self.rs_area.setFontItalic(fallbackValues["italic"])
-            self.rs_area.setFontUnderline(fallbackValues["underline"])
-            self.rs_area.setAlignment(fallbackValues["contentAlign"])
-            self.rs_area.setTextColor(QColor(fallbackValues["contentColor"]))
-            self.rs_area.setTextBackgroundColor(
+            self.DocumentArea.clear()
+            self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
+            self.DocumentArea.setFontPointSize(fallbackValues["fontSize"])
+            self.DocumentArea.setFontWeight(75 if fallbackValues["bold"] else 50)
+            self.DocumentArea.setFontItalic(fallbackValues["italic"])
+            self.DocumentArea.setFontUnderline(fallbackValues["underline"])
+            self.DocumentArea.setAlignment(fallbackValues["contentAlign"])
+            self.DocumentArea.setTextColor(QColor(fallbackValues["contentColor"]))
+            self.DocumentArea.setTextBackgroundColor(
                 QColor(fallbackValues["contentBackgroundColor"])
             )
-            self.rs_area.setTabStopDistance(27)
+            self.DocumentArea.setTabStopDistance(27)
             self.directory = self.default_directory
             self.file_name = None
             self.is_saved = False
-            self.RS_updateTitle()
+            self.updateTitle()
         else:
             reply = QMessageBox.question(
                 self,
@@ -1037,26 +1033,26 @@ class RS_Workspace(QMainWindow):
             )
 
             if reply == QMessageBox.Yes:
-                self.rs_area.clear()
-                self.rs_area.setFontFamily(fallbackValues["fontFamily"])
-                self.rs_area.setFontPointSize(fallbackValues["fontSize"])
-                self.rs_area.setFontWeight(75 if fallbackValues["bold"] else 50)
-                self.rs_area.setFontItalic(fallbackValues["italic"])
-                self.rs_area.setFontUnderline(fallbackValues["underline"])
-                self.rs_area.setAlignment(fallbackValues["contentAlign"])
-                self.rs_area.setTextColor(QColor(fallbackValues["contentColor"]))
-                self.rs_area.setTextBackgroundColor(
+                self.DocumentArea.clear()
+                self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
+                self.DocumentArea.setFontPointSize(fallbackValues["fontSize"])
+                self.DocumentArea.setFontWeight(75 if fallbackValues["bold"] else 50)
+                self.DocumentArea.setFontItalic(fallbackValues["italic"])
+                self.DocumentArea.setFontUnderline(fallbackValues["underline"])
+                self.DocumentArea.setAlignment(fallbackValues["contentAlign"])
+                self.DocumentArea.setTextColor(QColor(fallbackValues["contentColor"]))
+                self.DocumentArea.setTextBackgroundColor(
                     QColor(fallbackValues["contentBackgroundColor"])
                 )
-                self.rs_area.setTabStopDistance(27)
+                self.DocumentArea.setTabStopDistance(27)
                 self.directory = self.default_directory
                 self.file_name = None
                 self.is_saved = False
-                self.RS_updateTitle()
+                self.updateTitle()
             else:
                 pass
 
-    def open(self):
+    def Open(self):
         options = QFileDialog.Options()
         settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
@@ -1070,7 +1066,7 @@ class RS_Workspace(QMainWindow):
         )
         if selected_file:
             self.file_name = selected_file
-            automaticEncoding = RS_Workspace.RS_detectEncoding(selected_file)
+            automaticEncoding = RS_Workspace.detectEncoding(selected_file)
             if self.file_name.endswith(".docx"):
                 with open(
                     self.file_name,
@@ -1078,36 +1074,36 @@ class RS_Workspace(QMainWindow):
                 ) as file:
                     try:
                         conversionLayer = mammoth.convert_to_html(file)
-                        self.rs_area.setHtml(conversionLayer.value)
+                        self.DocumentArea.setHtml(conversionLayer.value)
                     except:
                         QMessageBox.warning(self, None, "Conversion failed.")
             else:
                 with open(self.file_name, "r", encoding=automaticEncoding) as file:
                     if self.file_name.endswith((".rsdoc")):
-                        self.rs_area.setHtml(file.read())
+                        self.DocumentArea.setHtml(file.read())
                     elif self.file_name.endswith((".html", ".htm")):
-                        self.rs_area.setHtml(file.read())
+                        self.DocumentArea.setHtml(file.read())
 
                     elif self.file_name.endswith((".md")):
-                        self.rs_area.setMarkdown(file.read())
+                        self.DocumentArea.setMarkdown(file.read())
                     else:
-                        self.rs_area.setPlainText(file.read())
+                        self.DocumentArea.setPlainText(file.read())
 
             self.directory = os.path.dirname(self.file_name)
             self.is_saved = True
-            self.RS_updateTitle()
+            self.updateTitle()
         else:
             pass
 
-    def save(self):
+    def Save(self):
         if self.is_saved == False:
-            self.saveFile()
+            self.SaveProcess()
         elif self.file_name == None:
-            self.saveAs()
+            self.SaveAs()
         else:
-            self.saveFile()
+            self.SaveProcess()
 
-    def saveAs(self):
+    def SaveAs(self):
         options = QFileDialog.Options()
         settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
@@ -1122,34 +1118,34 @@ class RS_Workspace(QMainWindow):
         if selected_file:
             self.file_name = selected_file
             self.directory = os.path.dirname(self.file_name)
-            self.saveFile()
+            self.SaveProcess()
             return True
         else:
             return False
 
-    def saveFile(self):
+    def SaveProcess(self):
         if not self.file_name:
-            self.saveAs()
+            self.SaveAs()
         else:
-            automaticEncoding = RS_Workspace.RS_detectEncoding(self.file_name)
+            automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
             if self.file_name.lower().endswith(".docx"):
                 None
             else:
                 with open(self.file_name, "w", encoding=automaticEncoding) as file:
                     if self.file_name.lower().endswith((".rsdoc", ".html", ".htm")):
-                        file.write(self.rs_area.toHtml())
+                        file.write(self.DocumentArea.toHtml())
                     elif self.file_name.lower().endswith((".md")):
-                        file.write(self.rs_area.toMarkdown())
+                        file.write(self.DocumentArea.toMarkdown())
                     else:
                         document = QTextDocument()
-                        document.setPlainText(self.rs_area.toPlainText())
+                        document.setPlainText(self.DocumentArea.toPlainText())
                         file.write(document.toPlainText())
 
         self.status_bar.showMessage("Saved.", 2000)
         self.is_saved = True
-        self.RS_updateTitle()
+        self.updateTitle()
 
-    def print(self):
+    def PrintDocument(self):
         printer = QPrinter(QPrinter.HighResolution)
         printer.setPageOrientation(QPageLayout.Orientation.Portrait)
         printer.setPageMargins(QMargins(10, 10, 10, 10), QPageLayout.Millimeter)
@@ -1158,10 +1154,10 @@ class RS_Workspace(QMainWindow):
         printer.setDocName(self.file_name)
 
         preview_dialog = QPrintPreviewDialog(printer, self)
-        preview_dialog.paintRequested.connect(self.rs_area.print_)
+        preview_dialog.paintRequested.connect(self.DocumentArea.print_)
         preview_dialog.exec()
         
-    def contentAddImage(self):
+    def addImage(self):
         settings = QSettings("berkaygediz", "RichSpan")
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
@@ -1181,11 +1177,78 @@ class RS_Workspace(QMainWindow):
                 data = file.read()
                 data = base64.b64encode(data).decode("utf-8")
                 img_tag = f'<img src="data:{mime_type};base64,{data}"/>'
-                self.rs_area.insertHtml(img_tag)
+                self.DocumentArea.insertHtml(img_tag)
 
-    def showAbout(self):
+    def viewAbout(self):
         self.about_window = RS_About()
         self.about_window.show()
+
+    def Align(self, alignment):
+        self.DocumentArea.setAlignment(alignment)
+
+    def Bullet(self):
+        cursor = self.DocumentArea.textCursor()
+        cursor.beginEditBlock()
+        selected_text = cursor.selectedText()
+        char_format = cursor.charFormat()
+        cursor.removeSelectedText()
+        cursor.insertList(QTextListFormat.ListDisc)
+        cursor.insertText(selected_text)
+        new_cursor = self.DocumentArea.textCursor()
+        new_cursor.movePosition(QTextCursor.PreviousBlock)
+        new_cursor.mergeCharFormat(char_format)
+        cursor.endEditBlock()
+
+    def Numbered(self):
+        cursor = self.DocumentArea.textCursor()
+        cursor.beginEditBlock()
+        selected_text = cursor.selectedText()
+        char_format = cursor.charFormat()
+        cursor.removeSelectedText()
+        cursor.insertList(QTextListFormat.ListDecimal)
+        cursor.insertText(selected_text)
+        new_cursor = self.DocumentArea.textCursor()
+        new_cursor.movePosition(QTextCursor.PreviousBlock)
+        new_cursor.mergeCharFormat(char_format)
+        cursor.endEditBlock()
+
+    def ContentBold(self):
+        font = self.DocumentArea.currentFont()
+        font.setBold(not font.bold())
+        self.DocumentArea.setCurrentFont(font)
+
+    def ContentItalic(self):
+        font = self.DocumentArea.currentFont()
+        font.setItalic(not font.italic())
+        self.DocumentArea.setCurrentFont(font)
+
+    def ContentUnderline(self):
+        font = self.DocumentArea.currentFont()
+        font.setUnderline(not font.underline())
+        self.DocumentArea.setCurrentFont(font)
+
+    def ContentColor(self):
+        color = QColorDialog.getColor()
+        self.DocumentArea.setTextColor(color)
+
+    def ContentBGColor(self):
+        color = QColorDialog.getColor()
+        self.DocumentArea.setTextBackgroundColor(color)
+
+    def ContentFont(self):
+        font, ok = QFontDialog.getFont(self.DocumentArea.currentFont(), self)
+        if ok:
+            self.DocumentArea.setCurrentFont(font)
+
+    def incFont(self):
+        font = self.DocumentArea.currentFont()
+        font.setPointSize(font.pointSize() + 1)
+        self.DocumentArea.setCurrentFont(font)
+
+    def decFont(self):
+        font = self.DocumentArea.currentFont()
+        font.setPointSize(font.pointSize() - 1)
+        self.DocumentArea.setCurrentFont(font)
 
     def find(self):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -1200,7 +1263,7 @@ class RS_Workspace(QMainWindow):
         self.find_dialog.show()
 
     def findText(self, text):
-        self.rs_area.find(text)
+        self.DocumentArea.find(text)
 
     def replace(self):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -1222,8 +1285,8 @@ class RS_Workspace(QMainWindow):
         self.replace_dialog.show()
 
     def replaceText(self, text):
-        self.rs_area.find(text)
-        self.rs_area.insertPlainText(text)
+        self.DocumentArea.find(text)
+        self.DocumentArea.insertPlainText(text)
 
 
 if __name__ == "__main__":
@@ -1236,7 +1299,7 @@ if __name__ == "__main__":
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
     app.setApplicationDisplayName("RichSpan 2024.09")
-    app.setApplicationVersion("1.4.2024.09-2")
+    app.setApplicationVersion("1.4.2024.09-3")
     ws = RS_Workspace()
     ws.show()
     sys.exit(app.exec())
