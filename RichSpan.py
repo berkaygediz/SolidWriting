@@ -260,7 +260,9 @@ class RS_Workspace(QMainWindow):
         settings.setValue("fileName", self.file_name)
         settings.setValue("content", self.DocumentArea.toHtml())
         settings.setValue("isSaved", self.is_saved)
-        settings.setValue("scrollPosition", self.DocumentArea.verticalScrollBar().value())
+        settings.setValue(
+            "scrollPosition", self.DocumentArea.verticalScrollBar().value()
+        )
         settings.setValue(
             "appTheme", "dark" if self.palette() == self.dark_theme else "light"
         )
@@ -460,27 +462,19 @@ class RS_Workspace(QMainWindow):
         self.alignjustifiedevent.setStatusTip(
             translations[settings.value("appLanguage")]["justify_message"]
         )
-        self.bold.setText(
-            translations[settings.value("appLanguage")]["bold"]
-        )
+        self.bold.setText(translations[settings.value("appLanguage")]["bold"])
         self.bold.setStatusTip(
             translations[settings.value("appLanguage")]["bold_message"]
         )
-        self.italic.setText(
-            translations[settings.value("appLanguage")]["italic"]
-        )
+        self.italic.setText(translations[settings.value("appLanguage")]["italic"])
         self.italic.setStatusTip(
             translations[settings.value("appLanguage")]["italic_message"]
         )
-        self.underline.setText(
-            translations[settings.value("appLanguage")]["underline"]
-        )
+        self.underline.setText(translations[settings.value("appLanguage")]["underline"])
         self.underline.setStatusTip(
             translations[settings.value("appLanguage")]["underline_message"]
         )
-        self.bulletevent.setText(
-            translations[settings.value("appLanguage")]["bullet"]
-        )
+        self.bulletevent.setText(translations[settings.value("appLanguage")]["bullet"])
         self.bulletevent.setStatusTip(
             translations[settings.value("appLanguage")]["bullet"]
         )
@@ -502,24 +496,16 @@ class RS_Workspace(QMainWindow):
                 "contentBackgroundColor_message"
             ]
         )
-        self.fontfamily.setText(
-            translations[settings.value("appLanguage")]["font"]
-        )
+        self.fontfamily.setText(translations[settings.value("appLanguage")]["font"])
         self.fontfamily.setStatusTip(
-            translations[settings.value("appLanguage")][
-                "font_message"
-            ]
+            translations[settings.value("appLanguage")]["font_message"]
         )
         self.dock_widget.setWindowTitle(
             translations[settings.value("appLanguage")]["help"] + " && AI"
         )
-        self.addimage.setText(
-            translations[settings.value("appLanguage")]["image"]
-        )
+        self.addimage.setText(translations[settings.value("appLanguage")]["image"])
         self.addimage.setStatusTip(
-            translations[settings.value("appLanguage")][
-                "image_message"
-            ]
+            translations[settings.value("appLanguage")]["image_message"]
         )
         self.dock_widget.setWidget(self.helpText)
         self.helpText.setText(
@@ -660,9 +646,7 @@ class RS_Workspace(QMainWindow):
         if shortcut:
             action.setShortcut(shortcut)
         if icon:
-            action.setIcon(
-                QIcon("")
-            )
+            action.setIcon(QIcon(""))
         return action
 
     def initActions(self):
@@ -875,8 +859,14 @@ class RS_Workspace(QMainWindow):
         self.theme_action.setChecked(settings.value("appTheme") == "dark")
 
         self.toolbar.addAction(self.theme_action)
-        self.powersaveraction = QAction(translations[settings.value("appLanguage")]["powersaver"], self, checkable=True)
-        self.powersaveraction.setStatusTip(translations[settings.value("appLanguage")]["powersaver_message"])
+        self.powersaveraction = QAction(
+            translations[settings.value("appLanguage")]["powersaver"],
+            self,
+            checkable=True,
+        )
+        self.powersaveraction.setStatusTip(
+            translations[settings.value("appLanguage")]["powersaver_message"]
+        )
         self.powersaveraction.toggled.connect(self.hybridSaver)
 
         self.toolbar.addAction(self.powersaveraction)
@@ -1156,7 +1146,7 @@ class RS_Workspace(QMainWindow):
         preview_dialog = QPrintPreviewDialog(printer, self)
         preview_dialog.paintRequested.connect(self.DocumentArea.print_)
         preview_dialog.exec()
-        
+
     def addImage(self):
         settings = QSettings("berkaygediz", "RichSpan")
         options = QFileDialog.Options()
