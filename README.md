@@ -6,7 +6,7 @@
 ![GitHub repo size](https://img.shields.io/github/repo-size/berkaygediz/richspan)
 ![GitHub](https://img.shields.io/github/license/berkaygediz/richspan)
 
-RichSpan is a lightweight word processor designed as a simple alternative to traditional word processing software. It is written in Python with a graphical user interface based on PyQt5, ensuring cross-platform compatibility across Windows, macOS, and Linux.
+RichSpan is a lightweight word processor designed as a simple alternative to traditional word processing software. It is written in Python with a graphical user interface based on PySide6, ensuring cross-platform compatibility across Windows, macOS, and Linux.
 
 ## Features
 
