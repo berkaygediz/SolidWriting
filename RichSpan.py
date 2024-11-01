@@ -284,7 +284,11 @@ class RS_Workspace(QMainWindow):
             self.restoreGeometry(self.geometry)
 
         if self.file_name and os.path.exists(self.file_name):
-            automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
+            try:
+                automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
+            except Exception as e:
+                automaticEncoding = "utf-8"
+
             if self.file_name.endswith(".docx"):
                 with open(
                     self.file_name,
@@ -1056,7 +1060,10 @@ class RS_Workspace(QMainWindow):
         )
         if selected_file:
             self.file_name = selected_file
-            automaticEncoding = RS_Workspace.detectEncoding(selected_file)
+            try:
+                automaticEncoding = RS_Workspace.detectEncoding(self.selected_file)
+            except Exception as e:
+                automaticEncoding = "utf-8"
             if self.file_name.endswith(".docx"):
                 with open(
                     self.file_name,
@@ -1117,7 +1124,10 @@ class RS_Workspace(QMainWindow):
         if not self.file_name:
             self.SaveAs()
         else:
-            automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
+            try:
+                automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
+            except Exception as e:
+                automaticEncoding = "utf-8"
             if self.file_name.lower().endswith(".docx"):
                 None
             else:
