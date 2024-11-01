@@ -19,12 +19,19 @@ from PySide6.QtWidgets import *
 from modules.globals import *
 from modules.threading import *
 
+try:
+    from ctypes import windll
+
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID("berkaygediz.RichSpan.1.5")
+except ImportError:
+    pass
+
 
 class RS_About(QMainWindow):
     def __init__(self, parent=None):
         super(RS_About, self).__init__(parent)
         self.setWindowFlags(Qt.Dialog)
-        self.setWindowIcon(QIcon("richspan_icon.png"))
+        self.setWindowIcon(QIcon("richspan_icon.ico"))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setGeometry(
             QStyle.alignedRect(
@@ -1295,11 +1302,11 @@ if __name__ == "__main__":
     elif __file__:
         applicationPath = os.path.dirname(__file__)
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(os.path.join(applicationPath, "richspan_icon.png")))
+    app.setWindowIcon(QIcon(os.path.join(applicationPath, "richspan_icon.ico")))
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
-    app.setApplicationDisplayName("RichSpan 2024.09")
-    app.setApplicationVersion("1.4.2024.09-3")
+    app.setApplicationDisplayName("RichSpan 2024.11")
+    app.setApplicationVersion("1.5.2024.11-1")
     ws = RS_Workspace()
     ws.show()
     sys.exit(app.exec())
