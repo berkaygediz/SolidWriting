@@ -26,6 +26,12 @@ try:
 except ImportError:
     pass
 
+try:
+    settings = QSettings("berkaygediz", "RichSpan")
+    lang = settings.value("appLanguage")
+except:
+    pass
+
 
 class RS_About(QMainWindow):
     def __init__(self, parent=None):
@@ -135,7 +141,7 @@ class RS_Workspace(QMainWindow):
             reply = QMessageBox.question(
                 self,
                 f"{app.applicationDisplayName()}",
-                translations[settings.value("appLanguage")]["exit_message"],
+                translations[lang]["exit_message"],
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
             )
@@ -160,11 +166,7 @@ class RS_Workspace(QMainWindow):
 
     def updateTitle(self):
         settings = QSettings("berkaygediz", "RichSpan")
-        file = (
-            self.file_name
-            if self.file_name
-            else translations[settings.value("appLanguage")]["new"]
-        )
+        file = self.file_name if self.file_name else translations[lang]["new"]
         if file.endswith(".docx"):
             textMode = " - Read Only"
         else:
@@ -210,24 +212,22 @@ class RS_Workspace(QMainWindow):
         statistics += "</style></head><body>"
         statistics += "<table><tr>"
         if word_count > 0 and line_count > 0 and character_count > 0 and text != "":
-            statistics += (
-                f"<th>{translations[settings.value('appLanguage')]['analysis']}</th>"
-            )
+            statistics += f"<th>{translations[lang]['analysis']}</th>"
             avg_word_length = sum(len(word) for word in text.split()) / word_count
             formatted_avg_word_length = "{:.1f}".format(avg_word_length)
-            statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_1'].format(formatted_avg_word_length)}</td>"
+            statistics += f"<td>{translations[lang]['analysis_message_1'].format(formatted_avg_word_length)}</td>"
             avg_line_length = character_count / line_count - 1
             formatted_avg_line_length = "{:.1f}".format(avg_line_length)
-            statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_2'].format(formatted_avg_line_length)}</td>"
+            statistics += f"<td>{translations[lang]['analysis_message_2'].format(formatted_avg_line_length)}</td>"
             uppercase_count = sum(1 for char in text if char.isupper())
             lowercase_count = sum(1 for char in text if char.islower())
-            statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_3'].format(uppercase_count)}</td>"
-            statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_4'].format(lowercase_count)}</td>"
+            statistics += f"<td>{translations[lang]['analysis_message_3'].format(uppercase_count)}</td>"
+            statistics += f"<td>{translations[lang]['analysis_message_4'].format(lowercase_count)}</td>"
             if word_count > 20:
                 try:
                     DetectorFactory.seed = 0
                     lang = detect(text)
-                    statistics += f"<td>{translations[settings.value('appLanguage')]['analysis_message_5'].format(lang)}</td>"
+                    statistics += f"<td>{translations[lang]['analysis_message_5'].format(lang)}</td>"
                 except:
                     None
 
@@ -242,12 +242,14 @@ class RS_Workspace(QMainWindow):
             self.DocumentArea.setTextBackgroundColor(
                 QColor(fallbackValues["contentBackgroundColor"])
             )
+        statistics += f"<th>{translations[lang]['statistic']}</th>"
         statistics += (
-            f"<th>{translations[settings.value('appLanguage')]['statistic']}</th>"
+            f"<td>{translations[lang]['statistic_message_1'].format(line_count)}</td>"
         )
-        statistics += f"<td>{translations[settings.value('appLanguage')]['statistic_message_1'].format(line_count)}</td>"
-        statistics += f"<td>{translations[settings.value('appLanguage')]['statistic_message_2'].format(word_count)}</td>"
-        statistics += f"<td>{translations[settings.value('appLanguage')]['statistic_message_3'].format(character_count)}</td>"
+        statistics += (
+            f"<td>{translations[lang]['statistic_message_2'].format(word_count)}</td>"
+        )
+        statistics += f"<td>{translations[lang]['statistic_message_3'].format(character_count)}</td>"
         statistics += f"</td><th id='rs-text'>{app.applicationDisplayName()}</th>"
         statistics += "</tr></table></body></html>"
 
@@ -284,7 +286,7 @@ class RS_Workspace(QMainWindow):
         self.file_name = settings.value("fileName")
         self.DocumentArea.setHtml(settings.value("content"))
         self.is_saved = settings.value("isSaved")
-        index = self.language_combobox.findData(settings.value("appLanguage"))
+        index = self.language_combobox.findData(lang)
         self.language_combobox.setCurrentIndex(index)
 
         if self.geometry is not None:
@@ -389,135 +391,61 @@ class RS_Workspace(QMainWindow):
 
     def toolbarTranslate(self):
         settings = QSettings("berkaygediz", "RichSpan")
-        self.newaction.setText(translations[settings.value("appLanguage")]["new"])
-        self.newaction.setStatusTip(
-            translations[settings.value("appLanguage")]["new_message"]
-        )
-        self.openaction.setText(translations[settings.value("appLanguage")]["open"])
-        self.openaction.setStatusTip(
-            translations[settings.value("appLanguage")]["open_message"]
-        )
-        self.saveaction.setText(translations[settings.value("appLanguage")]["save"])
-        self.saveaction.setStatusTip(
-            translations[settings.value("appLanguage")]["save_message"]
-        )
-        self.saveasaction.setText(
-            translations[settings.value("appLanguage")]["save_as"]
-        )
-        self.saveasaction.setStatusTip(
-            translations[settings.value("appLanguage")]["save_as_message"]
-        )
-        self.printaction.setText(translations[settings.value("appLanguage")]["print"])
-        self.printaction.setStatusTip(
-            translations[settings.value("appLanguage")]["print_message"]
-        )
-        self.undoaction.setText(translations[settings.value("appLanguage")]["undo"])
-        self.undoaction.setStatusTip(
-            translations[settings.value("appLanguage")]["undo_message"]
-        )
-        self.redoaction.setText(translations[settings.value("appLanguage")]["redo"])
-        self.redoaction.setStatusTip(
-            translations[settings.value("appLanguage")]["redo_message"]
-        )
-        self.theme_action.setText(
-            translations[settings.value("appLanguage")]["darklight"]
-        )
-        self.theme_action.setStatusTip(
-            translations[settings.value("appLanguage")]["darklight_message"]
-        )
-        self.powersaveraction.setText(
-            translations[settings.value("appLanguage")]["powersaver"]
-        )
-        self.powersaveraction.setStatusTip(
-            translations[settings.value("appLanguage")]["powersaver_message"]
-        )
-        self.hide_dock_widget_action.setText(
-            f"{translations[settings.value("appLanguage")]["help"]} && AI"
-        )
-        self.hide_dock_widget_action.setStatusTip(
-            translations[settings.value("appLanguage")]["help_message"]
-        )
-        self.findaction.setText(translations[settings.value("appLanguage")]["find"])
-        self.findaction.setStatusTip(
-            translations[settings.value("appLanguage")]["find_message"]
-        )
-        self.replaceaction.setText(
-            translations[settings.value("appLanguage")]["replace"]
-        )
-        self.replaceaction.setStatusTip(
-            translations[settings.value("appLanguage")]["replace_message"]
-        )
-        self.aboutaction.setText(translations[settings.value("appLanguage")]["about"])
-        self.aboutaction.setStatusTip(
-            translations[settings.value("appLanguage")]["about"]
-        )
-        self.alignrightevent.setText(
-            translations[settings.value("appLanguage")]["right"]
-        )
-        self.alignrightevent.setStatusTip(
-            translations[settings.value("appLanguage")]["right_message"]
-        )
-        self.aligncenterevent.setText(
-            translations[settings.value("appLanguage")]["center"]
-        )
-        self.aligncenterevent.setStatusTip(
-            translations[settings.value("appLanguage")]["center_message"]
-        )
-        self.alignleftevent.setText(translations[settings.value("appLanguage")]["left"])
-        self.alignleftevent.setStatusTip(
-            translations[settings.value("appLanguage")]["left_message"]
-        )
-        self.alignjustifiedevent.setText(
-            translations[settings.value("appLanguage")]["justify"]
-        )
-        self.alignjustifiedevent.setStatusTip(
-            translations[settings.value("appLanguage")]["justify_message"]
-        )
-        self.bold.setText(translations[settings.value("appLanguage")]["bold"])
-        self.bold.setStatusTip(
-            translations[settings.value("appLanguage")]["bold_message"]
-        )
-        self.italic.setText(translations[settings.value("appLanguage")]["italic"])
-        self.italic.setStatusTip(
-            translations[settings.value("appLanguage")]["italic_message"]
-        )
-        self.underline.setText(translations[settings.value("appLanguage")]["underline"])
-        self.underline.setStatusTip(
-            translations[settings.value("appLanguage")]["underline_message"]
-        )
-        self.bulletevent.setText(translations[settings.value("appLanguage")]["bullet"])
-        self.bulletevent.setStatusTip(
-            translations[settings.value("appLanguage")]["bullet"]
-        )
-        self.numberedevent.setText(
-            translations[settings.value("appLanguage")]["numbered"]
-        )
-        self.numberedevent.setStatusTip(
-            translations[settings.value("appLanguage")]["numbered"]
-        )
-        self.color.setText(translations[settings.value("appLanguage")]["font_color"])
-        self.color.setStatusTip(
-            translations[settings.value("appLanguage")]["font_color_message"]
-        )
-        self.backgroundcolor.setText(
-            translations[settings.value("appLanguage")]["contentBackgroundColor"]
-        )
+        self.newaction.setText(translations[lang]["new"])
+        self.newaction.setStatusTip(translations[lang]["new_message"])
+        self.openaction.setText(translations[lang]["open"])
+        self.openaction.setStatusTip(translations[lang]["open_message"])
+        self.saveaction.setText(translations[lang]["save"])
+        self.saveaction.setStatusTip(translations[lang]["save_message"])
+        self.saveasaction.setText(translations[lang]["save_as"])
+        self.saveasaction.setStatusTip(translations[lang]["save_as_message"])
+        self.printaction.setText(translations[lang]["print"])
+        self.printaction.setStatusTip(translations[lang]["print_message"])
+        self.undoaction.setText(translations[lang]["undo"])
+        self.undoaction.setStatusTip(translations[lang]["undo_message"])
+        self.redoaction.setText(translations[lang]["redo"])
+        self.redoaction.setStatusTip(translations[lang]["redo_message"])
+        self.theme_action.setText(translations[lang]["darklight"])
+        self.theme_action.setStatusTip(translations[lang]["darklight_message"])
+        self.powersaveraction.setText(translations[lang]["powersaver"])
+        self.powersaveraction.setStatusTip(translations[lang]["powersaver_message"])
+        self.hide_dock_widget_action.setText(f"{translations[lang]["help"]} && AI")
+        self.hide_dock_widget_action.setStatusTip(translations[lang]["help_message"])
+        self.findaction.setText(translations[lang]["find"])
+        self.findaction.setStatusTip(translations[lang]["find_message"])
+        self.replaceaction.setText(translations[lang]["replace"])
+        self.replaceaction.setStatusTip(translations[lang]["replace_message"])
+        self.aboutaction.setText(translations[lang]["about"])
+        self.aboutaction.setStatusTip(translations[lang]["about"])
+        self.alignrightevent.setText(translations[lang]["right"])
+        self.alignrightevent.setStatusTip(translations[lang]["right_message"])
+        self.aligncenterevent.setText(translations[lang]["center"])
+        self.aligncenterevent.setStatusTip(translations[lang]["center_message"])
+        self.alignleftevent.setText(translations[lang]["left"])
+        self.alignleftevent.setStatusTip(translations[lang]["left_message"])
+        self.alignjustifiedevent.setText(translations[lang]["justify"])
+        self.alignjustifiedevent.setStatusTip(translations[lang]["justify_message"])
+        self.bold.setText(translations[lang]["bold"])
+        self.bold.setStatusTip(translations[lang]["bold_message"])
+        self.italic.setText(translations[lang]["italic"])
+        self.italic.setStatusTip(translations[lang]["italic_message"])
+        self.underline.setText(translations[lang]["underline"])
+        self.underline.setStatusTip(translations[lang]["underline_message"])
+        self.bulletevent.setText(translations[lang]["bullet"])
+        self.bulletevent.setStatusTip(translations[lang]["bullet"])
+        self.numberedevent.setText(translations[lang]["numbered"])
+        self.numberedevent.setStatusTip(translations[lang]["numbered"])
+        self.color.setText(translations[lang]["font_color"])
+        self.color.setStatusTip(translations[lang]["font_color_message"])
+        self.backgroundcolor.setText(translations[lang]["contentBackgroundColor"])
         self.backgroundcolor.setStatusTip(
-            translations[settings.value("appLanguage")][
-                "contentBackgroundColor_message"
-            ]
+            translations[lang]["contentBackgroundColor_message"]
         )
-        self.fontfamily.setText(translations[settings.value("appLanguage")]["font"])
-        self.fontfamily.setStatusTip(
-            translations[settings.value("appLanguage")]["font_message"]
-        )
-        self.dock_widget.setWindowTitle(
-            translations[settings.value("appLanguage")]["help"] + " && AI"
-        )
-        self.addimage.setText(translations[settings.value("appLanguage")]["image"])
-        self.addimage.setStatusTip(
-            translations[settings.value("appLanguage")]["image_message"]
-        )
+        self.fontfamily.setText(translations[lang]["font"])
+        self.fontfamily.setStatusTip(translations[lang]["font_message"])
+        self.dock_widget.setWindowTitle(translations[lang]["help"] + " && AI")
+        self.addimage.setText(translations[lang]["image"])
+        self.addimage.setStatusTip(translations[lang]["image_message"])
         self.dock_widget.setWidget(self.helpText)
         self.helpText.setText(
             "<html><head><style>"
@@ -530,31 +458,31 @@ class RS_Workspace(QMainWindow):
             "p {background-color: red; color: white; padding: 12px; }"
             "</style></head><body>"
             "<table width='100%'><tr>"
-            f"<th>{translations[settings.value('appLanguage')]['help_shortcut']}</th>"
-            f"<th>{translations[settings.value('appLanguage')]['help_description']}</th>"
-            f"</tr><tr><td>Ctrl+N</td><td>{translations[settings.value('appLanguage')]['new_message']}</td></tr>"
-            f"<tr><td>Ctrl+O</td><td>{translations[settings.value('appLanguage')]['open_message']}</td></tr>"
-            f"<tr><td>Ctrl+S</td><td>{translations[settings.value('appLanguage')]['save_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+S</td><td>{translations[settings.value('appLanguage')]['save_as_message']}</td></tr>"
-            f"<tr><td>Ctrl+P</td><td>{translations[settings.value('appLanguage')]['print_message']}</td></tr>"
-            f"<tr><td>Ctrl+Z</td><td>{translations[settings.value('appLanguage')]['undo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Y</td><td>{translations[settings.value('appLanguage')]['redo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+T</td><td>{translations[settings.value('appLanguage')]['darklight_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+D</td><td>{translations[settings.value('appLanguage')]['help_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+C</td><td>{translations[settings.value('appLanguage')]['font_color_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+B</td><td>{translations[settings.value('appLanguage')]['contentBackgroundColor_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+F</td><td>{translations[settings.value('appLanguage')]['font_message']}</td></tr>"
-            f"<tr><td>Ctrl++</td><td>{translations[settings.value('appLanguage')]['inc_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+-</td><td>{translations[settings.value('appLanguage')]['dec_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+P</td><td>{translations[settings.value('appLanguage')]['image_message']}</td></tr>"
-            f"<tr><td>Ctrl+F</td><td>{translations[settings.value('appLanguage')]['find_message']}</td></tr>"
-            f"<tr><td>Ctrl+H</td><td>{translations[settings.value('appLanguage')]['replace_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+U</td><td>{translations[settings.value('appLanguage')]['bullet']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+O</td><td>{translations[settings.value('appLanguage')]['numbered']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+R</td><td>{translations[settings.value('appLanguage')]['right']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+L</td><td>{translations[settings.value('appLanguage')]['left']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+E</td><td>{translations[settings.value('appLanguage')]['center']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+J</td><td>{translations[settings.value('appLanguage')]['justify']}</td></tr>"
+            f"<th>{translations[lang]['help_shortcut']}</th>"
+            f"<th>{translations[lang]['help_description']}</th>"
+            f"</tr><tr><td>Ctrl+N</td><td>{translations[lang]['new_message']}</td></tr>"
+            f"<tr><td>Ctrl+O</td><td>{translations[lang]['open_message']}</td></tr>"
+            f"<tr><td>Ctrl+S</td><td>{translations[lang]['save_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+S</td><td>{translations[lang]['save_as_message']}</td></tr>"
+            f"<tr><td>Ctrl+P</td><td>{translations[lang]['print_message']}</td></tr>"
+            f"<tr><td>Ctrl+Z</td><td>{translations[lang]['undo_message']}</td></tr>"
+            f"<tr><td>Ctrl+Y</td><td>{translations[lang]['redo_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+T</td><td>{translations[lang]['darklight_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+D</td><td>{translations[lang]['help_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+C</td><td>{translations[lang]['font_color_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+B</td><td>{translations[lang]['contentBackgroundColor_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+F</td><td>{translations[lang]['font_message']}</td></tr>"
+            f"<tr><td>Ctrl++</td><td>{translations[lang]['inc_font_message']}</td></tr>"
+            f"<tr><td>Ctrl+-</td><td>{translations[lang]['dec_font_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+P</td><td>{translations[lang]['image_message']}</td></tr>"
+            f"<tr><td>Ctrl+F</td><td>{translations[lang]['find_message']}</td></tr>"
+            f"<tr><td>Ctrl+H</td><td>{translations[lang]['replace_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+U</td><td>{translations[lang]['bullet']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+O</td><td>{translations[lang]['numbered']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+R</td><td>{translations[lang]['right']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+L</td><td>{translations[lang]['left']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+E</td><td>{translations[lang]['center']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+J</td><td>{translations[lang]['justify']}</td></tr>"
             "</table><center><p>NOTE: <b>AI</b> support planned.</p></center></body></html>"
         )
 
@@ -573,11 +501,8 @@ class RS_Workspace(QMainWindow):
         self.DocumentArea.document().setDocumentMargin(self.width() * 0.25)
 
     def initDock(self):
-        settings = QSettings("berkaygediz", "RichSpan")
-        settings.sync()
-        self.dock_widget = QDockWidget(
-            translations[settings.value("appLanguage")]["help"] + " && AI", self
-        )
+        lang = settings.value("appLanguage")
+        self.dock_widget = QDockWidget(f"{translations[lang]["help"]} && AI", self)
         self.dock_widget.setObjectName("Help & AI")
         self.dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_widget)
@@ -600,31 +525,31 @@ class RS_Workspace(QMainWindow):
             "p {background-color: red; color: white; padding: 12px; }"
             "</style></head><body>"
             "<table width='100%'><tr>"
-            f"<th>{translations[settings.value('appLanguage')]['help_shortcut']}</th>"
-            f"<th>{translations[settings.value('appLanguage')]['help_description']}</th>"
-            f"</tr><tr><td>Ctrl+N</td><td>{translations[settings.value('appLanguage')]['new_message']}</td></tr>"
-            f"<tr><td>Ctrl+O</td><td>{translations[settings.value('appLanguage')]['open_message']}</td></tr>"
-            f"<tr><td>Ctrl+S</td><td>{translations[settings.value('appLanguage')]['save_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+S</td><td>{translations[settings.value('appLanguage')]['save_as_message']}</td></tr>"
-            f"<tr><td>Ctrl+P</td><td>{translations[settings.value('appLanguage')]['print_message']}</td></tr>"
-            f"<tr><td>Ctrl+Z</td><td>{translations[settings.value('appLanguage')]['undo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Y</td><td>{translations[settings.value('appLanguage')]['redo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+T</td><td>{translations[settings.value('appLanguage')]['darklight_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+D</td><td>{translations[settings.value('appLanguage')]['help_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+C</td><td>{translations[settings.value('appLanguage')]['font_color_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+B</td><td>{translations[settings.value('appLanguage')]['contentBackgroundColor_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+F</td><td>{translations[settings.value('appLanguage')]['font_message']}</td></tr>"
-            f"<tr><td>Ctrl++</td><td>{translations[settings.value('appLanguage')]['inc_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+-</td><td>{translations[settings.value('appLanguage')]['dec_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+P</td><td>{translations[settings.value('appLanguage')]['image_message']}</td></tr>"
-            f"<tr><td>Ctrl+F</td><td>{translations[settings.value('appLanguage')]['find_message']}</td></tr>"
-            f"<tr><td>Ctrl+H</td><td>{translations[settings.value('appLanguage')]['replace_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+U</td><td>{translations[settings.value('appLanguage')]['bullet']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+O</td><td>{translations[settings.value('appLanguage')]['numbered']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+R</td><td>{translations[settings.value('appLanguage')]['right']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+L</td><td>{translations[settings.value('appLanguage')]['left']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+E</td><td>{translations[settings.value('appLanguage')]['center']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+J</td><td>{translations[settings.value('appLanguage')]['justify']}</td></tr>"
+            f"<th>{translations[lang]['help_shortcut']}</th>"
+            f"<th>{translations[lang]['help_description']}</th>"
+            f"</tr><tr><td>Ctrl+N</td><td>{translations[lang]['new_message']}</td></tr>"
+            f"<tr><td>Ctrl+O</td><td>{translations[lang]['open_message']}</td></tr>"
+            f"<tr><td>Ctrl+S</td><td>{translations[lang]['save_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+S</td><td>{translations[lang]['save_as_message']}</td></tr>"
+            f"<tr><td>Ctrl+P</td><td>{translations[lang]['print_message']}</td></tr>"
+            f"<tr><td>Ctrl+Z</td><td>{translations[lang]['undo_message']}</td></tr>"
+            f"<tr><td>Ctrl+Y</td><td>{translations[lang]['redo_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+T</td><td>{translations[lang]['darklight_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+D</td><td>{translations[lang]['help_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+C</td><td>{translations[lang]['font_color_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+B</td><td>{translations[lang]['contentBackgroundColor_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+F</td><td>{translations[lang]['font_message']}</td></tr>"
+            f"<tr><td>Ctrl++</td><td>{translations[lang]['inc_font_message']}</td></tr>"
+            f"<tr><td>Ctrl+-</td><td>{translations[lang]['dec_font_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+P</td><td>{translations[lang]['image_message']}</td></tr>"
+            f"<tr><td>Ctrl+F</td><td>{translations[lang]['find_message']}</td></tr>"
+            f"<tr><td>Ctrl+H</td><td>{translations[lang]['replace_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+U</td><td>{translations[lang]['bullet']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+O</td><td>{translations[lang]['numbered']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+R</td><td>{translations[lang]['right']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+L</td><td>{translations[lang]['left']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+E</td><td>{translations[lang]['center']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+J</td><td>{translations[lang]['justify']}</td></tr>"
             "</table><center><p>NOTE: <b>AI</b> support planned.</p></center></body></html>"
         )
         self.AI_QVBox.addWidget(self.helpText)
@@ -663,167 +588,165 @@ class RS_Workspace(QMainWindow):
     def initActions(self):
         settings = QSettings("berkaygediz", "RichSpan")
         self.newaction = self.createAction(
-            translations[settings.value("appLanguage")]["new"],
-            translations[settings.value("appLanguage")]["new_message"],
+            translations[lang]["new"],
+            translations[lang]["new_message"],
             self.New,
             QKeySequence.New,
             "",
         )
         self.openaction = self.createAction(
-            translations[settings.value("appLanguage")]["open"],
-            translations[settings.value("appLanguage")]["open_message"],
+            translations[lang]["open"],
+            translations[lang]["open_message"],
             self.Open,
             QKeySequence.Open,
             "",
         )
         self.saveaction = self.createAction(
-            translations[settings.value("appLanguage")]["save"],
-            translations[settings.value("appLanguage")]["save_message"],
+            translations[lang]["save"],
+            translations[lang]["save_message"],
             self.Save,
             QKeySequence.Save,
             "",
         )
         self.saveasaction = self.createAction(
-            translations[settings.value("appLanguage")]["save_as"],
-            translations[settings.value("appLanguage")]["save_as_message"],
+            translations[lang]["save_as"],
+            translations[lang]["save_as_message"],
             self.SaveAs,
             QKeySequence.SaveAs,
             "",
         )
         self.printaction = self.createAction(
-            translations[settings.value("appLanguage")]["print"],
-            translations[settings.value("appLanguage")]["print_message"],
+            translations[lang]["print"],
+            translations[lang]["print_message"],
             self.PrintDocument,
             QKeySequence.Print,
             "",
         )
         self.findaction = self.createAction(
-            translations[settings.value("appLanguage")]["find"],
-            translations[settings.value("appLanguage")]["find_message"],
+            translations[lang]["find"],
+            translations[lang]["find_message"],
             self.find,
             QKeySequence.Find,
             "",
         )
         self.replaceaction = self.createAction(
-            translations[settings.value("appLanguage")]["replace"],
-            translations[settings.value("appLanguage")]["replace_message"],
+            translations[lang]["replace"],
+            translations[lang]["replace_message"],
             self.replace,
             QKeySequence.Replace,
             "",
         )
         self.undoaction = self.createAction(
-            translations[settings.value("appLanguage")]["undo"],
-            translations[settings.value("appLanguage")]["undo_message"],
+            translations[lang]["undo"],
+            translations[lang]["undo_message"],
             self.DocumentArea.undo,
             QKeySequence.Undo,
             "",
         )
         self.redoaction = self.createAction(
-            translations[settings.value("appLanguage")]["redo"],
-            translations[settings.value("appLanguage")]["redo_message"],
+            translations[lang]["redo"],
+            translations[lang]["redo_message"],
             self.DocumentArea.redo,
             QKeySequence.Redo,
             "",
         )
         self.alignrightevent = self.createAction(
-            translations[settings.value("appLanguage")]["right"],
-            translations[settings.value("appLanguage")]["right_message"],
+            translations[lang]["right"],
+            translations[lang]["right_message"],
             lambda: self.Align(Qt.AlignRight),
         )
         self.alignleftevent = self.createAction(
-            translations[settings.value("appLanguage")]["left"],
-            translations[settings.value("appLanguage")]["left_message"],
+            translations[lang]["left"],
+            translations[lang]["left_message"],
             lambda: self.Align(Qt.AlignLeft),
         )
         self.aligncenterevent = self.createAction(
-            translations[settings.value("appLanguage")]["center"],
-            translations[settings.value("appLanguage")]["center_message"],
+            translations[lang]["center"],
+            translations[lang]["center_message"],
             lambda: self.Align(Qt.AlignCenter),
         )
         self.alignjustifiedevent = self.createAction(
-            translations[settings.value("appLanguage")]["justify"],
-            translations[settings.value("appLanguage")]["justify_message"],
+            translations[lang]["justify"],
+            translations[lang]["justify_message"],
             lambda: self.Align(Qt.AlignJustify),
         )
         self.bulletevent = self.createAction(
-            translations[settings.value("appLanguage")]["bullet"],
+            translations[lang]["bullet"],
             "",
             self.Bullet,
             QKeySequence("Ctrl+Shift+U"),
             "",
         )
         self.numberedevent = self.createAction(
-            translations[settings.value("appLanguage")]["numbered"],
+            translations[lang]["numbered"],
             "",
             self.Numbered,
             QKeySequence("Ctrl+Shift+O"),
             "",
         )
         self.bold = self.createAction(
-            translations[settings.value("appLanguage")]["bold"],
-            translations[settings.value("appLanguage")]["bold_message"],
+            translations[lang]["bold"],
+            translations[lang]["bold_message"],
             self.ContentBold,
             QKeySequence.Bold,
             "",
         )
         self.italic = self.createAction(
-            translations[settings.value("appLanguage")]["italic"],
-            translations[settings.value("appLanguage")]["italic_message"],
+            translations[lang]["italic"],
+            translations[lang]["italic_message"],
             self.ContentItalic,
             QKeySequence.Italic,
             "",
         )
         self.underline = self.createAction(
-            translations[settings.value("appLanguage")]["underline"],
-            translations[settings.value("appLanguage")]["underline_message"],
+            translations[lang]["underline"],
+            translations[lang]["underline_message"],
             self.ContentUnderline,
             QKeySequence.Underline,
             "",
         )
         self.color = self.createAction(
-            translations[settings.value("appLanguage")]["font_color"],
-            translations[settings.value("appLanguage")]["font_color_message"],
+            translations[lang]["font_color"],
+            translations[lang]["font_color_message"],
             self.ContentColor,
             QKeySequence("Ctrl+Shift+C"),
             "",
         )
         self.backgroundcolor = self.createAction(
-            translations[settings.value("appLanguage")]["contentBackgroundColor"],
-            translations[settings.value("appLanguage")][
-                "contentBackgroundColor_message"
-            ],
+            translations[lang]["contentBackgroundColor"],
+            translations[lang]["contentBackgroundColor_message"],
             self.ContentBGColor,
             QKeySequence("Ctrl+Shift+B"),
             "",
         )
         self.fontfamily = self.createAction(
-            translations[settings.value("appLanguage")]["font"],
-            translations[settings.value("appLanguage")]["font_message"],
+            translations[lang]["font"],
+            translations[lang]["font_message"],
             self.ContentFont,
             QKeySequence("Ctrl+Shift+F"),
             "",
         )
         self.inc_fontaction = self.createAction(
             "A+",
-            translations[settings.value("appLanguage")]["inc_font_message"],
+            translations[lang]["inc_font_message"],
             self.incFont,
             QKeySequence("Ctrl++"),
         )
         self.dec_fontaction = self.createAction(
             "A-",
-            translations[settings.value("appLanguage")]["dec_font_message"],
+            translations[lang]["dec_font_message"],
             self.decFont,
             QKeySequence("Ctrl+-"),
         )
         self.addimage = self.createAction(
-            translations[settings.value("appLanguage")]["image"],
-            translations[settings.value("appLanguage")]["image_message"],
+            translations[lang]["image"],
+            translations[lang]["image_message"],
             self.addImage,
             QKeySequence("Ctrl+Shift+P"),
             "",
         )
         self.aboutaction = self.createAction(
-            translations[settings.value("appLanguage")]["about"],
+            translations[lang]["about"],
             "",
             self.viewAbout,
             QKeySequence("Ctrl+Shift+I"),
@@ -832,12 +755,10 @@ class RS_Workspace(QMainWindow):
 
     def initToolbar(self):
         settings = QSettings("berkaygediz", "RichSpan")
-        self.toolbar = self.addToolBar(
-            translations[settings.value("appLanguage")]["file"]
-        )
+        self.toolbar = self.addToolBar(translations[lang]["file"])
         self.toolbarLabel(
             self.toolbar,
-            translations[settings.value("appLanguage")]["file"] + ": ",
+            translations[lang]["file"] + ": ",
         )
         self.toolbar.addActions(
             [
@@ -853,15 +774,11 @@ class RS_Workspace(QMainWindow):
             ]
         )
 
-        self.toolbar = self.addToolBar(
-            translations[settings.value("appLanguage")]["ui"]
-        )
-        self.toolbarLabel(
-            self.toolbar, translations[settings.value("appLanguage")]["ui"] + ": "
-        )
+        self.toolbar = self.addToolBar(translations[lang]["ui"])
+        self.toolbarLabel(self.toolbar, translations[lang]["ui"] + ": ")
         self.theme_action = self.createAction(
-            translations[settings.value("appLanguage")]["darklight"],
-            translations[settings.value("appLanguage")]["darklight_message"],
+            translations[lang]["darklight"],
+            translations[lang]["darklight_message"],
             self.themeAction,
             QKeySequence("Ctrl+Shift+T"),
             "",
@@ -871,13 +788,11 @@ class RS_Workspace(QMainWindow):
 
         self.toolbar.addAction(self.theme_action)
         self.powersaveraction = QAction(
-            translations[settings.value("appLanguage")]["powersaver"],
+            translations[lang]["powersaver"],
             self,
             checkable=True,
         )
-        self.powersaveraction.setStatusTip(
-            translations[settings.value("appLanguage")]["powersaver_message"]
-        )
+        self.powersaveraction.setStatusTip(translations[lang]["powersaver_message"])
         self.powersaveraction.toggled.connect(self.hybridSaver)
 
         self.toolbar.addAction(self.powersaveraction)
@@ -893,8 +808,8 @@ class RS_Workspace(QMainWindow):
         self.powersaveraction.setChecked(response_exponential > 1)
         self.toolbar.addAction(self.powersaveraction)
         self.hide_dock_widget_action = self.createAction(
-            translations[settings.value("appLanguage")]["help"] + " && AI",
-            translations[settings.value("appLanguage")]["help_message"],
+            translations[lang]["help"] + " && AI",
+            translations[lang]["help_message"],
             self.toggleDock,
             QKeySequence("Ctrl+Shift+D"),
             "",
@@ -911,12 +826,10 @@ class RS_Workspace(QMainWindow):
 
         self.addToolBarBreak()
 
-        self.toolbar = self.addToolBar(
-            translations[settings.value("appLanguage")]["edit"]
-        )
+        self.toolbar = self.addToolBar(translations[lang]["edit"])
         self.toolbarLabel(
             self.toolbar,
-            translations[settings.value("appLanguage")]["edit"] + ": ",
+            translations[lang]["edit"] + ": ",
         )
         self.toolbar.addActions(
             [
@@ -929,26 +842,22 @@ class RS_Workspace(QMainWindow):
         self.toolbar.addSeparator()
         self.toolbarLabel(
             self.toolbar,
-            translations[settings.value("appLanguage")]["font"] + ": ",
+            translations[lang]["font"] + ": ",
         )
         self.toolbar.addActions([self.bold, self.italic, self.underline])
         self.toolbar.addSeparator()
-        self.toolbar = self.addToolBar(
-            translations[settings.value("appLanguage")]["list"]
-        )
+        self.toolbar = self.addToolBar(translations[lang]["list"])
         self.toolbarLabel(
             self.toolbar,
-            translations[settings.value("appLanguage")]["list"] + ": ",
+            translations[lang]["list"] + ": ",
         )
         self.toolbar.addActions([self.bulletevent, self.numberedevent])
         self.addToolBarBreak()
 
-        self.toolbar = self.addToolBar(
-            translations[settings.value("appLanguage")]["color"]
-        )
+        self.toolbar = self.addToolBar(translations[lang]["color"])
         self.toolbarLabel(
             self.toolbar,
-            translations[settings.value("appLanguage")]["color"] + ": ",
+            translations[lang]["color"] + ": ",
         )
         self.toolbar.addActions(
             [
@@ -960,12 +869,10 @@ class RS_Workspace(QMainWindow):
             ]
         )
 
-        self.toolbar = self.addToolBar(
-            translations[settings.value("appLanguage")]["multimedia"]
-        )
+        self.toolbar = self.addToolBar(translations[lang]["multimedia"])
         self.toolbarLabel(
             self.toolbar,
-            translations[settings.value("appLanguage")]["multimedia"] + ": ",
+            translations[lang]["multimedia"] + ": ",
         )
         self.toolbar.addActions([self.addimage])
 
@@ -1028,7 +935,7 @@ class RS_Workspace(QMainWindow):
             reply = QMessageBox.question(
                 self,
                 f"{app.applicationDisplayName()}",
-                translations[settings.value("appLanguage")]["new_message"],
+                translations[lang]["new_message"],
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
             )
@@ -1059,8 +966,7 @@ class RS_Workspace(QMainWindow):
         options |= QFileDialog.ReadOnly
         selected_file, _ = QFileDialog.getOpenFileName(
             self,
-            translations[settings.value("appLanguage")]["open"]
-            + f" — {app.applicationDisplayName()} ",
+            translations[lang]["open"] + f" — {app.applicationDisplayName()} ",
             self.directory,
             fallbackValues["readFilter"],
             options=options,
@@ -1113,8 +1019,7 @@ class RS_Workspace(QMainWindow):
         options |= QFileDialog.ReadOnly
         selected_file, _ = QFileDialog.getSaveFileName(
             self,
-            translations[settings.value("appLanguage")]["save_as"]
-            + f" — {app.applicationDisplayName()}",
+            translations[lang]["save_as"] + f" — {app.applicationDisplayName()}",
             self.directory,
             fallbackValues["writeFilter"],
             options=options,
@@ -1170,7 +1075,7 @@ class RS_Workspace(QMainWindow):
         options |= QFileDialog.ReadOnly
         selected_file, _ = QFileDialog.getOpenFileName(
             self,
-            translations[settings.value("appLanguage")]["open"],
+            translations[lang]["open"],
             self.directory,
             fallbackValues["mediaFilter"],
             options=options,
@@ -1261,7 +1166,7 @@ class RS_Workspace(QMainWindow):
         settings = QSettings("berkaygediz", "RichSpan")
         self.find_dialog = QInputDialog(self)
         self.find_dialog.setInputMode(QInputDialog.TextInput)
-        app_language = settings.value("appLanguage")
+        app_language = lang
         self.find_dialog.setLabelText(translations[app_language]["find"])
         self.find_dialog.setWindowTitle(translations[app_language]["find"])
         self.find_dialog.setOkButtonText(translations[app_language]["find"])
@@ -1276,18 +1181,10 @@ class RS_Workspace(QMainWindow):
         settings = QSettings("berkaygediz", "RichSpan")
         self.replace_dialog = QInputDialog(self)
         self.replace_dialog.setInputMode(QInputDialog.TextInput)
-        self.replace_dialog.setLabelText(
-            translations[settings.value("appLanguage")]["replace"]
-        )
-        self.replace_dialog.setWindowTitle(
-            translations[settings.value("appLanguage")]["replace"]
-        )
-        self.replace_dialog.setOkButtonText(
-            translations[settings.value("appLanguage")]["replace"]
-        )
-        self.replace_dialog.setCancelButtonText(
-            translations[settings.value("appLanguage")]["cancel"]
-        )
+        self.replace_dialog.setLabelText(translations[lang]["replace"])
+        self.replace_dialog.setWindowTitle(translations[lang]["replace"])
+        self.replace_dialog.setOkButtonText(translations[lang]["replace"])
+        self.replace_dialog.setCancelButtonText(translations[lang]["cancel"])
         self.replace_dialog.textValueSelected.connect(self.replaceText)
         self.replace_dialog.show()
 
