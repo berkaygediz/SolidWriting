@@ -73,8 +73,7 @@ class RS_Workspace(QMainWindow):
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumSize(768, 540)
         system_language = locale.getlocale()[1]
-        settings = QSettings("berkaygediz", "RichSpan")
-        if system_language not in languages.keys():
+        if system_language not in languages.items():
             settings.setValue("appLanguage", "1252")
             settings.sync()
         if settings.value("adaptiveResponse") == None:
@@ -136,7 +135,6 @@ class RS_Workspace(QMainWindow):
         )
 
     def closeEvent(self, event):
-        settings = QSettings("berkaygediz", "RichSpan")
         if self.is_saved == False:
             reply = QMessageBox.question(
                 self,
@@ -194,7 +192,7 @@ class RS_Workspace(QMainWindow):
     def updateStatistics(self):
         self.text_changed_timer.stop()
         self.thread_running = False
-        settings = QSettings("berkaygediz", "RichSpan")
+        lang = settings.value("appLanguage")
         text = self.DocumentArea.toPlainText()
         character_count = len(text)
         word_count = len(text.split())
@@ -501,7 +499,6 @@ class RS_Workspace(QMainWindow):
         self.DocumentArea.document().setDocumentMargin(self.width() * 0.25)
 
     def initDock(self):
-        lang = settings.value("appLanguage")
         self.dock_widget = QDockWidget(f"{translations[lang]["help"]} && AI", self)
         self.dock_widget.setObjectName("Help & AI")
         self.dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
