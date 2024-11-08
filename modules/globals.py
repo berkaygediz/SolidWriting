@@ -1,6 +1,7 @@
 from PySide6.QtCore import *
 
 fallbackValues = {
+    "icon": "richspan_icon.ico",
     "fontFamily": "Helvetica",
     "fontSize": 14,
     "bold": False,

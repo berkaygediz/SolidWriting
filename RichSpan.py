@@ -33,11 +33,52 @@ except:
     pass
 
 
+class RS_ControlInfo(QMainWindow):
+    def __init__(self, parent=None):
+        super(RS_ControlInfo, self).__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowIcon(QIcon(fallbackValues["icon"]))
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+
+        screen = QGuiApplication.primaryScreen().availableGeometry()
+        self.setGeometry(
+            QStyle.alignedRect(
+                Qt.LayoutDirection.LeftToRight,
+                Qt.AlignmentFlag.AlignCenter,
+                QSize(int(screen.width() * 0.2), int(screen.height() * 0.2)),
+                screen,
+            )
+        )
+        self.setStyleSheet("background-color: transparent;")
+        self.setWindowOpacity(0.75)
+
+        self.widget_central = QWidget(self)
+        self.layout_central = QVBoxLayout(self.widget_central)
+
+        self.title = QLabel("RichSpan", self)
+        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title.setFont(QFont("Roboto", 30))
+        self.title.setStyleSheet(
+            "background-color: #0D47A1; color: #FFFFFF; font-weight: bold; font-size: 30px; border-radius: 25px; border: 1px solid #021E56;"
+        )
+
+        self.layout_central.addWidget(self.title)
+        self.setCentralWidget(self.widget_central)
+
+        QTimer.singleShot(500, self.showWS)
+
+    def showWS(self):
+        self.hide()
+        self.ws_window = RS_Workspace()
+        self.ws_window.show()
+
+
 class RS_About(QMainWindow):
     def __init__(self, parent=None):
         super(RS_About, self).__init__(parent)
         self.setWindowFlags(Qt.Dialog)
-        self.setWindowIcon(QIcon("richspan_icon.ico"))
+        self.setWindowIcon(QIcon(fallbackValues["icon"]))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setGeometry(
             QStyle.alignedRect(
@@ -69,7 +110,7 @@ class RS_Workspace(QMainWindow):
 
     def initUI(self):
         starttime = datetime.datetime.now()
-        self.setWindowIcon(QIcon("richspan_icon.ico"))
+        self.setWindowIcon(QIcon(fallbackValues["icon"]))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumSize(768, 540)
         system_language = locale.getlocale()[1]
@@ -388,7 +429,7 @@ class RS_Workspace(QMainWindow):
                     toolbar.setPalette(action_color)
 
     def toolbarTranslate(self):
-        settings = QSettings("berkaygediz", "RichSpan")
+        lang = settings.value("appLanguage")
         self.newaction.setText(translations[lang]["new"])
         self.newaction.setStatusTip(translations[lang]["new_message"])
         self.openaction.setText(translations[lang]["open"])
@@ -1196,11 +1237,11 @@ if __name__ == "__main__":
     elif __file__:
         applicationPath = os.path.dirname(__file__)
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(os.path.join(applicationPath, "richspan_icon.ico")))
+    app.setWindowIcon(QIcon(os.path.join(applicationPath, fallbackValues["icon"])))
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("RichSpan")
     app.setApplicationDisplayName("RichSpan 2024.11")
     app.setApplicationVersion("1.5.2024.11-1")
-    ws = RS_Workspace()
+    ws = RS_ControlInfo()
     ws.show()
     sys.exit(app.exec())
