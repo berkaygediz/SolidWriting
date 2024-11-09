@@ -145,6 +145,7 @@ class RS_Workspace(QMainWindow):
 
         self.status_bar = self.statusBar()
         self.DocumentArea = QTextEdit()
+        self.DocumentArea.setTextInteractionFlags(Qt.TextEditorInteraction)
         self.initArea()
         layout.addWidget(self.DocumentArea)
 
@@ -204,7 +205,6 @@ class RS_Workspace(QMainWindow):
         self.toolbarTranslate()
 
     def updateTitle(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         file = self.file_name if self.file_name else translations[lang]["new"]
         if file.endswith(".docx"):
             textMode = " - Read Only"
@@ -230,10 +230,9 @@ class RS_Workspace(QMainWindow):
         if not self.text_changed_timer.isActive():
             self.text_changed_timer.start()
 
-    def updateStatistics(self):
+    def updateStatistics(self, lang=lang):
         self.text_changed_timer.stop()
         self.thread_running = False
-        lang = settings.value("appLanguage")
         text = self.DocumentArea.toPlainText()
         character_count = len(text)
         word_count = len(text.split())
@@ -265,8 +264,8 @@ class RS_Workspace(QMainWindow):
             if word_count > 20:
                 try:
                     DetectorFactory.seed = 0
-                    lang = detect(text)
-                    statistics += f"<td>{translations[lang]['analysis_message_5'].format(lang)}</td>"
+                    langdetect = detect(text)
+                    statistics += f"<td>{translations[lang]['analysis_message_5'].format(langdetect)}</td>"
                 except:
                     None
 
@@ -302,7 +301,6 @@ class RS_Workspace(QMainWindow):
         self.updateTitle()
 
     def saveState(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         settings.setValue("windowScale", self.saveGeometry())
         settings.setValue("defaultDirectory", self.directory)
         settings.setValue("fileName", self.file_name)
@@ -319,7 +317,6 @@ class RS_Workspace(QMainWindow):
         settings.sync()
 
     def restoreState(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         self.geometry = settings.value("windowScale")
         self.directory = settings.value("defaultDirectory", self.default_directory)
         self.file_name = settings.value("fileName")
@@ -376,7 +373,6 @@ class RS_Workspace(QMainWindow):
         self.updateTitle()
 
     def restoreTheme(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         if settings.value("appTheme") == "dark":
             self.setPalette(self.dark_theme)
         else:
@@ -404,7 +400,6 @@ class RS_Workspace(QMainWindow):
         self.dark_theme.setColor(QPalette.ButtonText, QColor(255, 255, 255))
 
     def themeAction(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         if self.palette() == self.light_theme:
             self.setPalette(self.dark_theme)
             settings.setValue("appTheme", "dark")
@@ -624,7 +619,6 @@ class RS_Workspace(QMainWindow):
         return action
 
     def initActions(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         self.newaction = self.createAction(
             translations[lang]["new"],
             translations[lang]["new_message"],
@@ -792,7 +786,6 @@ class RS_Workspace(QMainWindow):
         )
 
     def initToolbar(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         self.toolbar = self.addToolBar(translations[lang]["file"])
         self.toolbarLabel(
             self.toolbar,
@@ -951,7 +944,6 @@ class RS_Workspace(QMainWindow):
         return detector.result["encoding"]
 
     def New(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         if self.is_saved == True:
             self.DocumentArea.clear()
             self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
@@ -1000,7 +992,6 @@ class RS_Workspace(QMainWindow):
 
     def Open(self):
         options = QFileDialog.Options()
-        settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
         selected_file, _ = QFileDialog.getOpenFileName(
             self,
@@ -1053,7 +1044,6 @@ class RS_Workspace(QMainWindow):
 
     def SaveAs(self):
         options = QFileDialog.Options()
-        settings = QSettings("berkaygediz", "RichSpan")
         options |= QFileDialog.ReadOnly
         selected_file, _ = QFileDialog.getSaveFileName(
             self,
@@ -1108,7 +1098,6 @@ class RS_Workspace(QMainWindow):
         preview_dialog.exec()
 
     def addImage(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
         selected_file, _ = QFileDialog.getOpenFileName(
@@ -1201,7 +1190,6 @@ class RS_Workspace(QMainWindow):
         self.DocumentArea.setCurrentFont(font)
 
     def find(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         self.find_dialog = QInputDialog(self)
         self.find_dialog.setInputMode(QInputDialog.TextInput)
         app_language = lang
@@ -1216,7 +1204,6 @@ class RS_Workspace(QMainWindow):
         self.DocumentArea.find(text)
 
     def replace(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         self.replace_dialog = QInputDialog(self)
         self.replace_dialog.setInputMode(QInputDialog.TextInput)
         self.replace_dialog.setLabelText(translations[lang]["replace"])
