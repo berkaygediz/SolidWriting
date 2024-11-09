@@ -3,12 +3,15 @@ import datetime
 import locale
 import mimetypes
 import os
+import re
 import sys
 
 import chardet
 import mammoth
 import psutil
+import torch
 from langdetect import DetectorFactory, detect
+from llama_cpp import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtOpenGL import *
@@ -18,9 +21,6 @@ from PySide6.QtWidgets import *
 
 from modules.globals import *
 from modules.threading import *
-
-# from llama_cpp import LLM
-
 
 try:
     from ctypes import windll
@@ -32,7 +32,6 @@ except ImportError:
 try:
     settings = QSettings("berkaygediz", "RichSpan")
     lang = settings.value("appLanguage")
-    # llmmodel = settings.value("LLMmodel")
 except:
     pass
 
@@ -107,17 +106,120 @@ class RS_About(QMainWindow):
         self.setCentralWidget(self.about_label)
 
 
+class RS_Help(QMainWindow):
+    def __init__(self, parent=None):
+        super(RS_Help, self).__init__(parent)
+        self.setWindowFlags(Qt.Dialog)
+        self.setWindowIcon(QIcon(fallbackValues["icon"]))
+        self.setWindowModality(Qt.WindowModality.WindowModal)
+        self.setMinimumSize(540, 460)
+
+        self.setGeometry(
+            QStyle.alignedRect(
+                Qt.LeftToRight,
+                Qt.AlignCenter,
+                self.size(),
+                QApplication.primaryScreen().availableGeometry(),
+            )
+        )
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        main_widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 20, 0, 0)
+
+        self.help_label = QLabel()
+        self.help_label.setWordWrap(True)
+        self.help_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.help_label.setTextFormat(Qt.RichText)
+        lang = settings.value("appLanguage")
+        self.help_label.setText(
+            "<html><head><style>"
+            "table {border-collapse: collapse; width: 80%; margin: auto;}"
+            "th, td {text-align: left; padding: 8px;}"
+            "tr:nth-child(even) {background-color: #f2f2f2;}"
+            "tr:hover {background-color: #ddd;}"
+            "th {background-color: #0D47A1; color: white;}"
+            "body {text-align: center;}"
+            "</style></head><body>"
+            "<h1>Help</h1>"
+            "<table><tr><th>Shortcut</th><th>Function</th></tr>"
+            f"</tr><tr><td>Ctrl+N</td><td>{translations[lang]['new_message']}</td></tr>"
+            f"<tr><td>Ctrl+O</td><td>{translations[lang]['open_message']}</td></tr>"
+            f"<tr><td>Ctrl+S</td><td>{translations[lang]['save_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+S</td><td>{translations[lang]['save_as_message']}</td></tr>"
+            f"<tr><td>Ctrl+P</td><td>{translations[lang]['print_message']}</td></tr>"
+            f"<tr><td>Ctrl+Z</td><td>{translations[lang]['undo_message']}</td></tr>"
+            f"<tr><td>Ctrl+Y</td><td>{translations[lang]['redo_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+T</td><td>{translations[lang]['darklight_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+D</td><td>{translations[lang]['help_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+C</td><td>{translations[lang]['font_color_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+B</td><td>{translations[lang]['contentBackgroundColor_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+F</td><td>{translations[lang]['font_message']}</td></tr>"
+            f"<tr><td>Ctrl++</td><td>{translations[lang]['inc_font_message']}</td></tr>"
+            f"<tr><td>Ctrl+-</td><td>{translations[lang]['dec_font_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+P</td><td>{translations[lang]['image_message']}</td></tr>"
+            f"<tr><td>Ctrl+F</td><td>{translations[lang]['find_message']}</td></tr>"
+            f"<tr><td>Ctrl+H</td><td>{translations[lang]['replace_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+U</td><td>{translations[lang]['bullet']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+O</td><td>{translations[lang]['numbered']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+R</td><td>{translations[lang]['right']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+L</td><td>{translations[lang]['left']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+E</td><td>{translations[lang]['center']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+J</td><td>{translations[lang]['justify']}</td></tr>"
+            "</table></body></html>"
+        )
+
+        layout.addWidget(self.help_label)
+        main_widget.setLayout(layout)
+        scroll_area.setWidget(main_widget)
+
+        self.setCentralWidget(scroll_area)
+
+
 class RS_Workspace(QMainWindow):
     def __init__(self, parent=None):
         super(RS_Workspace, self).__init__(parent)
-        # self.model = LLM(model_path=llmmodel)
+        self.hardwareCore = self.acceleratorHardware()
         QTimer.singleShot(0, self.initUI)
+
+    def loadLLM(self):
+        try:
+            # model_qwen2_15b = "qwen2-1_5b-instruct-q5_k_m.gguf"
+            model_filename = "codeqwen-1_5-7b-chat-q5_0.gguf"
+            current_directory = os.getcwd()
+
+            model_path = os.path.join(current_directory, model_filename)
+
+            if os.path.exists(model_path):
+                self.llm = Llama(model_path)
+            else:
+                print(f"ERROR: {model_path}")
+                self.llm = None
+
+        except Exception as e:
+            print(str(e))
+
+    def acceleratorHardware(self):
+        if torch.cuda.is_available():  # NVIDIA
+            return "cuda"
+        elif torch.backends.mps.is_available():  # Metal API
+            return "mps"
+        elif torch.cuda.is_available() and torch.cuda.device_count() > 0:  # AMD
+            return "rocm"
+        else:  # CPU
+            return "cpu"
 
     def initUI(self):
         starttime = datetime.datetime.now()
         self.setWindowIcon(QIcon(fallbackValues["icon"]))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumSize(768, 540)
+        self.llm = None
         system_language = locale.getlocale()[1]
         if system_language not in languages.items():
             settings.setValue("appLanguage", "1252")
@@ -145,8 +247,8 @@ class RS_Workspace(QMainWindow):
         self.default_directory = QDir().homePath()
         self.directory = self.default_directory
 
-        self.initDock()
-        self.dock_widget.hide()
+        self.LLMinitDock()
+        self.ai_widget.hide()
 
         self.status_bar = self.statusBar()
         self.DocumentArea = QTextEdit()
@@ -234,11 +336,6 @@ class RS_Workspace(QMainWindow):
     def textChanged(self):
         if not self.text_changed_timer.isActive():
             self.text_changed_timer.start()
-
-    # def predict(self):
-    #     prompt = self.input_text.toPlainText()
-    #     response = self.model(prompt)
-    #     self.output_label.setText(response['text'])
 
     def updateStatistics(self, lang=lang):
         self.text_changed_timer.stop()
@@ -453,14 +550,16 @@ class RS_Workspace(QMainWindow):
         self.theme_action.setStatusTip(translations[lang]["darklight_message"])
         self.powersaveraction.setText(translations[lang]["powersaver"])
         self.powersaveraction.setStatusTip(translations[lang]["powersaver_message"])
-        self.hide_dock_widget_action.setText(f"{translations[lang]["help"]} && AI")
-        self.hide_dock_widget_action.setStatusTip(translations[lang]["help_message"])
+        self.hide_ai_dock.setText("AI")
+        self.hide_ai_dock.setStatusTip("AI")
         self.findaction.setText(translations[lang]["find"])
         self.findaction.setStatusTip(translations[lang]["find_message"])
         self.replaceaction.setText(translations[lang]["replace"])
         self.replaceaction.setStatusTip(translations[lang]["replace_message"])
-        self.aboutaction.setText(translations[lang]["about"])
-        self.aboutaction.setStatusTip(translations[lang]["about"])
+        self.helpAction.setText(translations[lang]["help"])
+        self.helpAction.setStatusTip(translations[lang]["help"])
+        self.aboutAction.setText(translations[lang]["about"])
+        self.aboutAction.setStatusTip(translations[lang]["about"])
         self.alignrightevent.setText(translations[lang]["right"])
         self.alignrightevent.setStatusTip(translations[lang]["right_message"])
         self.aligncenterevent.setText(translations[lang]["center"])
@@ -487,48 +586,9 @@ class RS_Workspace(QMainWindow):
         )
         self.fontfamily.setText(translations[lang]["font"])
         self.fontfamily.setStatusTip(translations[lang]["font_message"])
-        self.dock_widget.setWindowTitle(translations[lang]["help"] + " && AI")
         self.addimage.setText(translations[lang]["image"])
         self.addimage.setStatusTip(translations[lang]["image_message"])
-        self.dock_widget.setWidget(self.helpText)
-        self.helpText.setText(
-            "<html><head><style>"
-            "table { width: 100%; }"
-            "th, td {text-align: left; padding: 8px;}"
-            "tr:nth-child(even) {background-color: #f2f2f2;}"
-            "tr:hover {background-color: #ddd;}"
-            "th {background-color: #4CAF50; color: white;}"
-            "td {background-color: #000000; color: white;}"
-            "p {background-color: red; color: white; padding: 12px; }"
-            "</style></head><body>"
-            "<table width='100%'><tr>"
-            f"<th>{translations[lang]['help_shortcut']}</th>"
-            f"<th>{translations[lang]['help_description']}</th>"
-            f"</tr><tr><td>Ctrl+N</td><td>{translations[lang]['new_message']}</td></tr>"
-            f"<tr><td>Ctrl+O</td><td>{translations[lang]['open_message']}</td></tr>"
-            f"<tr><td>Ctrl+S</td><td>{translations[lang]['save_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+S</td><td>{translations[lang]['save_as_message']}</td></tr>"
-            f"<tr><td>Ctrl+P</td><td>{translations[lang]['print_message']}</td></tr>"
-            f"<tr><td>Ctrl+Z</td><td>{translations[lang]['undo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Y</td><td>{translations[lang]['redo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+T</td><td>{translations[lang]['darklight_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+D</td><td>{translations[lang]['help_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+C</td><td>{translations[lang]['font_color_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+B</td><td>{translations[lang]['contentBackgroundColor_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+F</td><td>{translations[lang]['font_message']}</td></tr>"
-            f"<tr><td>Ctrl++</td><td>{translations[lang]['inc_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+-</td><td>{translations[lang]['dec_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+P</td><td>{translations[lang]['image_message']}</td></tr>"
-            f"<tr><td>Ctrl+F</td><td>{translations[lang]['find_message']}</td></tr>"
-            f"<tr><td>Ctrl+H</td><td>{translations[lang]['replace_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+U</td><td>{translations[lang]['bullet']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+O</td><td>{translations[lang]['numbered']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+R</td><td>{translations[lang]['right']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+L</td><td>{translations[lang]['left']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+E</td><td>{translations[lang]['center']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+J</td><td>{translations[lang]['justify']}</td></tr>"
-            "</table><center><p>NOTE: <b>AI</b> support planned.</p></center></body></html>"
-        )
+        self.ai_widget.setWindowTitle("AI")
 
     def initArea(self):
         self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
@@ -544,75 +604,162 @@ class RS_Workspace(QMainWindow):
         self.DocumentArea.setTabStopDistance(27)
         self.DocumentArea.document().setDocumentMargin(self.width() * 0.25)
 
-    def initDock(self):
-        self.dock_widget = QDockWidget(f"{translations[lang]["help"]} && AI", self)
-        self.dock_widget.setObjectName("Help & AI")
-        self.dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_widget)
+    def LLMwarningCPU(self):
+        message = (
+            "Your device does not have GPU support. Running intensive AI operations on the CPU "
+            "may result in high CPU utilization, causing system performance degradation and potential "
+            "long-term damage. This could lead to overheating, system instability, or permanent hardware damage. "
+            "By proceeding with CPU usage, you acknowledge and accept the risks associated with these operations. "
+            "Do you still wish to continue?"
+        )
+
+        reply = QMessageBox.question(
+            self,
+            None,
+            message,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+
+        if reply == QMessageBox.Yes:
+            QTimer.singleShot(500, self.loadLLM)
+
+        if reply == QMessageBox.No:
+            self.ai_widget.setWidget(QLabel("GPU/NPU not available."))
+
+    def LLMinitDock(self):
+        self.statistics_label = QLabel()
+        self.ai_widget = QDockWidget("AI", self)
+        self.ai_widget.setObjectName("AI")
+        self.ai_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.ai_widget)
+
+        main_layout = QVBoxLayout()
 
         self.scrollableArea = QScrollArea()
-        self.AI_QVBox = QVBoxLayout()
-        self.statistics_label = QLabel()
-        self.helpText = QLabel()
-        self.helpText.setWordWrap(True)
-        self.helpText.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.helpText.setTextFormat(Qt.RichText)
-        self.helpText.setText(
-            "<html><head><style>"
-            "table { width: 100%; }"
-            "th, td {text-align: left; padding: 8px;}"
-            "tr:nth-child(even) {background-color: #f2f2f2;}"
-            "tr:hover {background-color: #ddd;}"
-            "th {background-color: #4CAF50; color: white;}"
-            "td {background-color: #000000; color: white;}"
-            "p {background-color: red; color: white; padding: 12px; }"
-            "</style></head><body>"
-            "<table width='100%'><tr>"
-            f"<th>{translations[lang]['help_shortcut']}</th>"
-            f"<th>{translations[lang]['help_description']}</th>"
-            f"</tr><tr><td>Ctrl+N</td><td>{translations[lang]['new_message']}</td></tr>"
-            f"<tr><td>Ctrl+O</td><td>{translations[lang]['open_message']}</td></tr>"
-            f"<tr><td>Ctrl+S</td><td>{translations[lang]['save_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+S</td><td>{translations[lang]['save_as_message']}</td></tr>"
-            f"<tr><td>Ctrl+P</td><td>{translations[lang]['print_message']}</td></tr>"
-            f"<tr><td>Ctrl+Z</td><td>{translations[lang]['undo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Y</td><td>{translations[lang]['redo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+T</td><td>{translations[lang]['darklight_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+D</td><td>{translations[lang]['help_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+C</td><td>{translations[lang]['font_color_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+B</td><td>{translations[lang]['contentBackgroundColor_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+F</td><td>{translations[lang]['font_message']}</td></tr>"
-            f"<tr><td>Ctrl++</td><td>{translations[lang]['inc_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+-</td><td>{translations[lang]['dec_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+P</td><td>{translations[lang]['image_message']}</td></tr>"
-            f"<tr><td>Ctrl+F</td><td>{translations[lang]['find_message']}</td></tr>"
-            f"<tr><td>Ctrl+H</td><td>{translations[lang]['replace_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+U</td><td>{translations[lang]['bullet']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+O</td><td>{translations[lang]['numbered']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+R</td><td>{translations[lang]['right']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+L</td><td>{translations[lang]['left']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+E</td><td>{translations[lang]['center']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+J</td><td>{translations[lang]['justify']}</td></tr>"
-            "</table><center><p>NOTE: <b>AI</b> support planned.</p></center></body></html>"
-        )
-        self.AI_QVBox.addWidget(self.helpText)
+        self.messages_layout = QVBoxLayout()
 
-        self.dock_widget.setObjectName("Help")
-        self.dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.dock_widget)
+        self.input_text = QTextEdit()
+        self.input_text.setPlaceholderText("...")
+        self.input_text.setFixedHeight(80)
+        main_layout.addWidget(self.input_text)
 
-        self.dock_widget.setWidget(self.scrollableArea)
+        self.predict_button = QPushButton("->")
+        self.predict_button.clicked.connect(self.LLMpredict)
+        main_layout.addWidget(self.predict_button)
 
-        self.dock_widget.setFeatures(
-            QDockWidget.NoDockWidgetFeatures | QDockWidget.DockWidgetClosable
-        )
-        self.dock_widget.setWidget(self.scrollableArea)
         self.scrollableArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.scrollableArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.scrollableArea.setWidgetResizable(True)
         scroll_contents = QWidget()
-        scroll_contents.setLayout(self.AI_QVBox)
+        scroll_contents.setLayout(self.messages_layout)
         self.scrollableArea.setWidget(scroll_contents)
+
+        main_layout.addWidget(self.scrollableArea)
+
+        container = QWidget()
+        container.setLayout(main_layout)
+        self.ai_widget.setWidget(container)
+
+        if self.hardwareCore == "cpu":
+            self.LLMwarningCPU()
+
+        self.ai_widget.setFeatures(
+            QDockWidget.NoDockWidgetFeatures | QDockWidget.DockWidgetClosable
+        )
+
+    def LLMmessage(self, text, is_user=True):
+        DetectorFactory.seed = 0
+        language = detect(text)
+
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        text = self.LLMconvertMarkdownHTML(text)
+
+        message_widget = QWidget()
+        message_layout = QHBoxLayout()
+
+        message_label = QLabel(f"{text}\n\n\n({current_time} - {language})")
+        message_label.setWordWrap(True)
+        message_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        message_label.setTextFormat(Qt.RichText)
+
+        if is_user:
+            message_label.setStyleSheet(
+                "background-color: #d1e7ff; color: #000; border-radius: 15px; padding: 10px; margin: 5px;"
+            )
+            message_layout.addWidget(message_label, alignment=Qt.AlignRight)
+        else:
+            message_label.setStyleSheet(
+                "background-color: #f1f1f1; color: #000; border-radius: 15px; padding: 10px; margin: 5px;"
+            )
+            message_layout.addWidget(message_label, alignment=Qt.AlignLeft)
+
+        message_widget.setLayout(message_layout)
+        self.messages_layout.addWidget(message_widget)
+
+    def LLMpredict(self):
+        prompt = self.input_text.toPlainText().strip()
+
+        self.predict_button.setText("...")
+        self.predict_button.setEnabled(False)
+
+        QTimer.singleShot(0, lambda: self.LLMprompt(prompt))
+
+    def LLMprompt(self, prompt):
+        if prompt:
+            self.LLMmessage(prompt, is_user=True)
+            response = self.LLMresponse(prompt)
+            self.LLMmessage(response, is_user=False)
+            self.input_text.clear()
+        else:
+            self.LLMmessage("Please enter a question.", is_user=False)
+
+        self.predict_button.setText("->")
+        self.predict_button.setEnabled(True)
+
+    def LLMresponse(self, prompt):
+        try:
+            response = self.llm.create_chat_completion(
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response["choices"][0]["message"]["content"]
+        except Exception as e:
+            return str(e)
+
+    def LLMconvertMarkdownHTML(self, markdown_text):
+        markdown_text = self.LLMconvertCodeHTML(markdown_text)
+
+        markdown_text = (
+            markdown_text.replace("**", "<b>")
+            .replace("__", "<b>")
+            .replace("**", "</b>")
+            .replace("__", "</b>")
+        )
+        markdown_text = (
+            markdown_text.replace("*", "<i>")
+            .replace("_", "<i>")
+            .replace("*", "</i>")
+            .replace("_", "</i>")
+        )
+
+        return markdown_text
+
+    def LLMconvertCodeHTML(self, text):
+        def replace_code_block(match):
+            code = match.group(1).strip()
+            return f"<pre><code>{self.LLMescapeHTML(code)}</code></pre>"
+
+        return re.sub(r"```(.*?)```", replace_code_block, text, flags=re.DOTALL)
+
+    def LLMescapeHTML(self, text):
+        return (
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&#039;")
+        )
 
     def toolbarLabel(self, toolbar, text):
         label = QLabel(f"<b>{text}</b>")
@@ -629,171 +776,202 @@ class RS_Workspace(QMainWindow):
         return action
 
     def initActions(self):
-        self.newaction = self.createAction(
-            translations[lang]["new"],
-            translations[lang]["new_message"],
-            self.New,
-            QKeySequence.New,
-            "",
-        )
-        self.openaction = self.createAction(
-            translations[lang]["open"],
-            translations[lang]["open_message"],
-            self.Open,
-            QKeySequence.Open,
-            "",
-        )
-        self.saveaction = self.createAction(
-            translations[lang]["save"],
-            translations[lang]["save_message"],
-            self.Save,
-            QKeySequence.Save,
-            "",
-        )
-        self.saveasaction = self.createAction(
-            translations[lang]["save_as"],
-            translations[lang]["save_as_message"],
-            self.SaveAs,
-            QKeySequence.SaveAs,
-            "",
-        )
-        self.printaction = self.createAction(
-            translations[lang]["print"],
-            translations[lang]["print_message"],
-            self.PrintDocument,
-            QKeySequence.Print,
-            "",
-        )
-        self.findaction = self.createAction(
-            translations[lang]["find"],
-            translations[lang]["find_message"],
-            self.find,
-            QKeySequence.Find,
-            "",
-        )
-        self.replaceaction = self.createAction(
-            translations[lang]["replace"],
-            translations[lang]["replace_message"],
-            self.replace,
-            QKeySequence.Replace,
-            "",
-        )
-        self.undoaction = self.createAction(
-            translations[lang]["undo"],
-            translations[lang]["undo_message"],
-            self.DocumentArea.undo,
-            QKeySequence.Undo,
-            "",
-        )
-        self.redoaction = self.createAction(
-            translations[lang]["redo"],
-            translations[lang]["redo_message"],
-            self.DocumentArea.redo,
-            QKeySequence.Redo,
-            "",
-        )
-        self.alignrightevent = self.createAction(
-            translations[lang]["right"],
-            translations[lang]["right_message"],
-            lambda: self.Align(Qt.AlignRight),
-        )
-        self.alignleftevent = self.createAction(
-            translations[lang]["left"],
-            translations[lang]["left_message"],
-            lambda: self.Align(Qt.AlignLeft),
-        )
-        self.aligncenterevent = self.createAction(
-            translations[lang]["center"],
-            translations[lang]["center_message"],
-            lambda: self.Align(Qt.AlignCenter),
-        )
-        self.alignjustifiedevent = self.createAction(
-            translations[lang]["justify"],
-            translations[lang]["justify_message"],
-            lambda: self.Align(Qt.AlignJustify),
-        )
-        self.bulletevent = self.createAction(
-            translations[lang]["bullet"],
-            "",
-            self.Bullet,
-            QKeySequence("Ctrl+Shift+U"),
-            "",
-        )
-        self.numberedevent = self.createAction(
-            translations[lang]["numbered"],
-            "",
-            self.Numbered,
-            QKeySequence("Ctrl+Shift+O"),
-            "",
-        )
-        self.bold = self.createAction(
-            translations[lang]["bold"],
-            translations[lang]["bold_message"],
-            self.ContentBold,
-            QKeySequence.Bold,
-            "",
-        )
-        self.italic = self.createAction(
-            translations[lang]["italic"],
-            translations[lang]["italic_message"],
-            self.ContentItalic,
-            QKeySequence.Italic,
-            "",
-        )
-        self.underline = self.createAction(
-            translations[lang]["underline"],
-            translations[lang]["underline_message"],
-            self.ContentUnderline,
-            QKeySequence.Underline,
-            "",
-        )
-        self.color = self.createAction(
-            translations[lang]["font_color"],
-            translations[lang]["font_color_message"],
-            self.ContentColor,
-            QKeySequence("Ctrl+Shift+C"),
-            "",
-        )
-        self.backgroundcolor = self.createAction(
-            translations[lang]["contentBackgroundColor"],
-            translations[lang]["contentBackgroundColor_message"],
-            self.ContentBGColor,
-            QKeySequence("Ctrl+Shift+B"),
-            "",
-        )
-        self.fontfamily = self.createAction(
-            translations[lang]["font"],
-            translations[lang]["font_message"],
-            self.ContentFont,
-            QKeySequence("Ctrl+Shift+F"),
-            "",
-        )
-        self.inc_fontaction = self.createAction(
-            "A+",
-            translations[lang]["inc_font_message"],
-            self.incFont,
-            QKeySequence("Ctrl++"),
-        )
-        self.dec_fontaction = self.createAction(
-            "A-",
-            translations[lang]["dec_font_message"],
-            self.decFont,
-            QKeySequence("Ctrl+-"),
-        )
-        self.addimage = self.createAction(
-            translations[lang]["image"],
-            translations[lang]["image_message"],
-            self.addImage,
-            QKeySequence("Ctrl+Shift+P"),
-            "",
-        )
-        self.aboutaction = self.createAction(
-            translations[lang]["about"],
-            "",
-            self.viewAbout,
-            QKeySequence("Ctrl+Shift+I"),
-            "",
-        )
+        action_definitions = [
+            {
+                "name": "newaction",
+                "text": translations[lang]["new"],
+                "status_tip": translations[lang]["new_message"],
+                "function": self.New,
+                "shortcut": QKeySequence.New,
+            },
+            {
+                "name": "openaction",
+                "text": translations[lang]["open"],
+                "status_tip": translations[lang]["open_message"],
+                "function": self.Open,
+                "shortcut": QKeySequence.Open,
+            },
+            {
+                "name": "saveaction",
+                "text": translations[lang]["save"],
+                "status_tip": translations[lang]["save_message"],
+                "function": self.Save,
+                "shortcut": QKeySequence.Save,
+            },
+            {
+                "name": "saveasaction",
+                "text": translations[lang]["save_as"],
+                "status_tip": translations[lang]["save_as_message"],
+                "function": self.SaveAs,
+                "shortcut": QKeySequence.SaveAs,
+            },
+            {
+                "name": "printaction",
+                "text": translations[lang]["print"],
+                "status_tip": translations[lang]["print_message"],
+                "function": self.PrintDocument,
+                "shortcut": QKeySequence.Print,
+            },
+            {
+                "name": "findaction",
+                "text": translations[lang]["find"],
+                "status_tip": translations[lang]["find_message"],
+                "function": self.find,
+                "shortcut": QKeySequence.Find,
+            },
+            {
+                "name": "replaceaction",
+                "text": translations[lang]["replace"],
+                "status_tip": translations[lang]["replace_message"],
+                "function": self.replace,
+                "shortcut": QKeySequence.Replace,
+            },
+            {
+                "name": "undoaction",
+                "text": translations[lang]["undo"],
+                "status_tip": translations[lang]["undo_message"],
+                "function": self.DocumentArea.undo,
+                "shortcut": QKeySequence.Undo,
+            },
+            {
+                "name": "redoaction",
+                "text": translations[lang]["redo"],
+                "status_tip": translations[lang]["redo_message"],
+                "function": self.DocumentArea.redo,
+                "shortcut": QKeySequence.Redo,
+            },
+            {
+                "name": "alignrightevent",
+                "text": translations[lang]["right"],
+                "status_tip": translations[lang]["right_message"],
+                "function": lambda: self.Align(Qt.AlignRight),
+                "shortcut": "",
+            },
+            {
+                "name": "alignleftevent",
+                "text": translations[lang]["left"],
+                "status_tip": translations[lang]["left_message"],
+                "function": lambda: self.Align(Qt.AlignLeft),
+                "shortcut": "",
+            },
+            {
+                "name": "aligncenterevent",
+                "text": translations[lang]["center"],
+                "status_tip": translations[lang]["center_message"],
+                "function": lambda: self.Align(Qt.AlignCenter),
+                "shortcut": "",
+            },
+            {
+                "name": "alignjustifiedevent",
+                "text": translations[lang]["justify"],
+                "status_tip": translations[lang]["justify_message"],
+                "function": lambda: self.Align(Qt.AlignJustify),
+                "shortcut": "",
+            },
+            {
+                "name": "bulletevent",
+                "text": translations[lang]["bullet"],
+                "status_tip": "",
+                "function": self.Bullet,
+                "shortcut": QKeySequence("Ctrl+Shift+U"),
+            },
+            {
+                "name": "numberedevent",
+                "text": translations[lang]["numbered"],
+                "status_tip": "",
+                "function": self.Numbered,
+                "shortcut": QKeySequence("Ctrl+Shift+O"),
+            },
+            {
+                "name": "bold",
+                "text": translations[lang]["bold"],
+                "status_tip": translations[lang]["bold_message"],
+                "function": self.ContentBold,
+                "shortcut": QKeySequence.Bold,
+            },
+            {
+                "name": "italic",
+                "text": translations[lang]["italic"],
+                "status_tip": translations[lang]["italic_message"],
+                "function": self.ContentItalic,
+                "shortcut": QKeySequence.Italic,
+            },
+            {
+                "name": "underline",
+                "text": translations[lang]["underline"],
+                "status_tip": translations[lang]["underline_message"],
+                "function": self.ContentUnderline,
+                "shortcut": QKeySequence.Underline,
+            },
+            {
+                "name": "color",
+                "text": translations[lang]["font_color"],
+                "status_tip": translations[lang]["font_color_message"],
+                "function": self.ContentColor,
+                "shortcut": QKeySequence("Ctrl+Shift+C"),
+            },
+            {
+                "name": "backgroundcolor",
+                "text": translations[lang]["contentBackgroundColor"],
+                "status_tip": translations[lang]["contentBackgroundColor_message"],
+                "function": self.ContentBGColor,
+                "shortcut": QKeySequence("Ctrl+Shift+B"),
+            },
+            {
+                "name": "fontfamily",
+                "text": translations[lang]["font"],
+                "status_tip": translations[lang]["font_message"],
+                "function": self.ContentFont,
+                "shortcut": QKeySequence("Ctrl+Shift+F"),
+            },
+            {
+                "name": "inc_fontaction",
+                "text": "A+",
+                "status_tip": translations[lang]["inc_font_message"],
+                "function": self.incFont,
+                "shortcut": QKeySequence("Ctrl++"),
+            },
+            {
+                "name": "dec_fontaction",
+                "text": "A-",
+                "status_tip": translations[lang]["dec_font_message"],
+                "function": self.decFont,
+                "shortcut": QKeySequence("Ctrl+-"),
+            },
+            {
+                "name": "addimage",
+                "text": translations[lang]["image"],
+                "status_tip": translations[lang]["image_message"],
+                "function": self.addImage,
+                "shortcut": QKeySequence("Ctrl+Shift+P"),
+            },
+            {
+                "name": "helpAction",
+                "text": translations[lang]["help"],
+                "status_tip": translations[lang]["help_message"],
+                "function": self.viewHelp,
+                "shortcut": QKeySequence("Ctrl+H"),
+            },
+            {
+                "name": "aboutAction",
+                "text": translations[lang]["about"],
+                "status_tip": translations[lang]["about"],
+                "function": self.viewAbout,
+                "shortcut": QKeySequence("Ctrl+Shift+I"),
+            },
+        ]
+
+        for action_def in action_definitions:
+            setattr(
+                self,
+                action_def["name"],
+                self.createAction(
+                    action_def["text"],
+                    action_def["status_tip"],
+                    action_def["function"],
+                    action_def["shortcut"],
+                ),
+            )
 
     def initToolbar(self):
         self.toolbar = self.addToolBar(translations[lang]["file"])
@@ -848,15 +1026,16 @@ class RS_Workspace(QMainWindow):
 
         self.powersaveraction.setChecked(response_exponential > 1)
         self.toolbar.addAction(self.powersaveraction)
-        self.hide_dock_widget_action = self.createAction(
-            translations[lang]["help"] + " && AI",
-            translations[lang]["help_message"],
+        self.hide_ai_dock = self.createAction(
+            "AI",
+            "AI",
             self.toggleDock,
             QKeySequence("Ctrl+Shift+D"),
             "",
         )
-        self.toolbar.addAction(self.hide_dock_widget_action)
-        self.toolbar.addAction(self.aboutaction)
+        self.toolbar.addAction(self.hide_ai_dock)
+        self.toolbar.addAction(self.helpAction)
+        self.toolbar.addAction(self.aboutAction)
         self.language_combobox = QComboBox(self)
         self.language_combobox.setStyleSheet("background-color:#000000; color:#FFFFFF;")
         for lcid, name in languages.items():
@@ -918,10 +1097,10 @@ class RS_Workspace(QMainWindow):
         self.toolbar.addActions([self.addimage])
 
     def toggleDock(self):
-        if self.dock_widget.isHidden():
-            self.dock_widget.show()
+        if self.ai_widget.isHidden():
+            self.ai_widget.show()
         else:
-            self.dock_widget.hide()
+            self.ai_widget.hide()
 
     def hybridSaver(self, checked):
         settings = QSettings("berkaygediz", "RichSpan")
@@ -1131,6 +1310,10 @@ class RS_Workspace(QMainWindow):
     def viewAbout(self):
         self.about_window = RS_About()
         self.about_window.show()
+
+    def viewHelp(self):
+        help_window = RS_Help(self)
+        help_window.show()
 
     def Align(self, alignment):
         self.DocumentArea.setAlignment(alignment)
