@@ -4,3 +4,4 @@ chardet==5.2.0
 psutil==6.0.0
 langdetect==1.0.9
 pyinstaller==6.10.0
+llama-cpp-python==0.3.1

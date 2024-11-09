@@ -19,6 +19,9 @@ from PySide6.QtWidgets import *
 from modules.globals import *
 from modules.threading import *
 
+# from llama_cpp import LLM
+
+
 try:
     from ctypes import windll
 
@@ -29,6 +32,7 @@ except ImportError:
 try:
     settings = QSettings("berkaygediz", "RichSpan")
     lang = settings.value("appLanguage")
+    # llmmodel = settings.value("LLMmodel")
 except:
     pass
 
@@ -106,6 +110,7 @@ class RS_About(QMainWindow):
 class RS_Workspace(QMainWindow):
     def __init__(self, parent=None):
         super(RS_Workspace, self).__init__(parent)
+        # self.model = LLM(model_path=llmmodel)
         QTimer.singleShot(0, self.initUI)
 
     def initUI(self):
@@ -229,6 +234,11 @@ class RS_Workspace(QMainWindow):
     def textChanged(self):
         if not self.text_changed_timer.isActive():
             self.text_changed_timer.start()
+
+    # def predict(self):
+    #     prompt = self.input_text.toPlainText()
+    #     response = self.model(prompt)
+    #     self.output_label.setText(response['text'])
 
     def updateStatistics(self, lang=lang):
         self.text_changed_timer.stop()
