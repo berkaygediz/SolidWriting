@@ -1,29 +1,40 @@
-# RichSpan - A Lightweight Word Processor
+# RichSpan - A Supercharged Word Processor
 
-![Screenshot](images/richspan_banner_1.png)
+<p align="center">
+    <img src="images/richspan_banner_1.png" alt="RichSpan Banner" width="80%" />
+</p>
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/berkaygediz/richspan)
-![GitHub repo size](https://img.shields.io/github/repo-size/berkaygediz/richspan)
-![GitHub](https://img.shields.io/github/license/berkaygediz/richspan)
+<p align="center">
+    <a href="https://github.com/berkaygediz/richspan/releases/latest">
+        <img src="https://img.shields.io/github/v/release/berkaygediz/richspan" alt="GitHub release" />
+    </a>
+    <a href="https://github.com/berkaygediz/richspan">
+        <img src="https://img.shields.io/github/repo-size/berkaygediz/richspan" alt="GitHub repo size" />
+    </a>
+    <a href="https://github.com/berkaygediz/richspan">
+        <img src="https://img.shields.io/github/license/berkaygediz/richspan" alt="GitHub license" />
+    </a>
+</p>
 
-RichSpan is a lightweight word processor designed as a simple alternative to traditional word processing software. It is written in Python with a graphical user interface based on PySide6, ensuring cross-platform compatibility across Windows, macOS, and Linux.
+RichSpan is a supercharged word processor offering a powerful alternative to traditional software. Built with Python and PySide6, it ensures cross-platform compatibility on Windows, macOS, and Linux. RichSpan features offline AI chat for content generation, while respecting your privacy by processing all interactions locally on your device.
 
 ## Features
 
-- [x] **Cross-Platform**: Compatible with Windows, macOS, and Linux.
-- [x] **Statistics**: Provides statistical information about the document.
-- [x] **Find & Replace**: Search and replace functionality within the document.
-- [x] **Printing**: Allows print or exporting documents to PDF format.
-- [x] **Document Operations**: Supports .txt, .html, .docx (partial) and .rsdoc (RichSpan Document) file formats.
-- [x] **Text Formatting**: Customize text with color, background color, bold, italic, underline, alignment, font, font size, and font color.
-- [x] **Undo and Redo**: Provides undo and redo functionalities for editing operations.
-- [x] **User Experience**: Features drag and drop functionality, supports dark mode, and provides alerts for unsaved changes.
-- [x] **Base64 Image Support**: Supports embedding images using Base64 encoding.
-- [x] **Customizable Toolbar**: Allows customization of the user interface toolbar.
+- [x] **Cross-Platform**: Fully compatible with Windows, macOS, and Linux.
+- [x] **Document Statistics**: Provides key statistical information about the document.
+- [x] **Find & Replace**: Search and replace text within your document.
+- [x] **Printing & Exporting**: Print or export documents to PDF format.
+- [x] **File Format Support**: Supports .txt, .html, .docx (partial), and .rsdoc (RichSpan) file formats.
+- [x] **Text Formatting**: Customize text with options like color, background color, bold, italic, underline, font style, size, and alignment.
+- [x] **Undo & Redo**: Easily undo or redo any edits made in the document.
+- [x] **User Experience**: Drag and drop functionality, dark mode support, and alerts for unsaved changes.
+- [x] **Base64 Image Support**: Embed images in documents using Base64 encoding.
+- [x] **Customizable Toolbar**: Personalize the user interface toolbar to suit your workflow.
 - [x] **Performance**: Fast and lightweight with threading support and hardware acceleration.
-- [x] **Multilingual**: Available in English, Turkish, German, Spanish, Azerbaijani, Uzbek, Chinese, Arabic.
-- [x] **Enumeration and Bullet List**: Includes support for creating numbered and bulleted lists.
-- [x] **Adaptive Power Saver**: Optimized for power consumption. Hybrid ultra and standard power saving mode.
+- [x] **Multilingual Support**: Available in multiple languages including English, Deutsch, Español, Türkçe, Azərbaycanca, Uzbek, 中文 (Chinese), 한국어 (Korean), 日本語 (Japanese), العربية (Arabic), Русский (Russian), Français, Ελληνικά (Greek).
+- [x] **Lists**: Create numbered or bulleted lists.
+- [x] **Adaptive Power Saving**: Optimized for power efficiency with hybrid ultra and standard power saving modes.
+- [x] **Offline AI Chat**: Offline AI chat powered by a local language model, enabling direct interaction for questions and content generation, with automatic language detection.
 
 ## Prerequisites
 
@@ -34,6 +45,8 @@ RichSpan is a lightweight word processor designed as a simple alternative to tra
 - psutil
 - langdetect
 - pyinstaller
+- llama-cpp-python
+- torch
 
 ## Installation
 
