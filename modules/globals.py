@@ -2,13 +2,13 @@ from PySide6.QtCore import *
 
 fallbackValues = {
     "icon": "richspan_icon.ico",
-    "fontFamily": "Helvetica",
-    "fontSize": 14,
+    "fontFamily": "Segoe UI",
+    "fontSize": 9,
     "bold": False,
-    "italic": False,
+    "italic": False,    
     "underline": False,
     "contentAlign": Qt.AlignmentFlag.AlignLeft,
-    "contentColor": "#000000",
+    "contentColor": "#FFFFFF",
     "contentBackgroundColor": "transparent",
     "windowScale": None,
     "defaultDirectory": None,

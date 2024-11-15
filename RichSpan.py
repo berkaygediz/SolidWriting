@@ -184,32 +184,30 @@ class RS_Help(QMainWindow):
 class RS_Workspace(QMainWindow):
     def __init__(self, parent=None):
         super(RS_Workspace, self).__init__(parent)
-        self.hardwareCore = self.acceleratorHardware()
         QTimer.singleShot(0, self.initUI)
 
     def loadLLM(self):
         try:
-            # model_qwen2_15b = "qwen2-1_5b-instruct-q5_k_m.gguf"
             model_filename = "codeqwen-1_5-7b-chat-q5_0.gguf"
             current_directory = os.getcwd()
 
             model_path = os.path.join(current_directory, model_filename)
 
             if os.path.exists(model_path):
-                self.llm = Llama(model_path)
+                self.llm = Llama(model_path, n_gpu_layers=30, n_ctx=3584, n_batch=521)
             else:
-                print(f"ERROR: {model_path}")
                 self.llm = None
-
+        except TypeError as e:
+            print(f"Error: {str(e)}")
         except Exception as e:
-            print(str(e))
+            print(f"{str(e)}")
 
     def acceleratorHardware(self):
         if torch.cuda.is_available():  # NVIDIA
             return "cuda"
         elif torch.backends.mps.is_available():  # Metal API
             return "mps"
-        elif torch.cuda.is_available() and torch.cuda.device_count() > 0:  # AMD
+        elif hasattr(torch.backends, "rocm"):  # AMD
             return "rocm"
         else:  # CPU
             return "cpu"
@@ -219,7 +217,7 @@ class RS_Workspace(QMainWindow):
         self.setWindowIcon(QIcon(fallbackValues["icon"]))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumSize(768, 540)
-        self.llm = None
+
         system_language = locale.getlocale()[1]
         if system_language not in languages.items():
             settings.setValue("appLanguage", "1252")
@@ -246,6 +244,8 @@ class RS_Workspace(QMainWindow):
         self.is_saved = None
         self.default_directory = QDir().homePath()
         self.directory = self.default_directory
+        self.llm = None
+        self.hardwareCore = self.acceleratorHardware()
 
         self.LLMinitDock()
         self.ai_widget.hide()
@@ -277,11 +277,12 @@ class RS_Workspace(QMainWindow):
 
         self.DocumentArea.setDisabled(False)
         self.updateTitle()
-
         endtime = datetime.datetime.now()
         self.status_bar.showMessage(
             str((endtime - starttime).total_seconds()) + " ms", 2500
         )
+        if self.hardwareCore == "cpu":
+            self.LLMwarningCPU()
 
     def closeEvent(self, event):
         if self.is_saved == False:
@@ -661,9 +662,6 @@ class RS_Workspace(QMainWindow):
         container.setLayout(main_layout)
         self.ai_widget.setWidget(container)
 
-        if self.hardwareCore == "cpu":
-            self.LLMwarningCPU()
-
         self.ai_widget.setFeatures(
             QDockWidget.NoDockWidgetFeatures | QDockWidget.DockWidgetClosable
         )
@@ -674,15 +672,19 @@ class RS_Workspace(QMainWindow):
 
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        text = text.replace("\n", "<br>")
         text = self.LLMconvertMarkdownHTML(text)
 
         message_widget = QWidget()
         message_layout = QHBoxLayout()
 
-        message_label = QLabel(f"{text}\n\n\n({current_time} - {language})")
+        message_label = QLabel(f"{text}<br><br>({current_time} - {language})")
         message_label.setWordWrap(True)
         message_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         message_label.setTextFormat(Qt.RichText)
+
+        max_width = 400
+        message_label.setMaximumWidth(max_width)
 
         if is_user:
             message_label.setStyleSheet(
@@ -696,19 +698,24 @@ class RS_Workspace(QMainWindow):
             message_layout.addWidget(message_label, alignment=Qt.AlignLeft)
 
         message_widget.setLayout(message_layout)
+
         self.messages_layout.addWidget(message_widget)
 
     def LLMpredict(self):
         prompt = self.input_text.toPlainText().strip()
 
+        if not prompt:
+            self.LLMmessage("Please enter a question.", is_user=False)
+            return
+
+        self.LLMmessage(prompt, is_user=True)
         self.predict_button.setText("...")
         self.predict_button.setEnabled(False)
 
-        QTimer.singleShot(0, lambda: self.LLMprompt(prompt))
+        QTimer.singleShot(100, lambda: self.LLMprompt(prompt))
 
     def LLMprompt(self, prompt):
         if prompt:
-            self.LLMmessage(prompt, is_user=True)
             response = self.LLMresponse(prompt)
             self.LLMmessage(response, is_user=False)
             self.input_text.clear()
@@ -729,21 +736,15 @@ class RS_Workspace(QMainWindow):
 
     def LLMconvertMarkdownHTML(self, markdown_text):
         markdown_text = self.LLMconvertCodeHTML(markdown_text)
-
-        markdown_text = (
-            markdown_text.replace("**", "<b>")
-            .replace("__", "<b>")
-            .replace("**", "</b>")
-            .replace("__", "</b>")
-        )
-        markdown_text = (
-            markdown_text.replace("*", "<i>")
-            .replace("_", "<i>")
-            .replace("*", "</i>")
-            .replace("_", "</i>")
-        )
-
+        markdown_text = self.convertBoldItalic(markdown_text)
         return markdown_text
+
+    def convertBoldItalic(self, text):
+        text = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", text)  # **bold**
+        text = re.sub(r"__(.*?)__", r"<b>\1</b>", text)  # __bold__
+        text = re.sub(r"\*(.*?)\*", r"<i>\1</i>", text)  # *italic*
+        text = re.sub(r"_(.*?)_", r"<i>\1</i>", text)  # _italic_
+        return text
 
     def LLMconvertCodeHTML(self, text):
         def replace_code_block(match):
