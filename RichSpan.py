@@ -100,7 +100,7 @@ class RS_About(QMainWindow):
             f"<b>{app.applicationDisplayName()}</b><br><br>"
             "Real-time computing and formatting supported word processor<br><br>"
             "Made by Berkay Gediz<br><br>"
-            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, Mimino666/langdetect, PySide6, chardet, psutil<br><br>"
+            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, Mimino666/langdetect, abetlen/llama-cpp-python, <br>pytorch/pytorch, PySide6, chardet, psutil<br><br>"
             "OpenGL: <b>ON</b></center>"
         )
         self.setCentralWidget(self.about_label)
@@ -186,32 +186,6 @@ class RS_Workspace(QMainWindow):
         super(RS_Workspace, self).__init__(parent)
         QTimer.singleShot(0, self.initUI)
 
-    def loadLLM(self):
-        try:
-            model_filename = "codeqwen-1_5-7b-chat-q5_0.gguf"
-            current_directory = os.getcwd()
-
-            model_path = os.path.join(current_directory, model_filename)
-
-            if os.path.exists(model_path):
-                self.llm = Llama(model_path, n_gpu_layers=30, n_ctx=3584, n_batch=521)
-            else:
-                self.llm = None
-        except TypeError as e:
-            print(f"Error: {str(e)}")
-        except Exception as e:
-            print(f"{str(e)}")
-
-    def acceleratorHardware(self):
-        if torch.cuda.is_available():  # NVIDIA
-            return "cuda"
-        elif torch.backends.mps.is_available():  # Metal API
-            return "mps"
-        elif hasattr(torch.backends, "rocm"):  # AMD
-            return "rocm"
-        else:  # CPU
-            return "cpu"
-
     def initUI(self):
         starttime = datetime.datetime.now()
         self.setWindowIcon(QIcon(fallbackValues["icon"]))
@@ -253,6 +227,9 @@ class RS_Workspace(QMainWindow):
         self.status_bar = self.statusBar()
         self.DocumentArea = QTextEdit()
         self.DocumentArea.setTextInteractionFlags(Qt.TextEditorInteraction)
+        self.DocumentArea.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.DocumentArea.customContextMenuRequested.connect(self.showContextMenu)
+
         self.initArea()
         layout.addWidget(self.DocumentArea)
 
@@ -283,6 +260,137 @@ class RS_Workspace(QMainWindow):
         )
         if self.hardwareCore == "cpu":
             self.LLMwarningCPU()
+
+    def showContextMenu(self, pos):
+        selected_text = self.DocumentArea.textCursor().selectedText().strip()
+        text_length = len(selected_text)
+
+        show_ai = self.llm is not None and self.llm != ""
+        base_actions = [
+            (f"Selected ({text_length})", ""),
+            ("Typos", "typo"),
+            ("Fixes", "fix"),
+            ("Ask", "ask"),
+        ]
+
+        self.context_menu = QMenu(self)
+
+        if text_length > 0:
+            formatting_action = QAction("Formatting", self)
+            formatting_action.setEnabled(False)
+            self.context_menu.addAction(formatting_action)
+            self.context_menu.addSeparator()
+
+            formatting_actions = [
+                {
+                    "name": "bold",
+                    "text": translations[lang]["bold"],
+                    "function": self.ContentBold,
+                },
+                {
+                    "name": "italic",
+                    "text": translations[lang]["italic"],
+                    "function": self.ContentItalic,
+                },
+                {
+                    "name": "underline",
+                    "text": translations[lang]["underline"],
+                    "function": self.ContentUnderline,
+                },
+                {
+                    "name": "color",
+                    "text": translations[lang]["font_color"],
+                    "function": self.ContentColor,
+                },
+                {
+                    "name": "backgroundcolor",
+                    "text": translations[lang]["contentBackgroundColor"],
+                    "function": self.ContentBGColor,
+                },
+                {
+                    "name": "fontfamily",
+                    "text": translations[lang]["font"],
+                    "function": self.ContentFont,
+                },
+            ]
+
+            for action in formatting_actions:
+                action_item = QAction(action["text"], self)
+                action_item.triggered.connect(action["function"])
+                self.context_menu.addAction(action_item)
+
+            if show_ai:
+                self.context_menu.addSeparator()
+                label_action = QAction("AI", self)
+                label_action.setEnabled(False)
+                self.context_menu.addAction(label_action)
+                self.context_menu.addSeparator()
+
+                for action_text, prompt_type in base_actions:
+                    if prompt_type is not None:
+                        self.context_menu.addAction(
+                            action_text,
+                            lambda pt=prompt_type: self.LLMcontextPredict(pt),
+                        )
+                    else:
+                        selected_text_action = QAction(action_text, self)
+                        selected_text_action.setEnabled(False)
+                        self.context_menu.addAction(selected_text_action)
+
+                if text_length < 50:
+                    self.context_menu.addAction(
+                        "Clarify", lambda: self.LLMcontextPredict("clarify")
+                    )
+                elif 50 <= text_length < 200:
+                    self.context_menu.addAction(
+                        "Summary", lambda: self.LLMcontextPredict("summary")
+                    )
+                    self.context_menu.addAction(
+                        "Suggestions", lambda: self.LLMcontextPredict("suggestions")
+                    )
+                else:
+                    self.context_menu.addAction(
+                        "Summary", lambda: self.LLMcontextPredict("summary")
+                    )
+                    self.context_menu.addAction(
+                        "Suggestions", lambda: self.LLMcontextPredict("suggestions")
+                    )
+                    self.context_menu.addAction(
+                        "Clarify", lambda: self.LLMcontextPredict("clarify")
+                    )
+        else:
+            undo_action = QAction(translations[lang]["undo"], self)
+            undo_action.triggered.connect(self.DocumentArea.undo)
+            self.context_menu.addAction(undo_action)
+
+            redo_action = QAction(translations[lang]["redo"], self)
+            redo_action.triggered.connect(self.DocumentArea.redo)
+            self.context_menu.addAction(redo_action)
+
+            cut_action = QAction("Cut", self)
+            cut_action.triggered.connect(self.DocumentArea.cut)
+            self.context_menu.addAction(cut_action)
+
+            copy_action = QAction("Copy", self)
+            copy_action.triggered.connect(self.DocumentArea.copy)
+            self.context_menu.addAction(copy_action)
+
+            paste_action = QAction("Paste", self)
+            paste_action.triggered.connect(self.DocumentArea.paste)
+            self.context_menu.addAction(paste_action)
+
+            delete_action = QAction("Delete", self)
+            delete_action.triggered.connect(
+                lambda: self.DocumentArea.textCursor().removeSelectedText()
+            )
+            self.context_menu.addAction(delete_action)
+
+            image_action = QAction(translations[lang]["image"], self)
+            image_action.triggered.connect(self.addImage)
+            self.context_menu.addAction(image_action)
+
+        if self.context_menu.actions():
+            self.context_menu.exec(self.DocumentArea.mapToGlobal(pos))
 
     def closeEvent(self, event):
         if self.is_saved == False:
@@ -605,6 +713,32 @@ class RS_Workspace(QMainWindow):
         self.DocumentArea.setTabStopDistance(27)
         self.DocumentArea.document().setDocumentMargin(self.width() * 0.25)
 
+    def loadLLM(self):
+        try:
+            model_filename = "codeqwen-1_5-7b-chat-q5_0.gguf"
+            current_directory = os.getcwd()
+
+            model_path = os.path.join(current_directory, model_filename)
+
+            if os.path.exists(model_path):
+                self.llm = Llama(model_path, n_gpu_layers=30, n_ctx=3584, n_batch=521)
+            else:
+                self.llm = None
+        except TypeError as e:
+            print(f"Error: {str(e)}")
+        except Exception as e:
+            print(f"{str(e)}")
+
+    def acceleratorHardware(self):
+        if torch.cuda.is_available():  # NVIDIA
+            return "cuda"
+        elif torch.backends.mps.is_available():  # Metal API
+            return "mps"
+        elif hasattr(torch.backends, "rocm"):  # AMD
+            return "rocm"
+        else:  # CPU
+            return "cpu"
+
     def LLMwarningCPU(self):
         message = (
             "Your device does not have GPU support. Running intensive AI operations on the CPU "
@@ -668,7 +802,11 @@ class RS_Workspace(QMainWindow):
 
     def LLMmessage(self, text, is_user=True):
         DetectorFactory.seed = 0
-        language = detect(text)
+
+        language = ""
+
+        if len(text) > 30:
+            language = detect(text)
 
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -678,7 +816,12 @@ class RS_Workspace(QMainWindow):
         message_widget = QWidget()
         message_layout = QHBoxLayout()
 
-        message_label = QLabel(f"{text}<br><br>({current_time} - {language})")
+        if language:
+            message_label_content = f"{text}<br><br>({current_time} - {language})"
+        else:
+            message_label_content = f"{text}<br><br>({current_time})"
+
+        message_label = QLabel(message_label_content)
         message_label.setWordWrap(True)
         message_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         message_label.setTextFormat(Qt.RichText)
@@ -711,6 +854,25 @@ class RS_Workspace(QMainWindow):
         self.LLMmessage(prompt, is_user=True)
         self.predict_button.setText("...")
         self.predict_button.setEnabled(False)
+
+        QTimer.singleShot(100, lambda: self.LLMprompt(prompt))
+
+    def LLMcontextPredict(self, action_type):
+        selected_text = self.DocumentArea.textCursor().selectedText().strip()
+
+        if action_type:
+            prompt = f"{action_type}: {selected_text}"
+        else:
+            prompt = selected_text
+
+        self.ai_widget.show()
+        self.LLMmessage(prompt, is_user=True)
+        self.predict_button.setText("...")
+        self.predict_button.setEnabled(False)
+
+        if not selected_text:
+            self.LLMmessage("No text selected.", is_user=False)
+            return
 
         QTimer.singleShot(100, lambda: self.LLMprompt(prompt))
 
