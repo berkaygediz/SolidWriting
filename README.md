@@ -34,7 +34,7 @@ RichSpan is a supercharged word processor offering a powerful alternative to tra
 - [x] **Multilingual Support**: Available in multiple languages including English, Deutsch, Español, Türkçe, Azərbaycanca, Uzbek, 中文 (Chinese), 한국어 (Korean), 日本語 (Japanese), العربية (Arabic), Русский (Russian), Français, Ελληνικά (Greek).
 - [x] **Lists**: Create numbered or bulleted lists.
 - [x] **Adaptive Power Saving**: Optimized for power efficiency with hybrid ultra and standard power saving modes.
-- [x] **Offline AI Chat**: Offline AI chat powered by a local language model, enabling direct interaction for questions and content generation, with automatic language detection.
+- [x] **Offline AI Chat**: Offline AI chat powered by a local language model, enabling direct interaction for questions and content generation, with automatic language detection, assisted by a context menu for enhanced user experience.
 
 ## Prerequisites
 
