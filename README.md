@@ -65,7 +65,14 @@ RichSpan is a supercharged word processor offering a powerful alternative to tra
 3. Creating a executable file (Unsigned):
 
    ```bash
-   pyinstaller --noconfirm --onefile --windowed --icon "richspan_icon.ico" --name "RichSpan" --clean --optimize "2" --add-data "richspan_icon.png;."  "RichSpan.py"
+   pyinstaller --noconfirm --onefile --windowed --icon ".\richspan_icon.ico" --name "RichSpan" --clean --optimize "2" "RichSpan.py"
+   ```
+
+- Command for CUDA Support
+
+   ```bash
+   pyinstaller --noconfirm --onefile --windowed --icon ".\richspan_icon.ico" --name "RichSpan" --clean --optimize "2" --add-data "path\RichSpan\.venv\Lib\site-packages\llama_cpp\lib\;." ".\RichSpan.py"
+
    ```
 
 ## Usage

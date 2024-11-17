@@ -268,8 +268,8 @@ class RS_Workspace(QMainWindow):
         show_ai = self.llm is not None and self.llm != ""
         base_actions = [
             (f"Selected ({text_length})", ""),
-            ("Typos", "typo"),
-            ("Fixes", "fix"),
+            ("Typo", "typo"),
+            ("Fix", "fix"),
             ("Ask", "ask"),
         ]
 
@@ -715,13 +715,35 @@ class RS_Workspace(QMainWindow):
 
     def loadLLM(self):
         try:
-            model_filename = "codeqwen-1_5-7b-chat-q5_0.gguf"
-            current_directory = os.getcwd()
+            model_filename, _ = QFileDialog.getOpenFileName(
+                None,
+                "Select GGUF Model File",
+                "",
+                "GGUF files (*.gguf)",
+            )
 
+            if not model_filename:
+                self.ai_widget.setWidget(QLabel("LLM not available."))
+                return
+
+            current_directory = os.getcwd()
             model_path = os.path.join(current_directory, model_filename)
 
             if os.path.exists(model_path):
-                self.llm = Llama(model_path, n_gpu_layers=30, n_ctx=3584, n_batch=521)
+                if torch.cuda.is_available():
+                    max_memory = 4 * 1024
+                else:
+                    available_memory = psutil.virtual_memory().available
+                    max_memory = min(available_memory, 2 * 1024)
+
+                self.llm = Llama(
+                    model_path,
+                    n_gpu_layers=33,
+                    use_fp16=True,
+                    max_memory=max_memory,
+                    device_map="auto",
+                    n_threads=8,
+                )
             else:
                 self.llm = None
         except TypeError as e:
@@ -731,10 +753,16 @@ class RS_Workspace(QMainWindow):
 
     def acceleratorHardware(self):
         if torch.cuda.is_available():  # NVIDIA
+            QTimer.singleShot(500, self.loadLLM)
             return "cuda"
+        elif torch.is_vulkan_available():
+            QTimer.singleShot(500, self.loadLLM)
+            return "vulkan"
         elif torch.backends.mps.is_available():  # Metal API
+            QTimer.singleShot(500, self.loadLLM)
             return "mps"
         elif hasattr(torch.backends, "rocm"):  # AMD
+            QTimer.singleShot(500, self.loadLLM)
             return "rocm"
         else:  # CPU
             return "cpu"
