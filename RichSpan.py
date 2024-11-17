@@ -1559,9 +1559,14 @@ class RS_Workspace(QMainWindow):
         self.DocumentArea.setTextBackgroundColor(color)
 
     def ContentFont(self):
-        font, ok = QFontDialog.getFont(self.DocumentArea.currentFont(), self)
+        # 'ok' (bool), 'font' (QFont)
+        ok, font = QFontDialog.getFont(
+            self.DocumentArea.currentFont(), self.DocumentArea
+        )
+
         if ok:
-            self.DocumentArea.setCurrentFont(font)
+            if isinstance(font, QFont):
+                self.DocumentArea.setCurrentFont(font)
 
     def incFont(self):
         font = self.DocumentArea.currentFont()
