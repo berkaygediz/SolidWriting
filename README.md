@@ -1,7 +1,7 @@
 # RichSpan - A Supercharged Word Processor
 
 <p align="center">
-    <img src="images/richspan_banner_1.png" alt="RichSpan Banner" width="80%" />
+    <img src="images/richspan_banner_2.png" alt="RichSpan Banner" width="80%" />
 </p>
 
 <p align="center">
