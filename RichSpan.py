@@ -285,32 +285,32 @@ class RS_Workspace(QMainWindow):
                 {
                     "name": "bold",
                     "text": translations[lang]["bold"],
-                    "function": self.ContentBold,
+                    "function": self.contentBold,
                 },
                 {
                     "name": "italic",
                     "text": translations[lang]["italic"],
-                    "function": self.ContentItalic,
+                    "function": self.contentItalic,
                 },
                 {
                     "name": "underline",
                     "text": translations[lang]["underline"],
-                    "function": self.ContentUnderline,
+                    "function": self.contentUnderline,
                 },
                 {
                     "name": "color",
                     "text": translations[lang]["font_color"],
-                    "function": self.ContentColor,
+                    "function": self.contentColor,
                 },
                 {
                     "name": "backgroundcolor",
                     "text": translations[lang]["contentBackgroundColor"],
-                    "function": self.ContentBGColor,
+                    "function": self.contentBGColor,
                 },
                 {
                     "name": "fontfamily",
                     "text": translations[lang]["font"],
-                    "function": self.ContentFont,
+                    "function": self.contentFont,
                 },
             ]
 
@@ -413,7 +413,6 @@ class RS_Workspace(QMainWindow):
             event.accept()
 
     def changeLanguage(self):
-        settings = QSettings("berkaygediz", "RichSpan")
         settings.setValue("appLanguage", self.language_combobox.currentData())
         settings.sync()
         self.updateTitle()
@@ -421,18 +420,16 @@ class RS_Workspace(QMainWindow):
         self.toolbarTranslate()
 
     def updateTitle(self):
+        lang = settings.value("appLanguage")
+
         file = self.file_name if self.file_name else translations[lang]["new"]
-        if file.endswith(".docx"):
-            textMode = " - Read Only"
-        else:
-            textMode = ""
+        textMode = translations[lang]["readonly"] if file.endswith(".docx") else ""
+
         if len(textMode) == 0:
-            if self.is_saved == True:
-                asterisk = ""
-            else:
-                asterisk = "*"
+            asterisk = "*" if not self.is_saved else ""
         else:
             asterisk = ""
+
         self.setWindowTitle(
             f"{file}{asterisk}{textMode} — {app.applicationDisplayName()}"
         )
@@ -446,13 +443,35 @@ class RS_Workspace(QMainWindow):
         if not self.text_changed_timer.isActive():
             self.text_changed_timer.start()
 
-    def updateStatistics(self, lang=lang):
+    def updateStatistics(self):
         self.text_changed_timer.stop()
         self.thread_running = False
         text = self.DocumentArea.toPlainText()
+
         character_count = len(text)
         word_count = len(text.split())
         line_count = text.count("\n") + 1
+
+        avg_word_length = avg_line_length = uppercase_count = lowercase_count = None
+        detected_language = None
+        lang = settings.value("appLanguage")
+
+        if word_count > 0 and line_count > 0 and character_count > 0 and text != "":
+            avg_word_length = sum(len(word) for word in text.split()) / word_count
+            formatted_avg_word_length = "{:.1f}".format(avg_word_length)
+
+            avg_line_length = (character_count / line_count) - 1
+            formatted_avg_line_length = "{:.1f}".format(avg_line_length)
+
+            uppercase_count = sum(1 for char in text if char.isupper())
+            lowercase_count = sum(1 for char in text if char.islower())
+
+            if word_count > 20:
+                try:
+                    DetectorFactory.seed = 0
+                    detected_language = detect(text)
+                except Exception:
+                    detected_language = None
 
         statistics = f"<html><head><style>"
         statistics += "table {border-collapse: collapse; width: 100%;}"
@@ -464,26 +483,17 @@ class RS_Workspace(QMainWindow):
         statistics += "td { color: white;}"
         statistics += "#rs-text { background-color: #E2E3E1; color: #000000; }"
         statistics += "</style></head><body>"
+
         statistics += "<table><tr>"
-        if word_count > 0 and line_count > 0 and character_count > 0 and text != "":
+
+        if avg_word_length is not None:
             statistics += f"<th>{translations[lang]['analysis']}</th>"
-            avg_word_length = sum(len(word) for word in text.split()) / word_count
-            formatted_avg_word_length = "{:.1f}".format(avg_word_length)
             statistics += f"<td>{translations[lang]['analysis_message_1'].format(formatted_avg_word_length)}</td>"
-            avg_line_length = character_count / line_count - 1
-            formatted_avg_line_length = "{:.1f}".format(avg_line_length)
             statistics += f"<td>{translations[lang]['analysis_message_2'].format(formatted_avg_line_length)}</td>"
-            uppercase_count = sum(1 for char in text if char.isupper())
-            lowercase_count = sum(1 for char in text if char.islower())
             statistics += f"<td>{translations[lang]['analysis_message_3'].format(uppercase_count)}</td>"
             statistics += f"<td>{translations[lang]['analysis_message_4'].format(lowercase_count)}</td>"
-            if word_count > 20:
-                try:
-                    DetectorFactory.seed = 0
-                    langdetect = detect(text)
-                    statistics += f"<td>{translations[lang]['analysis_message_5'].format(langdetect)}</td>"
-                except:
-                    None
+            if detected_language:
+                statistics += f"<td>{translations[lang]['analysis_message_5'].format(detected_language)}</td>"
 
         else:
             self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
@@ -496,6 +506,7 @@ class RS_Workspace(QMainWindow):
             self.DocumentArea.setTextBackgroundColor(
                 QColor(fallbackValues["contentBackgroundColor"])
             )
+
         statistics += f"<th>{translations[lang]['statistic']}</th>"
         statistics += (
             f"<td>{translations[lang]['statistic_message_1'].format(line_count)}</td>"
@@ -504,16 +515,22 @@ class RS_Workspace(QMainWindow):
             f"<td>{translations[lang]['statistic_message_2'].format(word_count)}</td>"
         )
         statistics += f"<td>{translations[lang]['statistic_message_3'].format(character_count)}</td>"
+
         statistics += f"</td><th id='rs-text'>{app.applicationDisplayName()}</th>"
+
         statistics += "</tr></table></body></html>"
 
         self.statistics_label.setText(statistics)
+
         self.status_bar.addPermanentWidget(self.statistics_label)
+
         self.new_text = self.DocumentArea.toPlainText()
+
         if self.new_text != fallbackValues["content"]:
             self.is_saved = False
         else:
             self.is_saved = True
+
         self.updateTitle()
 
     def saveState(self):
@@ -535,7 +552,6 @@ class RS_Workspace(QMainWindow):
     def restoreState(self):
         self.geometry = settings.value("windowScale")
         self.directory = settings.value("defaultDirectory", self.default_directory)
-        self.file_name = settings.value("fileName")
         self.DocumentArea.setHtml(settings.value("content"))
         self.is_saved = settings.value("isSaved")
         index = self.language_combobox.findData(lang)
@@ -544,34 +560,20 @@ class RS_Workspace(QMainWindow):
         if self.geometry is not None:
             self.restoreGeometry(self.geometry)
 
-        if self.file_name and os.path.exists(self.file_name):
-            try:
-                automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
-            except Exception as e:
-                automaticEncoding = "utf-8"
-
-            if self.file_name.endswith(".docx"):
-                with open(
-                    self.file_name,
-                    "rb",
-                ) as file:
-                    try:
-                        conversionLayer = mammoth.convert_to_html(file)
-                        self.DocumentArea.setHtml(conversionLayer.value)
-                    except:
-                        None
-
+        if len(sys.argv) > 1:
+            file_to_open = os.path.abspath(sys.argv[1])
+            if os.path.exists(file_to_open):
+                self.file_name = file_to_open
             else:
-                with open(self.file_name, "r", encoding=automaticEncoding) as file:
-                    if self.file_name.endswith((".rsdoc")):
-                        self.DocumentArea.setHtml(file.read())
-                    elif self.file_name.endswith((".html", ".htm")):
-                        self.DocumentArea.setHtml(file.read())
+                QMessageBox.warning(
+                    self, "File Not Found", f"The file '{file_to_open}' does not exist."
+                )
+                return
+        else:
+            self.file_name = settings.value("fileName")
 
-                    elif self.file_name.endswith((".md")):
-                        self.DocumentArea.setMarkdown(file.read())
-                    else:
-                        self.DocumentArea.setPlainText(file.read())
+        if self.file_name and os.path.exists(self.file_name):
+            self.openFile(self.file_name)
 
         scroll_position = settings.value("scrollPosition")
         if scroll_position is not None:
@@ -579,10 +581,7 @@ class RS_Workspace(QMainWindow):
         else:
             self.DocumentArea.verticalScrollBar().setValue(0)
 
-        if self.file_name:
-            self.is_saved = True
-        else:
-            self.is_saved = False
+        self.is_saved = bool(self.file_name)
 
         self.adaptiveResponse = settings.value("adaptiveResponse")
         self.restoreTheme()
@@ -641,62 +640,46 @@ class RS_Workspace(QMainWindow):
 
     def toolbarTranslate(self):
         lang = settings.value("appLanguage")
-        self.newaction.setText(translations[lang]["new"])
-        self.newaction.setStatusTip(translations[lang]["new_message"])
-        self.openaction.setText(translations[lang]["open"])
-        self.openaction.setStatusTip(translations[lang]["open_message"])
-        self.saveaction.setText(translations[lang]["save"])
-        self.saveaction.setStatusTip(translations[lang]["save_message"])
-        self.saveasaction.setText(translations[lang]["save_as"])
-        self.saveasaction.setStatusTip(translations[lang]["save_as_message"])
-        self.printaction.setText(translations[lang]["print"])
-        self.printaction.setStatusTip(translations[lang]["print_message"])
-        self.undoaction.setText(translations[lang]["undo"])
-        self.undoaction.setStatusTip(translations[lang]["undo_message"])
-        self.redoaction.setText(translations[lang]["redo"])
-        self.redoaction.setStatusTip(translations[lang]["redo_message"])
-        self.theme_action.setText(translations[lang]["darklight"])
-        self.theme_action.setStatusTip(translations[lang]["darklight_message"])
-        self.powersaveraction.setText(translations[lang]["powersaver"])
-        self.powersaveraction.setStatusTip(translations[lang]["powersaver_message"])
-        self.hide_ai_dock.setText("AI")
-        self.hide_ai_dock.setStatusTip("AI")
-        self.findaction.setText(translations[lang]["find"])
-        self.findaction.setStatusTip(translations[lang]["find_message"])
-        self.replaceaction.setText(translations[lang]["replace"])
-        self.replaceaction.setStatusTip(translations[lang]["replace_message"])
-        self.helpAction.setText(translations[lang]["help"])
-        self.helpAction.setStatusTip(translations[lang]["help"])
-        self.aboutAction.setText(translations[lang]["about"])
-        self.aboutAction.setStatusTip(translations[lang]["about"])
-        self.alignrightevent.setText(translations[lang]["right"])
-        self.alignrightevent.setStatusTip(translations[lang]["right_message"])
-        self.aligncenterevent.setText(translations[lang]["center"])
-        self.aligncenterevent.setStatusTip(translations[lang]["center_message"])
-        self.alignleftevent.setText(translations[lang]["left"])
-        self.alignleftevent.setStatusTip(translations[lang]["left_message"])
-        self.alignjustifiedevent.setText(translations[lang]["justify"])
-        self.alignjustifiedevent.setStatusTip(translations[lang]["justify_message"])
-        self.bold.setText(translations[lang]["bold"])
-        self.bold.setStatusTip(translations[lang]["bold_message"])
-        self.italic.setText(translations[lang]["italic"])
-        self.italic.setStatusTip(translations[lang]["italic_message"])
-        self.underline.setText(translations[lang]["underline"])
-        self.underline.setStatusTip(translations[lang]["underline_message"])
-        self.bulletevent.setText(translations[lang]["bullet"])
-        self.bulletevent.setStatusTip(translations[lang]["bullet"])
-        self.numberedevent.setText(translations[lang]["numbered"])
-        self.numberedevent.setStatusTip(translations[lang]["numbered"])
-        self.color.setText(translations[lang]["font_color"])
-        self.color.setStatusTip(translations[lang]["font_color_message"])
-        self.backgroundcolor.setText(translations[lang]["contentBackgroundColor"])
-        self.backgroundcolor.setStatusTip(
-            translations[lang]["contentBackgroundColor_message"]
-        )
-        self.fontfamily.setText(translations[lang]["font"])
-        self.fontfamily.setStatusTip(translations[lang]["font_message"])
-        self.addimage.setText(translations[lang]["image"])
-        self.addimage.setStatusTip(translations[lang]["image_message"])
+
+        actions = {
+            self.newaction: ("new", "new_message"),
+            self.openaction: ("open", "open_message"),
+            self.saveaction: ("save", "save_message"),
+            self.saveasaction: ("save_as", "save_as_message"),
+            self.printaction: ("print", "print_message"),
+            self.undoaction: ("undo", "undo_message"),
+            self.redoaction: ("redo", "redo_message"),
+            self.theme_action: ("darklight", "darklight_message"),
+            self.powersaveraction: ("powersaver", "powersaver_message"),
+            self.findaction: ("find", "find_message"),
+            self.replaceaction: ("replace", "replace_message"),
+            self.helpAction: ("help", "help"),
+            self.aboutAction: ("about", "about"),
+            self.alignrightevent: ("right", "right_message"),
+            self.aligncenterevent: ("center", "center_message"),
+            self.alignleftevent: ("left", "left_message"),
+            self.alignjustifiedevent: ("justify", "justify_message"),
+            self.bold: ("bold", "bold_message"),
+            self.italic: ("italic", "italic_message"),
+            self.underline: ("underline", "underline_message"),
+            self.bulletevent: ("bullet", "bullet"),
+            self.numberedevent: (
+                "numbered",
+                "numbered",
+            ),
+            self.color: ("font_color", "font_color_message"),
+            self.backgroundcolor: (
+                "contentBackgroundColor",
+                "contentBackgroundColor_message",
+            ),
+            self.fontfamily: ("font", "font_message"),
+            self.addimage: ("image", "image_message"),
+        }
+
+        for action, (text_key, status_key) in actions.items():
+            action.setText(translations[lang][text_key])
+            action.setStatusTip(translations[lang][status_key])
+
         self.ai_widget.setWindowTitle("AI")
 
     def initArea(self):
@@ -714,6 +697,26 @@ class RS_Workspace(QMainWindow):
         self.DocumentArea.document().setDocumentMargin(self.width() * 0.25)
 
     def loadLLM(self):
+        # Consent
+        if settings.value("load_llm") is None or settings.value("load_llm") is True:
+            reply = QMessageBox.question(
+                None,
+                "Load LLM",
+                "Do you want to load the LLM model?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.Yes,
+            )
+
+            if reply == QMessageBox.Yes:
+                settings.setValue("load_llm", True)
+                self._load_model()
+            else:
+                settings.setValue("load_llm", False)
+                self.ai_widget.setWidget(QLabel("LLM not available."))
+        else:
+            self.ai_widget.setWidget(QLabel("LLM not available."))
+
+    def _load_model(self):
         try:
             model_filename, _ = QFileDialog.getOpenFileName(
                 None,
@@ -972,35 +975,35 @@ class RS_Workspace(QMainWindow):
                 "name": "newaction",
                 "text": translations[lang]["new"],
                 "status_tip": translations[lang]["new_message"],
-                "function": self.New,
+                "function": self.newFile,
                 "shortcut": QKeySequence.New,
             },
             {
                 "name": "openaction",
                 "text": translations[lang]["open"],
                 "status_tip": translations[lang]["open_message"],
-                "function": self.Open,
+                "function": self.openFile,
                 "shortcut": QKeySequence.Open,
             },
             {
                 "name": "saveaction",
                 "text": translations[lang]["save"],
                 "status_tip": translations[lang]["save_message"],
-                "function": self.Save,
+                "function": self.saveFile,
                 "shortcut": QKeySequence.Save,
             },
             {
                 "name": "saveasaction",
                 "text": translations[lang]["save_as"],
                 "status_tip": translations[lang]["save_as_message"],
-                "function": self.SaveAs,
+                "function": self.saveAs,
                 "shortcut": QKeySequence.SaveAs,
             },
             {
                 "name": "printaction",
                 "text": translations[lang]["print"],
                 "status_tip": translations[lang]["print_message"],
-                "function": self.PrintDocument,
+                "function": self.printDocument,
                 "shortcut": QKeySequence.Print,
             },
             {
@@ -1035,84 +1038,84 @@ class RS_Workspace(QMainWindow):
                 "name": "alignrightevent",
                 "text": translations[lang]["right"],
                 "status_tip": translations[lang]["right_message"],
-                "function": lambda: self.Align(Qt.AlignRight),
+                "function": lambda: self.contentAlign(Qt.AlignRight),
                 "shortcut": "",
             },
             {
                 "name": "alignleftevent",
                 "text": translations[lang]["left"],
                 "status_tip": translations[lang]["left_message"],
-                "function": lambda: self.Align(Qt.AlignLeft),
+                "function": lambda: self.contentAlign(Qt.AlignLeft),
                 "shortcut": "",
             },
             {
                 "name": "aligncenterevent",
                 "text": translations[lang]["center"],
                 "status_tip": translations[lang]["center_message"],
-                "function": lambda: self.Align(Qt.AlignCenter),
+                "function": lambda: self.contentAlign(Qt.AlignCenter),
                 "shortcut": "",
             },
             {
                 "name": "alignjustifiedevent",
                 "text": translations[lang]["justify"],
                 "status_tip": translations[lang]["justify_message"],
-                "function": lambda: self.Align(Qt.AlignJustify),
+                "function": lambda: self.contentAlign(Qt.AlignJustify),
                 "shortcut": "",
             },
             {
                 "name": "bulletevent",
                 "text": translations[lang]["bullet"],
                 "status_tip": "",
-                "function": self.Bullet,
+                "function": self.bulletList,
                 "shortcut": QKeySequence("Ctrl+Shift+U"),
             },
             {
                 "name": "numberedevent",
                 "text": translations[lang]["numbered"],
                 "status_tip": "",
-                "function": self.Numbered,
+                "function": self.numberedList,
                 "shortcut": QKeySequence("Ctrl+Shift+O"),
             },
             {
                 "name": "bold",
                 "text": translations[lang]["bold"],
                 "status_tip": translations[lang]["bold_message"],
-                "function": self.ContentBold,
+                "function": self.contentBold,
                 "shortcut": QKeySequence.Bold,
             },
             {
                 "name": "italic",
                 "text": translations[lang]["italic"],
                 "status_tip": translations[lang]["italic_message"],
-                "function": self.ContentItalic,
+                "function": self.contentItalic,
                 "shortcut": QKeySequence.Italic,
             },
             {
                 "name": "underline",
                 "text": translations[lang]["underline"],
                 "status_tip": translations[lang]["underline_message"],
-                "function": self.ContentUnderline,
+                "function": self.contentUnderline,
                 "shortcut": QKeySequence.Underline,
             },
             {
                 "name": "color",
                 "text": translations[lang]["font_color"],
                 "status_tip": translations[lang]["font_color_message"],
-                "function": self.ContentColor,
+                "function": self.contentColor,
                 "shortcut": QKeySequence("Ctrl+Shift+C"),
             },
             {
                 "name": "backgroundcolor",
                 "text": translations[lang]["contentBackgroundColor"],
                 "status_tip": translations[lang]["contentBackgroundColor_message"],
-                "function": self.ContentBGColor,
+                "function": self.contentBGColor,
                 "shortcut": QKeySequence("Ctrl+Shift+B"),
             },
             {
                 "name": "fontfamily",
                 "text": translations[lang]["font"],
                 "status_tip": translations[lang]["font_message"],
-                "function": self.ContentFont,
+                "function": self.contentFont,
                 "shortcut": QKeySequence("Ctrl+Shift+F"),
             },
             {
@@ -1323,7 +1326,7 @@ class RS_Workspace(QMainWindow):
             detector.close()
         return detector.result["encoding"]
 
-    def New(self):
+    def newFile(self):
         if self.is_saved == True:
             self.DocumentArea.clear()
             self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
@@ -1370,31 +1373,34 @@ class RS_Workspace(QMainWindow):
             else:
                 pass
 
-    def Open(self):
+    def openFile(self, file_to_open=None):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        selected_file, _ = QFileDialog.getOpenFileName(
-            self,
-            translations[lang]["open"] + f" — {app.applicationDisplayName()} ",
-            self.directory,
-            fallbackValues["readFilter"],
-            options=options,
-        )
+
+        if file_to_open:
+            selected_file = file_to_open
+        else:
+            selected_file, _ = QFileDialog.getOpenFileName(
+                self,
+                translations[lang]["open"] + f" — {app.applicationDisplayName()} ",
+                self.directory,
+                fallbackValues["readFilter"],
+                options=options,
+            )
+
         if selected_file:
             self.file_name = selected_file
             try:
-                automaticEncoding = RS_Workspace.detectEncoding(self.selected_file)
+                automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
             except Exception as e:
                 automaticEncoding = "utf-8"
+
             if self.file_name.endswith(".docx"):
-                with open(
-                    self.file_name,
-                    "rb",
-                ) as file:
+                with open(self.file_name, "rb") as file:
                     try:
                         conversionLayer = mammoth.convert_to_html(file)
                         self.DocumentArea.setHtml(conversionLayer.value)
-                    except:
+                    except Exception as e:
                         QMessageBox.warning(self, None, "Conversion failed.")
             else:
                 with open(self.file_name, "r", encoding=automaticEncoding) as file:
@@ -1402,7 +1408,6 @@ class RS_Workspace(QMainWindow):
                         self.DocumentArea.setHtml(file.read())
                     elif self.file_name.endswith((".html", ".htm")):
                         self.DocumentArea.setHtml(file.read())
-
                     elif self.file_name.endswith((".md")):
                         self.DocumentArea.setMarkdown(file.read())
                     else:
@@ -1411,18 +1416,16 @@ class RS_Workspace(QMainWindow):
             self.directory = os.path.dirname(self.file_name)
             self.is_saved = True
             self.updateTitle()
-        else:
-            pass
 
-    def Save(self):
+    def saveFile(self):
         if self.is_saved == False:
-            self.SaveProcess()
+            self.saveProcess()
         elif self.file_name == None:
-            self.SaveAs()
+            self.saveAs()
         else:
-            self.SaveProcess()
+            self.saveProcess()
 
-    def SaveAs(self):
+    def saveAs(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
         selected_file, _ = QFileDialog.getSaveFileName(
@@ -1435,14 +1438,14 @@ class RS_Workspace(QMainWindow):
         if selected_file:
             self.file_name = selected_file
             self.directory = os.path.dirname(self.file_name)
-            self.SaveProcess()
+            self.saveProcess()
             return True
         else:
             return False
 
-    def SaveProcess(self):
+    def saveProcess(self):
         if not self.file_name:
-            self.SaveAs()
+            self.saveAs()
         else:
             try:
                 automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
@@ -1465,7 +1468,7 @@ class RS_Workspace(QMainWindow):
         self.is_saved = True
         self.updateTitle()
 
-    def PrintDocument(self):
+    def printDocument(self):
         printer = QPrinter(QPrinter.HighResolution)
         printer.setPageOrientation(QPageLayout.Orientation.Portrait)
         printer.setPageMargins(QMargins(10, 10, 10, 10), QPageLayout.Millimeter)
@@ -1506,10 +1509,7 @@ class RS_Workspace(QMainWindow):
         help_window = RS_Help(self)
         help_window.show()
 
-    def Align(self, alignment):
-        self.DocumentArea.setAlignment(alignment)
-
-    def Bullet(self):
+    def bulletList(self):
         cursor = self.DocumentArea.textCursor()
         cursor.beginEditBlock()
         selected_text = cursor.selectedText()
@@ -1522,7 +1522,7 @@ class RS_Workspace(QMainWindow):
         new_cursor.mergeCharFormat(char_format)
         cursor.endEditBlock()
 
-    def Numbered(self):
+    def numberedList(self):
         cursor = self.DocumentArea.textCursor()
         cursor.beginEditBlock()
         selected_text = cursor.selectedText()
@@ -1535,30 +1535,33 @@ class RS_Workspace(QMainWindow):
         new_cursor.mergeCharFormat(char_format)
         cursor.endEditBlock()
 
-    def ContentBold(self):
+    def contentAlign(self, alignment):
+        self.DocumentArea.setAlignment(alignment)
+
+    def contentBold(self):
         font = self.DocumentArea.currentFont()
         font.setBold(not font.bold())
         self.DocumentArea.setCurrentFont(font)
 
-    def ContentItalic(self):
+    def contentItalic(self):
         font = self.DocumentArea.currentFont()
         font.setItalic(not font.italic())
         self.DocumentArea.setCurrentFont(font)
 
-    def ContentUnderline(self):
+    def contentUnderline(self):
         font = self.DocumentArea.currentFont()
         font.setUnderline(not font.underline())
         self.DocumentArea.setCurrentFont(font)
 
-    def ContentColor(self):
+    def contentColor(self):
         color = QColorDialog.getColor()
         self.DocumentArea.setTextColor(color)
 
-    def ContentBGColor(self):
+    def contentBGColor(self):
         color = QColorDialog.getColor()
         self.DocumentArea.setTextBackgroundColor(color)
 
-    def ContentFont(self):
+    def contentFont(self):
         # 'ok' (bool), 'font' (QFont)
         ok, font = QFontDialog.getFont(
             self.DocumentArea.currentFont(), self.DocumentArea
