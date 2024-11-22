@@ -276,12 +276,12 @@ class RS_Workspace(QMainWindow):
         self.context_menu = QMenu(self)
 
         if text_length > 0:
-            formatting_action = QAction("Formatting", self)
-            formatting_action.setEnabled(False)
-            self.context_menu.addAction(formatting_action)
+            format_action = QAction("Format", self)
+            format_action.setEnabled(False)
+            self.context_menu.addAction(format_action)
             self.context_menu.addSeparator()
 
-            formatting_actions = [
+            format_actions = [
                 {
                     "name": "bold",
                     "text": translations[lang]["bold"],
@@ -314,7 +314,7 @@ class RS_Workspace(QMainWindow):
                 },
             ]
 
-            for action in formatting_actions:
+            for action in format_actions:
                 action_item = QAction(action["text"], self)
                 action_item.triggered.connect(action["function"])
                 self.context_menu.addAction(action_item)
@@ -393,6 +393,7 @@ class RS_Workspace(QMainWindow):
             self.context_menu.exec(self.DocumentArea.mapToGlobal(pos))
 
     def closeEvent(self, event):
+        lang = settings.value("appLanguage")
         if self.is_saved == False:
             reply = QMessageBox.question(
                 self,
@@ -415,9 +416,9 @@ class RS_Workspace(QMainWindow):
     def changeLanguage(self):
         settings.setValue("appLanguage", self.language_combobox.currentData())
         settings.sync()
-        self.updateTitle()
-        self.updateStatistics()
         self.toolbarTranslate()
+        self.updateStatistics()
+        self.updateTitle()
 
     def updateTitle(self):
         lang = settings.value("appLanguage")
@@ -681,6 +682,26 @@ class RS_Workspace(QMainWindow):
             action.setStatusTip(translations[lang][status_key])
 
         self.ai_widget.setWindowTitle("AI")
+        self.translateToolbarLabel(self.file_toolbar, translations[lang]["file"])
+        self.translateToolbarLabel(self.ui_toolbar, translations[lang]["ui"])
+        self.translateToolbarLabel(self.edit_toolbar, translations[lang]["edit"])
+        self.translateToolbarLabel(self.font_toolbar, translations[lang]["font"])
+        self.translateToolbarLabel(self.list_toolbar, translations[lang]["list"])
+        self.translateToolbarLabel(self.color_toolbar, translations[lang]["color"])
+        self.translateToolbarLabel(
+            self.multimedia_toolbar, translations[lang]["multimedia"]
+        )
+
+    def translateToolbarLabel(self, toolbar, label_key):
+        self.updateToolbarLabel(
+            toolbar, translations[lang].get(label_key, label_key) + ": "
+        )
+
+    def updateToolbarLabel(self, toolbar, new_label):
+        for widget in toolbar.children():
+            if isinstance(widget, QLabel):
+                widget.setText(f"<b>{new_label}</b>")
+                return
 
     def initArea(self):
         self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
@@ -1168,12 +1189,12 @@ class RS_Workspace(QMainWindow):
             )
 
     def initToolbar(self):
-        self.toolbar = self.addToolBar(translations[lang]["file"])
+        self.file_toolbar = self.addToolBar(translations[lang]["file"])
         self.toolbarLabel(
-            self.toolbar,
+            self.file_toolbar,
             translations[lang]["file"] + ": ",
         )
-        self.toolbar.addActions(
+        self.file_toolbar.addActions(
             [
                 self.newaction,
                 self.openaction,
@@ -1187,8 +1208,8 @@ class RS_Workspace(QMainWindow):
             ]
         )
 
-        self.toolbar = self.addToolBar(translations[lang]["ui"])
-        self.toolbarLabel(self.toolbar, translations[lang]["ui"] + ": ")
+        self.ui_toolbar = self.addToolBar(translations[lang]["ui"])
+        self.toolbarLabel(self.ui_toolbar, translations[lang]["ui"] + ": ")
         self.theme_action = self.createAction(
             translations[lang]["darklight"],
             translations[lang]["darklight_message"],
@@ -1199,7 +1220,7 @@ class RS_Workspace(QMainWindow):
         self.theme_action.setCheckable(True)
         self.theme_action.setChecked(settings.value("appTheme") == "dark")
 
-        self.toolbar.addAction(self.theme_action)
+        self.ui_toolbar.addAction(self.theme_action)
         self.powersaveraction = QAction(
             translations[lang]["powersaver"],
             self,
@@ -1208,18 +1229,13 @@ class RS_Workspace(QMainWindow):
         self.powersaveraction.setStatusTip(translations[lang]["powersaver_message"])
         self.powersaveraction.toggled.connect(self.hybridSaver)
 
-        self.toolbar.addAction(self.powersaveraction)
-        if settings.value("adaptiveResponse") == None:
-            response_exponential = settings.setValue(
-                "adaptiveResponse", fallbackValues["adaptiveResponse"]
-            )
-        else:
-            response_exponential = settings.value(
-                "adaptiveResponse",
-            )
+        self.ui_toolbar.addAction(self.powersaveraction)
+        adaptiveResponse = settings.value(
+            "adaptiveResponse", fallbackValues["adaptiveResponse"]
+        )
+        self.powersaveraction.setChecked(adaptiveResponse > 1)
 
-        self.powersaveraction.setChecked(response_exponential > 1)
-        self.toolbar.addAction(self.powersaveraction)
+        self.ui_toolbar.addAction(self.powersaveraction)
         self.hide_ai_dock = self.createAction(
             "AI",
             "AI",
@@ -1227,25 +1243,25 @@ class RS_Workspace(QMainWindow):
             QKeySequence("Ctrl+Shift+D"),
             "",
         )
-        self.toolbar.addAction(self.hide_ai_dock)
-        self.toolbar.addAction(self.helpAction)
-        self.toolbar.addAction(self.aboutAction)
+        self.ui_toolbar.addAction(self.hide_ai_dock)
+        self.ui_toolbar.addAction(self.helpAction)
+        self.ui_toolbar.addAction(self.aboutAction)
         self.language_combobox = QComboBox(self)
         self.language_combobox.setStyleSheet("background-color:#000000; color:#FFFFFF;")
         for lcid, name in languages.items():
             self.language_combobox.addItem(name, lcid)
 
         self.language_combobox.currentIndexChanged.connect(self.changeLanguage)
-        self.toolbar.addWidget(self.language_combobox)
+        self.ui_toolbar.addWidget(self.language_combobox)
 
         self.addToolBarBreak()
 
-        self.toolbar = self.addToolBar(translations[lang]["edit"])
+        self.edit_toolbar = self.addToolBar(translations[lang]["edit"])
         self.toolbarLabel(
-            self.toolbar,
+            self.edit_toolbar,
             translations[lang]["edit"] + ": ",
         )
-        self.toolbar.addActions(
+        self.edit_toolbar.addActions(
             [
                 self.alignrightevent,
                 self.aligncenterevent,
@@ -1253,27 +1269,28 @@ class RS_Workspace(QMainWindow):
                 self.alignjustifiedevent,
             ]
         )
-        self.toolbar.addSeparator()
+        self.edit_toolbar.addSeparator()
+        self.font_toolbar = self.addToolBar(translations[lang]["font"])
         self.toolbarLabel(
-            self.toolbar,
+            self.font_toolbar,
             translations[lang]["font"] + ": ",
         )
-        self.toolbar.addActions([self.bold, self.italic, self.underline])
-        self.toolbar.addSeparator()
-        self.toolbar = self.addToolBar(translations[lang]["list"])
+        self.font_toolbar.addActions([self.bold, self.italic, self.underline])
+        self.font_toolbar.addSeparator()
+        self.list_toolbar = self.addToolBar(translations[lang]["list"])
         self.toolbarLabel(
-            self.toolbar,
+            self.list_toolbar,
             translations[lang]["list"] + ": ",
         )
-        self.toolbar.addActions([self.bulletevent, self.numberedevent])
+        self.list_toolbar.addActions([self.bulletevent, self.numberedevent])
         self.addToolBarBreak()
 
-        self.toolbar = self.addToolBar(translations[lang]["color"])
+        self.color_toolbar = self.addToolBar(translations[lang]["color"])
         self.toolbarLabel(
-            self.toolbar,
+            self.color_toolbar,
             translations[lang]["color"] + ": ",
         )
-        self.toolbar.addActions(
+        self.color_toolbar.addActions(
             [
                 self.color,
                 self.backgroundcolor,
@@ -1283,12 +1300,12 @@ class RS_Workspace(QMainWindow):
             ]
         )
 
-        self.toolbar = self.addToolBar(translations[lang]["multimedia"])
+        self.multimedia_toolbar = self.addToolBar(translations[lang]["multimedia"])
         self.toolbarLabel(
-            self.toolbar,
+            self.multimedia_toolbar,
             translations[lang]["multimedia"] + ": ",
         )
-        self.toolbar.addActions([self.addimage])
+        self.multimedia_toolbar.addActions([self.addimage])
 
     def toggleDock(self):
         if self.ai_widget.isHidden():
