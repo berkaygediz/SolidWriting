@@ -1,8 +1,8 @@
 # RichSpan Documentation -  CUDA / llama-cpp-python
 
-## 1. Install NVIDIA CUDA v12.6 or Newer
+## 1. Install NVIDIA CUDA v12.8 or Newer
 
-- Download and install NVIDIA CUDA v12.6 or a newer version from the [official NVIDIA website](https://developer.nvidia.com/cuda-downloads).
+- Download and install NVIDIA CUDA v12.8 or a newer version from the [official NVIDIA website](https://developer.nvidia.com/cuda-downloads).
 
 ## 2. Download NVIDIA CUDNN
 
@@ -13,7 +13,7 @@
 - Extract the `cudnn.zip` file and copy the `bin`, `include`, and `lib` folders to the following directory:
 
   ```powershell
-  C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6
+  C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8
   ```
 
 ## 4. Copy Visual Studio MSBuild Files
@@ -21,7 +21,7 @@
 - Copy the files from the following directory:
 
   ```powershell
-  C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\extras\visual_studio_integration\MSBuildExtensions
+  C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\extras\visual_studio_integration\MSBuildExtensions
   ```
 
   To this directory:
@@ -39,19 +39,19 @@
 - Set the environment variable for the CUDA compiler (`nvcc.exe`):
 
   ```powershell
-  $env:CUDACXX="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin\nvcc.exe"
+  $env:CUDACXX="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\bin\nvcc.exe"
   ```
 
 - Set the CMake arguments for the build process:
 
   ```powershell
-  set CMAKE_ARGS=-DGGML_CUDA=on -DCMAKE_GENERATOR_TOOLSET="cuda=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
+  set CMAKE_ARGS=-DGGML_CUDA=on -DCMAKE_GENERATOR_TOOLSET="cuda=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8"
   ```
 
 - Set the environment variable for the CUDA toolkit directory:
 
   ```powershell
-  $env:CudaToolkitDir="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\"
+  $env:CudaToolkitDir="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\"
   ```
 
 ## 7. Install or Reinstall llama-cpp-python

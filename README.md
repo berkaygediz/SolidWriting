@@ -72,7 +72,6 @@ RichSpan is a supercharged word processor offering a powerful alternative to tra
 
    ```bash
    pyinstaller --noconfirm --onefile --windowed --icon ".\richspan_icon.ico" --name "RichSpan" --clean --optimize "2" --add-data "path\RichSpan\.venv\Lib\site-packages\llama_cpp\lib\;." ".\RichSpan.py"
-
    ```
 
 ## Usage
