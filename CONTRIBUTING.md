@@ -1,15 +1,15 @@
-# Contributing to RichSpan
+# Contributing to SolidWriting
 
-Thank you for considering contributing to RichSpan! We welcome your contributions to help improve this application. Please read this guide to understand how you can contribute effectively.
+Thank you for considering contributing to SolidWriting! We welcome your contributions to help improve this application. Please read this guide to understand how you can contribute effectively.
 
 ## How to Contribute
 
-1. Fork the Repository: Start by forking the [RichSpan repository](https://github.com/berkaygediz/RichSpan) on GitHub to your account.
+1. Fork the Repository: Start by forking the [SolidWriting repository](https://github.com/berkaygediz/SolidWriting) on GitHub to your account.
 
 2. Clone the Repository: Clone your forked repository to your local development environment.
 
    ```bash
-   git clone https://github.com/berkaygediz/RichSpan.git
+   git clone https://github.com/berkaygediz/SolidWriting.git
    ```
 
 3. Create a Branch: Create a new branch for your contribution. Use a descriptive name for your branch.
@@ -34,7 +34,7 @@ Thank you for considering contributing to RichSpan! We welcome your contribution
    git push origin feature/your-feature-name
    ```
 
-8. Create a Pull Request: Visit the [RichSpan repository on GitHub](https://github.com/berkaygediz/RichSpan) and click on the "New Pull Request" button. Provide a descriptive title and description for your pull request.
+8. Create a Pull Request: Visit the [SolidWriting repository on GitHub](https://github.com/berkaygediz/SolidWriting) and click on the "New Pull Request" button. Provide a descriptive title and description for your pull request.
 
 9. Review and Discuss: Your pull request will be reviewed by the project maintainers. Be prepared to address any feedback or changes requested during the review process.
 
@@ -46,7 +46,7 @@ Thank you for considering contributing to RichSpan! We welcome your contribution
 
 ## Reporting Issues
 
-If you encounter any bugs, issues, or have suggestions for improvements, please [create an issue](https://github.com/berkaygediz/RichSpan/issues) on the GitHub repository.
+If you encounter any bugs, issues, or have suggestions for improvements, please [create an issue](https://github.com/berkaygediz/SolidWriting/issues) on the GitHub repository.
 
 ## Code of Conduct
 

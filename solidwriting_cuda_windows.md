@@ -1,4 +1,4 @@
-# RichSpan Documentation -  CUDA / llama-cpp-python
+# SolidWriting Documentation -  CUDA / llama-cpp-python
 
 ## 1. Install NVIDIA CUDA v12.8 or Newer
 
@@ -65,5 +65,5 @@
 ## 8. Install torch for CUDA
 
   ```bash
-  pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+  pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
   ```

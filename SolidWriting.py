@@ -25,20 +25,22 @@ from modules.threading import *
 try:
     from ctypes import windll
 
-    windll.shell32.SetCurrentProcessExplicitAppUserModelID("berkaygediz.RichSpan.1.5")
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+        "berkaygediz.SolidWriting.1.5"
+    )
 except ImportError:
     pass
 
 try:
-    settings = QSettings("berkaygediz", "RichSpan")
+    settings = QSettings("berkaygediz", "SolidWriting")
     lang = settings.value("appLanguage")
 except:
     pass
 
 
-class RS_ControlInfo(QMainWindow):
+class SW_ControlInfo(QMainWindow):
     def __init__(self, parent=None):
-        super(RS_ControlInfo, self).__init__(parent)
+        super(SW_ControlInfo, self).__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setWindowIcon(QIcon(fallbackValues["icon"]))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
@@ -59,7 +61,7 @@ class RS_ControlInfo(QMainWindow):
         self.widget_central = QWidget(self)
         self.layout_central = QVBoxLayout(self.widget_central)
 
-        self.title = QLabel("RichSpan", self)
+        self.title = QLabel("SolidWriting", self)
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title.setFont(QFont("Roboto", 30))
         self.title.setStyleSheet(
@@ -73,13 +75,13 @@ class RS_ControlInfo(QMainWindow):
 
     def showWS(self):
         self.hide()
-        self.ws_window = RS_Workspace()
+        self.ws_window = SW_Workspace()
         self.ws_window.show()
 
 
-class RS_About(QMainWindow):
+class SW_About(QMainWindow):
     def __init__(self, parent=None):
-        super(RS_About, self).__init__(parent)
+        super(SW_About, self).__init__(parent)
         self.setWindowFlags(Qt.Dialog)
         self.setWindowIcon(QIcon(fallbackValues["icon"]))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
@@ -98,7 +100,7 @@ class RS_About(QMainWindow):
         self.about_label.setText(
             "<center>"
             f"<b>{app.applicationDisplayName()}</b><br><br>"
-            "Real-time computing and formatting supported word processor<br><br>"
+            "Real-time computing and formatting supported word processor.<br><br>"
             "Made by Berkay Gediz<br><br>"
             "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, Mimino666/langdetect, abetlen/llama-cpp-python, <br>pytorch/pytorch, PySide6, chardet, psutil<br><br>"
             "OpenGL: <b>ON</b></center>"
@@ -106,9 +108,9 @@ class RS_About(QMainWindow):
         self.setCentralWidget(self.about_label)
 
 
-class RS_Help(QMainWindow):
+class SW_Help(QMainWindow):
     def __init__(self, parent=None):
-        super(RS_Help, self).__init__(parent)
+        super(SW_Help, self).__init__(parent)
         self.setWindowFlags(Qt.Dialog)
         self.setWindowIcon(QIcon(fallbackValues["icon"]))
         self.setWindowModality(Qt.WindowModality.WindowModal)
@@ -181,9 +183,9 @@ class RS_Help(QMainWindow):
         self.setCentralWidget(scroll_area)
 
 
-class RS_Workspace(QMainWindow):
+class SW_Workspace(QMainWindow):
     def __init__(self, parent=None):
-        super(RS_Workspace, self).__init__(parent)
+        super(SW_Workspace, self).__init__(parent)
         QTimer.singleShot(0, self.initUI)
 
     def initUI(self):
@@ -207,10 +209,10 @@ class RS_Workspace(QMainWindow):
         layout.addWidget(self.hardwareAcceleration)
         self.setCentralWidget(centralWidget)
 
-        self.richspan_thread = ThreadingEngine(
+        self.solidwriting_thread = ThreadingEngine(
             adaptiveResponse=settings.value("adaptiveResponse")
         )
-        self.richspan_thread.update.connect(self.updateStatistics)
+        self.solidwriting_thread.update.connect(self.updateStatistics)
 
         self.themePalette()
         self.selected_file = None
@@ -437,7 +439,7 @@ class RS_Workspace(QMainWindow):
 
     def threadStart(self):
         if not self.thread_running:
-            self.richspan_thread.start()
+            self.solidwriting_thread.start()
             self.thread_running = True
 
     def textChanged(self):
@@ -1314,7 +1316,7 @@ class RS_Workspace(QMainWindow):
             self.ai_widget.hide()
 
     def hybridSaver(self, checked):
-        settings = QSettings("berkaygediz", "RichSpan")
+        settings = QSettings("berkaygediz", "SolidWriting")
         if checked:
             battery = psutil.sensors_battery()
             if battery:
@@ -1408,7 +1410,7 @@ class RS_Workspace(QMainWindow):
         if selected_file:
             self.file_name = selected_file
             try:
-                automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
+                automaticEncoding = SW_Workspace.detectEncoding(self.file_name)
             except Exception as e:
                 automaticEncoding = "utf-8"
 
@@ -1421,7 +1423,7 @@ class RS_Workspace(QMainWindow):
                         QMessageBox.warning(self, None, "Conversion failed.")
             else:
                 with open(self.file_name, "r", encoding=automaticEncoding) as file:
-                    if self.file_name.endswith((".rsdoc")):
+                    if self.file_name.endswith((".swdoc")):
                         self.DocumentArea.setHtml(file.read())
                     elif self.file_name.endswith((".html", ".htm")):
                         self.DocumentArea.setHtml(file.read())
@@ -1465,14 +1467,14 @@ class RS_Workspace(QMainWindow):
             self.saveAs()
         else:
             try:
-                automaticEncoding = RS_Workspace.detectEncoding(self.file_name)
+                automaticEncoding = SW_Workspace.detectEncoding(self.file_name)
             except Exception as e:
                 automaticEncoding = "utf-8"
             if self.file_name.lower().endswith(".docx"):
                 None
             else:
                 with open(self.file_name, "w", encoding=automaticEncoding) as file:
-                    if self.file_name.lower().endswith((".rsdoc", ".html", ".htm")):
+                    if self.file_name.lower().endswith((".swdoc", ".html", ".htm")):
                         file.write(self.DocumentArea.toHtml())
                     elif self.file_name.lower().endswith((".md")):
                         file.write(self.DocumentArea.toMarkdown())
@@ -1519,11 +1521,11 @@ class RS_Workspace(QMainWindow):
                 self.DocumentArea.insertHtml(img_tag)
 
     def viewAbout(self):
-        self.about_window = RS_About()
+        self.about_window = SW_About()
         self.about_window.show()
 
     def viewHelp(self):
-        help_window = RS_Help(self)
+        help_window = SW_Help(self)
         help_window.show()
 
     def bulletList(self):
@@ -1635,9 +1637,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(os.path.join(applicationPath, fallbackValues["icon"])))
     app.setOrganizationName("berkaygediz")
-    app.setApplicationName("RichSpan")
-    app.setApplicationDisplayName("RichSpan 2024.11")
-    app.setApplicationVersion("1.5.2024.11-1")
-    ws = RS_ControlInfo()
+    app.setApplicationName("SolidWriting")
+    app.setApplicationDisplayName("SolidWriting 2025.02")
+    app.setApplicationVersion("1.5.2025.02-1")
+    ws = SW_ControlInfo()
     ws.show()
     sys.exit(app.exec())

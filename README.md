@@ -1,22 +1,22 @@
-# RichSpan - A Supercharged Word Processor
+# SolidWriting - A Supercharged Word Processor
 
 <p align="center">
-    <img src="images/richspan_banner_2.png" alt="RichSpan Banner" />
+    <img src="images/banner/solidwriting_banner_1.png" alt="SolidWriting Banner" />
 </p>
 
 <p align="center">
-    <a href="https://github.com/berkaygediz/richspan/releases/latest">
-        <img src="https://img.shields.io/github/v/release/berkaygediz/richspan" alt="GitHub release" />
+    <a href="https://github.com/berkaygediz/solidwriting/releases/latest">
+        <img src="https://img.shields.io/github/v/release/berkaygediz/solidwriting" alt="GitHub release" />
     </a>
-    <a href="https://github.com/berkaygediz/richspan">
-        <img src="https://img.shields.io/github/repo-size/berkaygediz/richspan" alt="GitHub repo size" />
+    <a href="https://github.com/berkaygediz/solidwriting">
+        <img src="https://img.shields.io/github/repo-size/berkaygediz/solidwriting" alt="GitHub repo size" />
     </a>
-    <a href="https://github.com/berkaygediz/richspan">
-        <img src="https://img.shields.io/github/license/berkaygediz/richspan" alt="GitHub license" />
+    <a href="https://github.com/berkaygediz/solidwriting">
+        <img src="https://img.shields.io/github/license/berkaygediz/solidwriting" alt="GitHub license" />
     </a>
 </p>
 
-RichSpan is a supercharged word processor offering a powerful alternative to traditional software. Built with Python and PySide6, it ensures cross-platform compatibility on Windows, macOS, and Linux. RichSpan features offline AI chat for content generation, while respecting your privacy by processing all interactions locally on your device.
+SolidWriting is a supercharged word processor offering a powerful alternative to traditional software. Built with Python and PySide6, it ensures cross-platform compatibility on Windows, macOS, and Linux. SolidWriting features offline AI chat for content generation, while respecting your privacy by processing all interactions locally on your device.
 
 ## Features
 
@@ -24,7 +24,7 @@ RichSpan is a supercharged word processor offering a powerful alternative to tra
 - [x] **Document Statistics**: Provides key statistical information about the document.
 - [x] **Find & Replace**: Search and replace text within your document.
 - [x] **Printing & Exporting**: Print or export documents to PDF format.
-- [x] **File Format Support**: Supports .txt, .html, .docx (partial), and .rsdoc (RichSpan) file formats.
+- [x] **File Format Support**: Supports .txt, .html, .docx (partial), and .rsdoc (SolidWriting) file formats.
 - [x] **Text Formatting**: Customize text with options like color, background color, bold, italic, underline, font style, size, and alignment.
 - [x] **Undo & Redo**: Easily undo or redo any edits made in the document.
 - [x] **User Experience**: Drag and drop functionality, dark mode support, and alerts for unsaved changes.
@@ -53,7 +53,7 @@ RichSpan is a supercharged word processor offering a powerful alternative to tra
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/berkaygediz/RichSpan.git
+   git clone https://github.com/berkaygediz/SolidWriting.git
    ```
 
 2. Install requirements:
@@ -65,26 +65,26 @@ RichSpan is a supercharged word processor offering a powerful alternative to tra
 3. Creating a executable file (Unsigned):
 
    ```bash
-   pyinstaller --noconfirm --onefile --windowed --icon ".\richspan_icon.ico" --name "RichSpan" --clean --optimize "2" "RichSpan.py"
+   pyinstaller --noconfirm --onefile --windowed --icon ".\solidwriting_icon.ico" --name "SolidWriting" --clean --optimize "2" "SolidWriting.py"
    ```
 
 - Command for CUDA
 
    ```bash
-   pyinstaller --noconfirm --onefile --windowed --icon ".\richspan_icon.ico" --name "RichSpan" --clean --optimize "2" --add-data "path\RichSpan\.venv\Lib\site-packages\llama_cpp\lib\;." ".\RichSpan.py"
+   pyinstaller --noconfirm --onefile --windowed --icon ".\solidwriting_icon.ico" --name "SolidWriting" --clean --optimize "2" --add-data ".\.venv\Lib\site-packages\llama_cpp\lib\;." ".\SolidWriting.py"
    ```
 
 ## Usage
 
-Launch RichSpan from the command line:
+Launch SolidWriting from the command line:
 
 ```bash
-python RichSpan.py
+python SolidWriting.py
 ```
 
 ## Contributing
 
-Contributions to the RichSpan project are welcomed. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute and our code of conduct.
+Contributions to the SolidWriting project are welcomed. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute and our code of conduct.
 
 ## License
 

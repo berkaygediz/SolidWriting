@@ -60,8 +60,8 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-richspan.db
-richspan.db-*
+solidwriting.db
+solidwriting.db-*
 
 # Flask stuff:
 instance/
