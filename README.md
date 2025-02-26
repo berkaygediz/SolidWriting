@@ -65,13 +65,7 @@ SolidWriting is a supercharged word processor offering a powerful alternative to
 3. Creating a executable file (Unsigned):
 
    ```bash
-   pyinstaller --noconfirm --onefile --windowed --icon ".\solidwriting_icon.ico" --name "SolidWriting" --clean --optimize "2" "SolidWriting.py"
-   ```
-
-- Command for CUDA
-
-   ```bash
-   pyinstaller --noconfirm --onefile --windowed --icon ".\solidwriting_icon.ico" --name "SolidWriting" --clean --optimize "2" --add-data ".\.venv\Lib\site-packages\llama_cpp\lib\;." ".\SolidWriting.py"
+   pyinstaller --name="SolidWriting" --onedir --windowed --icon=".\solidwriting_icon.ico" --add-data "./.venv/Lib/site-packages/PySide6/*:PySide6" --add-data "./.venv/Lib/site-packages/torch/*:torch" --add-data "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" --add-binary "./.venv/Lib/site-packages/PySide6/*:PySide6" --add-binary "./.venv/Lib/site-packages/torch/*:torch" --add-binary "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" --optimize "2" --clean --noconfirm ".\SolidWriting.py"
    ```
 
 ## Usage

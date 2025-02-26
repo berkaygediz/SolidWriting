@@ -31,13 +31,13 @@ VSVersionInfo(
       StringTable(
         u'040904B0',
         [StringStruct(u'CompanyName', u'berkaygediz'),
-        StringStruct(u'FileDescription', u'Real-time computing and formatting supported word processor.'),
-        StringStruct(u'FileVersion', u'1.5.2024.11'),
+        StringStruct(u'FileDescription', u'A supercharged word processor with AI integration, supporting real-time computing and advanced formatting.'),
+        StringStruct(u'FileVersion', u'1.5.2025.02'),
         StringStruct(u'InternalName', u'SolidWriting'),
-        StringStruct(u'LegalCopyright', u'2024 © berkaygediz. All rights reserved.'),
+        StringStruct(u'LegalCopyright', u'2025 © berkaygediz. All rights reserved.'),
         StringStruct(u'OriginalFilename', u'SolidWriting.exe'),
         StringStruct(u'ProductName', u'SolidWriting'),
-        StringStruct(u'ProductVersion', u'1.5.2024.11')])
+        StringStruct(u'ProductVersion', u'1.5.2025.02')])
       ]), 
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]

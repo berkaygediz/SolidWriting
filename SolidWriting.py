@@ -11,7 +11,7 @@ import mammoth
 import psutil
 import torch
 from langdetect import DetectorFactory, detect
-from llama_cpp import *
+from llama_cpp import Llama
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtOpenGL import *
@@ -36,6 +36,28 @@ try:
     lang = settings.value("appLanguage")
 except:
     pass
+
+
+class LLMThread(QThread):
+    result = Signal(str)
+
+    def __init__(self, prompt, llm, parent=None):
+        super(LLMThread, self).__init__(parent)
+        self.prompt = prompt
+        self.llm = llm
+
+    def run(self):
+        response = self.getResponseLLM()
+        self.result.emit(response)
+
+    def getResponseLLM(self):
+        try:
+            response = self.llm.create_chat_completion(
+                messages=[{"role": "user", "content": self.prompt}]
+            )
+            return response["choices"][0]["message"]["content"]
+        except Exception as e:
+            return f"Error: {str(e)}"
 
 
 class SW_ControlInfo(QMainWindow):
@@ -100,7 +122,7 @@ class SW_About(QMainWindow):
         self.about_label.setText(
             "<center>"
             f"<b>{app.applicationDisplayName()}</b><br><br>"
-            "Real-time computing and formatting supported word processor.<br><br>"
+            "A supercharged word processor with AI integration, supporting real-time computing and advanced formatting.<br><br>"
             "Made by Berkay Gediz<br><br>"
             "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, Mimino666/langdetect, abetlen/llama-cpp-python, <br>pytorch/pytorch, PySide6, chardet, psutil<br><br>"
             "OpenGL: <b>ON</b></center>"
@@ -197,10 +219,10 @@ class SW_Workspace(QMainWindow):
         system_language = locale.getlocale()[1]
         if system_language not in languages.items():
             settings.setValue("appLanguage", "1252")
-            settings.sync()
         if settings.value("adaptiveResponse") == None:
             settings.setValue("adaptiveResponse", 1)
-            settings.sync()
+
+        settings.sync()
 
         centralWidget = QOpenGLWidget(self)
 
@@ -499,16 +521,7 @@ class SW_Workspace(QMainWindow):
                 statistics += f"<td>{translations[lang]['analysis_message_5'].format(detected_language)}</td>"
 
         else:
-            self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
-            self.DocumentArea.setFontPointSize(fallbackValues["fontSize"])
-            self.DocumentArea.setFontWeight(75 if fallbackValues["bold"] else 50)
-            self.DocumentArea.setFontItalic(fallbackValues["italic"])
-            self.DocumentArea.setFontUnderline(fallbackValues["underline"])
-            self.DocumentArea.setAlignment(fallbackValues["contentAlign"])
-            self.DocumentArea.setTextColor(QColor(fallbackValues["contentColor"]))
-            self.DocumentArea.setTextBackgroundColor(
-                QColor(fallbackValues["contentBackgroundColor"])
-            )
+            self.resetDocumentArea()
 
         statistics += f"<th>{translations[lang]['statistic']}</th>"
         statistics += (
@@ -706,22 +719,11 @@ class SW_Workspace(QMainWindow):
                 return
 
     def initArea(self):
-        self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
-        self.DocumentArea.setFontPointSize(fallbackValues["fontSize"])
-        self.DocumentArea.setFontWeight(75 if fallbackValues["bold"] else 50)
-        self.DocumentArea.setFontItalic(fallbackValues["italic"])
-        self.DocumentArea.setFontUnderline(fallbackValues["underline"])
-        self.DocumentArea.setAlignment(fallbackValues["contentAlign"])
-        self.DocumentArea.setTextColor(QColor(fallbackValues["contentColor"]))
-        self.DocumentArea.setTextBackgroundColor(
-            QColor(fallbackValues["contentBackgroundColor"])
-        )
-        self.DocumentArea.setTabStopDistance(27)
+        self.resetDocumentArea()
         self.DocumentArea.document().setDocumentMargin(self.width() * 0.25)
 
     def loadLLM(self):
-        # Consent
-        if settings.value("load_llm") is None or settings.value("load_llm") is True:
+        if settings.value("load_llm") == None or settings.value("load_llm") == "true":
             reply = QMessageBox.question(
                 None,
                 "Load LLM",
@@ -731,12 +733,13 @@ class SW_Workspace(QMainWindow):
             )
 
             if reply == QMessageBox.Yes:
-                settings.setValue("load_llm", True)
                 self._load_model()
+                settings.setValue("load_llm", True)
+
             else:
-                settings.setValue("load_llm", False)
-                self.ai_widget.setWidget(QLabel("LLM not available."))
+                pass
         else:
+            settings.setValue("load_llm", False)
             self.ai_widget.setWidget(QLabel("LLM not available."))
 
     def _load_model(self):
@@ -756,20 +759,29 @@ class SW_Workspace(QMainWindow):
             model_path = os.path.join(current_directory, model_filename)
 
             if os.path.exists(model_path):
-                if torch.cuda.is_available():
-                    max_memory = 4 * 1024
+                if torch.accelerator.is_available() == False:
+                    # max_memory = torch.cuda.get_device_properties(0).total_memory / (
+                    #     1024**2
+                    # )  # x MB VRAM
+                    max_memory = 8192
                 else:
                     available_memory = psutil.virtual_memory().available
-                    max_memory = min(available_memory, 2 * 1024)
+                    max_memory = min(available_memory, 4 * 1024 * 1024 * 1024) / (
+                        1024**2
+                    )  # 4096 MB
 
                 self.llm = Llama(
                     model_path,
-                    n_gpu_layers=33,
-                    use_fp16=True,
+                    n_gpu_layers=-1,
+                    split_mode=0,
+                    offload_kqv=True,
+                    flash_attn=True,
+                    n_threads=4,
                     max_memory=max_memory,
                     device_map="auto",
-                    n_threads=8,
+                    verbose=True,
                 )
+
             else:
                 self.llm = None
         except TypeError as e:
@@ -854,7 +866,7 @@ class SW_Workspace(QMainWindow):
             QDockWidget.NoDockWidgetFeatures | QDockWidget.DockWidgetClosable
         )
 
-    def LLMmessage(self, text, is_user=True):
+    def LLMmessage(self, text, is_user=True, typing_speed=100):
         DetectorFactory.seed = 0
 
         language = ""
@@ -898,6 +910,49 @@ class SW_Workspace(QMainWindow):
 
         self.messages_layout.addWidget(message_widget)
 
+        if not is_user:
+            self.LLMdynamicMessage(
+                message_label, text, typing_speed * self.adaptiveResponse
+            )
+
+        if is_user:
+            self.full_text = ""
+
+    def LLMdynamicMessage(self, message_label, text, typing_speed):
+        words = text.split()
+
+        if not hasattr(self, "full_text"):
+            self.full_text = ""
+
+        word_index = 0
+
+        def type_next_word():
+            nonlocal word_index
+            if word_index < len(words):
+                self.full_text += words[word_index] + " "
+                message_label.setText(self.full_text)
+                word_index += 1
+            else:
+                self.LLMmessageDatetime(message_label)
+                self.typing_timer.stop()
+
+        self.typing_timer = QTimer(self)
+        self.typing_timer.timeout.connect(type_next_word)
+        self.typing_timer.start(typing_speed)
+
+    def LLMmessageDatetime(self, message_label):
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        language = (
+            detect(message_label.text()) if len(message_label.text()) > 30 else ""
+        )
+
+        if language:
+            new_text = f"{message_label.text()}<br><br>({current_time} - {language})"
+        else:
+            new_text = f"{message_label.text()}<br><br>({current_time})"
+
+        message_label.setText(new_text)
+
     def LLMpredict(self):
         prompt = self.input_text.toPlainText().strip()
 
@@ -909,7 +964,15 @@ class SW_Workspace(QMainWindow):
         self.predict_button.setText("...")
         self.predict_button.setEnabled(False)
 
-        QTimer.singleShot(100, lambda: self.LLMprompt(prompt))
+        self.llm_thread = LLMThread(prompt, self.llm)
+        self.llm_thread.result.connect(self.LLMhandleResponse)
+        self.llm_thread.start()
+
+    def LLMhandleResponse(self, response):
+        self.LLMmessage(response, is_user=False)
+        self.input_text.clear()
+        self.predict_button.setText("->")
+        self.predict_button.setEnabled(True)
 
     def LLMcontextPredict(self, action_type):
         selected_text = self.DocumentArea.textCursor().selectedText().strip()
@@ -928,7 +991,9 @@ class SW_Workspace(QMainWindow):
             self.LLMmessage("No text selected.", is_user=False)
             return
 
-        QTimer.singleShot(100, lambda: self.LLMprompt(prompt))
+        self.llm_thread = LLMThread(prompt, self.llm)
+        self.llm_thread.result.connect(self.LLMhandleResponse)
+        self.llm_thread.start()
 
     def LLMprompt(self, prompt):
         if prompt:
@@ -1191,27 +1256,28 @@ class SW_Workspace(QMainWindow):
             )
 
     def initToolbar(self):
-        self.file_toolbar = self.addToolBar(translations[lang]["file"])
-        self.toolbarLabel(
-            self.file_toolbar,
-            translations[lang]["file"] + ": ",
-        )
-        self.file_toolbar.addActions(
-            [
-                self.newaction,
-                self.openaction,
-                self.saveaction,
-                self.saveasaction,
-                self.printaction,
-                self.undoaction,
-                self.redoaction,
-                self.findaction,
-                self.replaceaction,
-            ]
-        )
+        def add_toolbar(name_key, actions):
+            toolbar = self.addToolBar(translations[lang][name_key])
+            self.toolbarLabel(toolbar, translations[lang][name_key] + ": ")
+            toolbar.addActions(actions)
+            return toolbar
+
+        file_actions = [
+            self.newaction,
+            self.openaction,
+            self.saveaction,
+            self.saveasaction,
+            self.printaction,
+            self.undoaction,
+            self.redoaction,
+            self.findaction,
+            self.replaceaction,
+        ]
+        self.file_toolbar = add_toolbar("file", file_actions)
 
         self.ui_toolbar = self.addToolBar(translations[lang]["ui"])
         self.toolbarLabel(self.ui_toolbar, translations[lang]["ui"] + ": ")
+
         self.theme_action = self.createAction(
             translations[lang]["darklight"],
             translations[lang]["darklight_message"],
@@ -1221,93 +1287,63 @@ class SW_Workspace(QMainWindow):
         )
         self.theme_action.setCheckable(True)
         self.theme_action.setChecked(settings.value("appTheme") == "dark")
-
         self.ui_toolbar.addAction(self.theme_action)
+
         self.powersaveraction = QAction(
-            translations[lang]["powersaver"],
-            self,
-            checkable=True,
+            translations[lang]["powersaver"], self, checkable=True
         )
         self.powersaveraction.setStatusTip(translations[lang]["powersaver_message"])
         self.powersaveraction.toggled.connect(self.hybridSaver)
-
         self.ui_toolbar.addAction(self.powersaveraction)
+
         adaptiveResponse = settings.value(
             "adaptiveResponse", fallbackValues["adaptiveResponse"]
         )
         self.powersaveraction.setChecked(adaptiveResponse > 1)
 
-        self.ui_toolbar.addAction(self.powersaveraction)
         self.hide_ai_dock = self.createAction(
-            "AI",
-            "AI",
-            self.toggleDock,
-            QKeySequence("Ctrl+Shift+D"),
-            "",
+            "AI", "AI", self.toggleDock, QKeySequence("Ctrl+Shift+D"), ""
         )
         self.ui_toolbar.addAction(self.hide_ai_dock)
         self.ui_toolbar.addAction(self.helpAction)
         self.ui_toolbar.addAction(self.aboutAction)
+
         self.language_combobox = QComboBox(self)
         self.language_combobox.setStyleSheet("background-color:#000000; color:#FFFFFF;")
         for lcid, name in languages.items():
             self.language_combobox.addItem(name, lcid)
-
         self.language_combobox.currentIndexChanged.connect(self.changeLanguage)
         self.ui_toolbar.addWidget(self.language_combobox)
 
         self.addToolBarBreak()
 
-        self.edit_toolbar = self.addToolBar(translations[lang]["edit"])
-        self.toolbarLabel(
-            self.edit_toolbar,
-            translations[lang]["edit"] + ": ",
-        )
-        self.edit_toolbar.addActions(
-            [
-                self.alignrightevent,
-                self.aligncenterevent,
-                self.alignleftevent,
-                self.alignjustifiedevent,
-            ]
-        )
-        self.edit_toolbar.addSeparator()
-        self.font_toolbar = self.addToolBar(translations[lang]["font"])
-        self.toolbarLabel(
-            self.font_toolbar,
-            translations[lang]["font"] + ": ",
-        )
-        self.font_toolbar.addActions([self.bold, self.italic, self.underline])
-        self.font_toolbar.addSeparator()
-        self.list_toolbar = self.addToolBar(translations[lang]["list"])
-        self.toolbarLabel(
-            self.list_toolbar,
-            translations[lang]["list"] + ": ",
-        )
-        self.list_toolbar.addActions([self.bulletevent, self.numberedevent])
+        edit_actions = [
+            self.alignrightevent,
+            self.aligncenterevent,
+            self.alignleftevent,
+            self.alignjustifiedevent,
+        ]
+        self.edit_toolbar = add_toolbar("edit", edit_actions)
+
+        font_actions = [self.bold, self.italic, self.underline]
+        self.font_toolbar = add_toolbar("font", font_actions)
+
+        list_actions = [self.bulletevent, self.numberedevent]
+        self.list_toolbar = add_toolbar("list", list_actions)
+
         self.addToolBarBreak()
 
-        self.color_toolbar = self.addToolBar(translations[lang]["color"])
-        self.toolbarLabel(
-            self.color_toolbar,
-            translations[lang]["color"] + ": ",
-        )
-        self.color_toolbar.addActions(
-            [
-                self.color,
-                self.backgroundcolor,
-                self.fontfamily,
-                self.inc_fontaction,
-                self.dec_fontaction,
-            ]
-        )
+        color_actions = [
+            self.color,
+            self.backgroundcolor,
+            self.fontfamily,
+            self.inc_fontaction,
+            self.dec_fontaction,
+        ]
+        self.color_toolbar = add_toolbar("color", color_actions)
 
-        self.multimedia_toolbar = self.addToolBar(translations[lang]["multimedia"])
-        self.toolbarLabel(
-            self.multimedia_toolbar,
-            translations[lang]["multimedia"] + ": ",
-        )
-        self.multimedia_toolbar.addActions([self.addimage])
+        multimedia_actions = [self.addimage]
+        self.multimedia_toolbar = add_toolbar("multimedia", multimedia_actions)
 
     def toggleDock(self):
         if self.ai_widget.isHidden():
@@ -1322,13 +1358,13 @@ class SW_Workspace(QMainWindow):
             if battery:
                 if battery.percent <= 35 and not battery.power_plugged:
                     # Ultra
-                    self.adaptiveResponse = 12
+                    self.adaptiveResponse = 6
                 else:
                     # Standard
-                    self.adaptiveResponse = 6
+                    self.adaptiveResponse = 4
             else:
                 # Global Standard
-                self.adaptiveResponse = 3
+                self.adaptiveResponse = 2
         else:
             self.adaptiveResponse = fallbackValues["adaptiveResponse"]
 
@@ -1345,20 +1381,23 @@ class SW_Workspace(QMainWindow):
             detector.close()
         return detector.result["encoding"]
 
+    def resetDocumentArea(self):
+        self.DocumentArea.clear()
+        self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
+        self.DocumentArea.setFontPointSize(fallbackValues["fontSize"])
+        self.DocumentArea.setFontWeight(75 if fallbackValues["bold"] else 50)
+        self.DocumentArea.setFontItalic(fallbackValues["italic"])
+        self.DocumentArea.setFontUnderline(fallbackValues["underline"])
+        self.DocumentArea.setAlignment(fallbackValues["contentAlign"])
+        self.DocumentArea.setTextColor(QColor(fallbackValues["contentColor"]))
+        self.DocumentArea.setTextBackgroundColor(
+            QColor(fallbackValues["contentBackgroundColor"])
+        )
+        self.DocumentArea.setTabStopDistance(27)
+
     def newFile(self):
-        if self.is_saved == True:
-            self.DocumentArea.clear()
-            self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
-            self.DocumentArea.setFontPointSize(fallbackValues["fontSize"])
-            self.DocumentArea.setFontWeight(75 if fallbackValues["bold"] else 50)
-            self.DocumentArea.setFontItalic(fallbackValues["italic"])
-            self.DocumentArea.setFontUnderline(fallbackValues["underline"])
-            self.DocumentArea.setAlignment(fallbackValues["contentAlign"])
-            self.DocumentArea.setTextColor(QColor(fallbackValues["contentColor"]))
-            self.DocumentArea.setTextBackgroundColor(
-                QColor(fallbackValues["contentBackgroundColor"])
-            )
-            self.DocumentArea.setTabStopDistance(27)
+        if self.is_saved:
+            self.resetDocumentArea()
             self.directory = self.default_directory
             self.file_name = None
             self.is_saved = False
@@ -1373,24 +1412,7 @@ class SW_Workspace(QMainWindow):
             )
 
             if reply == QMessageBox.Yes:
-                self.DocumentArea.clear()
-                self.DocumentArea.setFontFamily(fallbackValues["fontFamily"])
-                self.DocumentArea.setFontPointSize(fallbackValues["fontSize"])
-                self.DocumentArea.setFontWeight(75 if fallbackValues["bold"] else 50)
-                self.DocumentArea.setFontItalic(fallbackValues["italic"])
-                self.DocumentArea.setFontUnderline(fallbackValues["underline"])
-                self.DocumentArea.setAlignment(fallbackValues["contentAlign"])
-                self.DocumentArea.setTextColor(QColor(fallbackValues["contentColor"]))
-                self.DocumentArea.setTextBackgroundColor(
-                    QColor(fallbackValues["contentBackgroundColor"])
-                )
-                self.DocumentArea.setTabStopDistance(27)
-                self.directory = self.default_directory
-                self.file_name = None
-                self.is_saved = False
-                self.updateTitle()
-            else:
-                pass
+                self.resetDocumentArea()
 
     def openFile(self, file_to_open=None):
         options = QFileDialog.Options()
@@ -1531,27 +1553,43 @@ class SW_Workspace(QMainWindow):
     def bulletList(self):
         cursor = self.DocumentArea.textCursor()
         cursor.beginEditBlock()
+
         selected_text = cursor.selectedText()
+        lines = selected_text.split("\n")
         char_format = cursor.charFormat()
-        cursor.removeSelectedText()
-        cursor.insertList(QTextListFormat.ListDisc)
-        cursor.insertText(selected_text)
-        new_cursor = self.DocumentArea.textCursor()
-        new_cursor.movePosition(QTextCursor.PreviousBlock)
-        new_cursor.mergeCharFormat(char_format)
+
+        for line in lines:
+            if line.strip():
+                cursor.insertList(QTextListFormat.ListDisc)
+                cursor.insertText(line)
+                cursor.insertBlock()
+            else:
+                cursor.insertBlock()
+
+        cursor.mergeCharFormat(char_format)
+
         cursor.endEditBlock()
 
     def numberedList(self):
         cursor = self.DocumentArea.textCursor()
         cursor.beginEditBlock()
+
         selected_text = cursor.selectedText()
+
+        lines = selected_text.split("\n")
+
         char_format = cursor.charFormat()
-        cursor.removeSelectedText()
-        cursor.insertList(QTextListFormat.ListDecimal)
-        cursor.insertText(selected_text)
-        new_cursor = self.DocumentArea.textCursor()
-        new_cursor.movePosition(QTextCursor.PreviousBlock)
-        new_cursor.mergeCharFormat(char_format)
+
+        for line in lines:
+            if line.strip():
+                cursor.insertList(QTextListFormat.ListDecimal)
+                cursor.insertText(line)
+                cursor.insertBlock()
+            else:
+                cursor.insertBlock()
+
+        cursor.mergeCharFormat(char_format)
+
         cursor.endEditBlock()
 
     def contentAlign(self, alignment):
@@ -1603,11 +1641,10 @@ class SW_Workspace(QMainWindow):
     def find(self):
         self.find_dialog = QInputDialog(self)
         self.find_dialog.setInputMode(QInputDialog.TextInput)
-        app_language = lang
-        self.find_dialog.setLabelText(translations[app_language]["find"])
-        self.find_dialog.setWindowTitle(translations[app_language]["find"])
-        self.find_dialog.setOkButtonText(translations[app_language]["find"])
-        self.find_dialog.setCancelButtonText(translations[app_language]["cancel"])
+        self.find_dialog.setLabelText(translations[lang]["find"])
+        self.find_dialog.setWindowTitle(translations[lang]["find"])
+        self.find_dialog.setOkButtonText(translations[lang]["find"])
+        self.find_dialog.setCancelButtonText(translations[lang]["cancel"])
         self.find_dialog.textValueSelected.connect(self.findText)
         self.find_dialog.show()
 
@@ -1639,7 +1676,7 @@ if __name__ == "__main__":
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("SolidWriting")
     app.setApplicationDisplayName("SolidWriting 2025.02")
-    app.setApplicationVersion("1.5.2025.02-1")
+    app.setApplicationVersion("1.5.2025.02-2")
     ws = SW_ControlInfo()
     ws.show()
     sys.exit(app.exec())
