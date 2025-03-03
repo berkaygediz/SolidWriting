@@ -1,4 +1,4 @@
-# SolidWriting - A Supercharged Word Processor
+# SolidWriting
 
 <p align="center">
     <img src="images/banner/solidwriting_banner_1.png" alt="SolidWriting Banner" />
@@ -65,7 +65,7 @@ SolidWriting is a supercharged word processor offering a powerful alternative to
 3. Creating a executable file (Unsigned):
 
    ```bash
-   pyinstaller --name="SolidWriting" --onedir --windowed --icon=".\solidwriting_icon.ico" --add-data "./.venv/Lib/site-packages/PySide6/*:PySide6" --add-data "./.venv/Lib/site-packages/torch/*:torch" --add-data "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" --add-binary "./.venv/Lib/site-packages/PySide6/*:PySide6" --add-binary "./.venv/Lib/site-packages/torch/*:torch" --add-binary "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" --optimize "2" --clean --noconfirm ".\SolidWriting.py"
+   pyinstaller --name="SolidWriting" --nonconsole --onedir --windowed --icon=".\solidwriting_icon.ico" --add-data "./.venv/Lib/site-packages/PySide6/*:PySide6" --add-data "./.venv/Lib/site-packages/torch/*:torch" --add-data "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" --add-binary "./.venv/Lib/site-packages/PySide6/*:PySide6" --add-binary "./.venv/Lib/site-packages/torch/*:torch" --add-binary "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" --optimize "2" --clean --noconfirm ".\SolidWriting.py"
    ```
 
 ## Usage

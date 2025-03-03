@@ -566,15 +566,15 @@ class SW_Workspace(QMainWindow):
         settings.sync()
 
     def restoreState(self):
-        self.geometry = settings.value("windowScale")
+        geometry = settings.value("windowScale")
         self.directory = settings.value("defaultDirectory", self.default_directory)
         self.DocumentArea.setHtml(settings.value("content"))
         self.is_saved = settings.value("isSaved")
         index = self.language_combobox.findData(lang)
         self.language_combobox.setCurrentIndex(index)
 
-        if self.geometry is not None:
-            self.restoreGeometry(self.geometry)
+        if geometry:
+            self.restoreGeometry(geometry)
 
         if len(sys.argv) > 1:
             file_to_open = os.path.abspath(sys.argv[1])
