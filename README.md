@@ -31,7 +31,7 @@ SolidWriting is a supercharged word processor offering a powerful alternative to
 - [x] **Base64 Image Support**: Embed images in documents using Base64 encoding.
 - [x] **Customizable Toolbar**: Personalize the user interface toolbar to suit your workflow.
 - [x] **Performance**: Fast and lightweight with threading support and hardware acceleration.
-- [x] **Multilingual Support**: Available in multiple languages including English, Deutsch, Español, Türkçe, Azərbaycanca, Uzbek, 中文 (Chinese), 한국어 (Korean), 日本語 (Japanese), العربية (Arabic), Русский (Russian), Français, Ελληνικά (Greek), Hebrew (עברית).
+- [x] **Multilingual Support**: Available in multiple languages including English, Deutsch, Español, Türkçe, Azərbaycanca, Uzbek, 中文 (Chinese), 한국어 (Korean), 日本語 (Japanese), العربية (Arabic), Русский (Russian), Français, Ελληνικά (Greek), Kinyarwanda (Rwandan) Hebrew (עברית).
 - [x] **Lists**: Create numbered or bulleted lists.
 - [x] **Adaptive Power Saving**: Optimized for power efficiency with hybrid ultra and standard power saving modes.
 - [x] **Offline AI Chat**: Offline AI chat powered by a local language model, enabling direct interaction for questions and content generation, with automatic language detection, assisted by a context menu for enhanced user experience.
