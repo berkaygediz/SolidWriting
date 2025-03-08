@@ -16,25 +16,27 @@
     </a>
 </p>
 
-SolidWriting is a supercharged word processor offering a powerful alternative to traditional software. Built with Python and PySide6, it ensures cross-platform compatibility on Windows, macOS, and Linux. SolidWriting features offline AI chat for content generation, while respecting your privacy by processing all interactions locally on your device.
+SolidWriting is a supercharged, modern word processor designed as a powerful alternative to traditional software. Built with Python and PySide6, it delivers a lightweight yet feature-rich experience while ensuring seamless cross-platform compatibility on Windows, macOS, and Linux. With its offline AI chat for content generation and intelligent assistance, SolidWriting enhances productivity while prioritizing privacy by processing all interactions locally on your device.
 
 ## Features
 
 - [x] **Cross-Platform**: Fully compatible with Windows, macOS, and Linux.
-- [x] **Document Statistics**: Provides key statistical information about the document.
+- [x] **Document Management**: Create, open, save, and print documents effortlessly.
 - [x] **Find & Replace**: Search and replace text within your document.
-- [x] **Printing & Exporting**: Print or export documents to PDF format.
-- [x] **File Format Support**: Supports .txt, .html, .docx (partial), and .rsdoc (SolidWriting) file formats.
-- [x] **Text Formatting**: Customize text with options like color, background color, bold, italic, underline, font style, size, and alignment.
-- [x] **Undo & Redo**: Easily undo or redo any edits made in the document.
+- [x] **Printing & Exporting**: Print documents or export them as PDFs.
+- [x] **File Format Support**: Supports .txt, .html, .docx (partial), and .rsdoc (SolidWriting).
+- [x] **Text Formatting**: Customize text with bold, italic, underline, font selection, size adjustment, color, background color, and alignment options.
+- [x] **Undo & Redo**: Easily reverse or reapply changes.
+- [x] **Cut, Copy, Paste**: Standard clipboard functions for efficient editing.
+- [x] **Lists & Tables**: Create numbered/bulleted lists and insert customizable tables.
+- [x] **Hyperlinks**: Add and open hyperlinks to reference external resources.
+- [x] **Image Support**: Embed images in documents with Base64 encoding.
+- [x] **Performance & Power Saving**: Fast and lightweight, with threading support and hardware acceleration. Optimized for power efficiency with hybrid ultra and standard power saving modes.
+- [x] **Document Statistics**: Provides key statistical information about the document.
 - [x] **User Experience**: Drag and drop functionality, dark mode support, and alerts for unsaved changes.
-- [x] **Base64 Image Support**: Embed images in documents using Base64 encoding.
 - [x] **Customizable Toolbar**: Personalize the user interface toolbar to suit your workflow.
-- [x] **Performance**: Fast and lightweight with threading support and hardware acceleration.
-- [x] **Multilingual Support**: Available in multiple languages including English, Deutsch, Español, Türkçe, Azərbaycanca, Uzbek, 中文 (Chinese), 한국어 (Korean), 日本語 (Japanese), العربية (Arabic), Русский (Russian), Français, Ελληνικά (Greek), Kinyarwanda (Rwandan) Hebrew (עברית).
-- [x] **Lists**: Create numbered or bulleted lists.
-- [x] **Adaptive Power Saving**: Optimized for power efficiency with hybrid ultra and standard power saving modes.
-- [x] **Offline AI Chat**: Offline AI chat powered by a local language model, enabling direct interaction for questions and content generation, with automatic language detection, assisted by a context menu for enhanced user experience.
+- [x] **Multilingual Support**: English, Deutsch, Español, Türkçe, Azərbaycanca, Uzbek, 中文 (Chinese), 한국어 (Korean), 日本語 (Japanese), العربية (Arabic), Русский (Russian), Français, Ελληνικά (Greek), Kinyarwanda (Rwandan), Hebrew (עברית).
+- [x] **Offline AI Chat**: Built-in AI assistant (offline mode) for content generation & Q&A, with automatic language detection and a context menu for seamless interaction.
 
 ## Prerequisites
 
@@ -65,7 +67,7 @@ SolidWriting is a supercharged word processor offering a powerful alternative to
 3. Creating a executable file (Unsigned):
 
    ```bash
-   pyinstaller --name="SolidWriting" --nonconsole --onedir --windowed --icon=".\solidwriting_icon.ico" --add-data "./.venv/Lib/site-packages/PySide6/*:PySide6" --add-data "./.venv/Lib/site-packages/torch/*:torch" --add-data "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" --add-binary "./.venv/Lib/site-packages/PySide6/*:PySide6" --add-binary "./.venv/Lib/site-packages/torch/*:torch" --add-binary "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" --optimize "2" --clean --noconfirm ".\SolidWriting.py"
+   pyinstaller --name="SolidWriting" --noconsole --onedir --windowed --optimize "2" --clean --noconfirm --icon=".\solidwriting_icon.ico" --add-data "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" --add-binary "./.venv/Lib/site-packages/llama_cpp/*:llama_cpp" ".\SolidWriting.py"
    ```
 
 ## Usage

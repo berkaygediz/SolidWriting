@@ -38,11 +38,11 @@ except:
     pass
 
 
-class LLMThread(QThread):
+class SW_LLMThread(QThread):
     result = Signal(str)
 
     def __init__(self, prompt, llm, parent=None):
-        super(LLMThread, self).__init__(parent)
+        super(SW_LLMThread, self).__init__(parent)
         self.prompt = prompt
         self.llm = llm
 
@@ -172,29 +172,38 @@ class SW_Help(QMainWindow):
             "</style></head><body>"
             "<h1>Help</h1>"
             "<table><tr><th>Shortcut</th><th>Function</th></tr>"
-            f"</tr><tr><td>Ctrl+N</td><td>{translations[lang]['new_message']}</td></tr>"
+            f"<tr><td>Ctrl+N</td><td>{translations[lang]['new_message']}</td></tr>"
             f"<tr><td>Ctrl+O</td><td>{translations[lang]['open_message']}</td></tr>"
             f"<tr><td>Ctrl+S</td><td>{translations[lang]['save_message']}</td></tr>"
             f"<tr><td>Ctrl+Shift+S</td><td>{translations[lang]['save_as_message']}</td></tr>"
             f"<tr><td>Ctrl+P</td><td>{translations[lang]['print_message']}</td></tr>"
             f"<tr><td>Ctrl+Z</td><td>{translations[lang]['undo_message']}</td></tr>"
             f"<tr><td>Ctrl+Y</td><td>{translations[lang]['redo_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+T</td><td>{translations[lang]['darklight_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+D</td><td>{translations[lang]['help_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+C</td><td>{translations[lang]['font_color_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+B</td><td>{translations[lang]['contentBackgroundColor_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+F</td><td>{translations[lang]['font_message']}</td></tr>"
-            f"<tr><td>Ctrl++</td><td>{translations[lang]['inc_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+-</td><td>{translations[lang]['dec_font_message']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+P</td><td>{translations[lang]['image_message']}</td></tr>"
+            f"<tr><td>Ctrl+X</td><td>Cut</td></tr>"
+            f"<tr><td>Ctrl+C</td><td>Copy</td></tr>"
+            f"<tr><td>Ctrl+V</td><td>Paste</td></tr>"
             f"<tr><td>Ctrl+F</td><td>{translations[lang]['find_message']}</td></tr>"
             f"<tr><td>Ctrl+H</td><td>{translations[lang]['replace_message']}</td></tr>"
+            f"<tr><td>Ctrl+L</td><td>{translations[lang]['left_message']}</td></tr>"
+            f"<tr><td>Ctrl+E</td><td>{translations[lang]['center_message']}</td></tr>"
+            f"<tr><td>Ctrl+R</td><td>{translations[lang]['right_message']}</td></tr>"
+            f"<tr><td>Ctrl+J</td><td>{translations[lang]['justify_message']}</td></tr>"
             f"<tr><td>Ctrl+Shift+U</td><td>{translations[lang]['bullet']}</td></tr>"
             f"<tr><td>Ctrl+Shift+O</td><td>{translations[lang]['numbered']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+R</td><td>{translations[lang]['right']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+L</td><td>{translations[lang]['left']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+E</td><td>{translations[lang]['center']}</td></tr>"
-            f"<tr><td>Ctrl+Shift+J</td><td>{translations[lang]['justify']}</td></tr>"
+            f"<tr><td>Ctrl+B</td><td>{translations[lang]['bold_message']}</td></tr>"
+            f"<tr><td>Ctrl+I</td><td>{translations[lang]['italic_message']}</td></tr>"
+            f"<tr><td>Ctrl+U</td><td>{translations[lang]['underline_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+F</td><td>{translations[lang]['font_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+C</td><td>{translations[lang]['font_color_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+G</td><td>{translations[lang]['contentBackgroundColor_message']}</td></tr>"
+            f"<tr><td>Ctrl++</td><td>{translations[lang]['inc_font_message']}</td></tr>"
+            f"<tr><td>Ctrl+-</td><td>{translations[lang]['dec_font_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+=</td><td>Superscript</td></tr>"
+            f"<tr><td>Ctrl+=</td><td>Subscript</td></tr>"
+            f"<tr><td>Ctrl+Shift+I</td><td>{translations[lang]['image_message']}</td></tr>"
+            f"<tr><td>Ctrl+T</td><td>Insert Table</td></tr>"
+            f"<tr><td>F1</td><td>{translations[lang]['help_message']}</td></tr>"
+            f"<tr><td>Ctrl+Shift+A</td><td>{translations[lang]['about']}</td></tr>"
             "</table></body></html>"
         )
 
@@ -249,9 +258,12 @@ class SW_Workspace(QMainWindow):
         self.ai_widget.hide()
 
         self.status_bar = self.statusBar()
-        self.DocumentArea = QTextEdit()
-        self.DocumentArea.setTextInteractionFlags(Qt.TextEditorInteraction)
+        self.DocumentArea = QTextBrowser()
+        self.DocumentArea.setReadOnly(True)
+        self.DocumentArea.setUndoRedoEnabled(True)
+        self.DocumentArea.setOpenExternalLinks(True)
         self.DocumentArea.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.DocumentArea.anchorClicked.connect(self.handleHyperlink)
         self.DocumentArea.customContextMenuRequested.connect(self.showContextMenu)
 
         self.initArea()
@@ -282,8 +294,10 @@ class SW_Workspace(QMainWindow):
         self.status_bar.showMessage(
             str((endtime - starttime).total_seconds()) + " ms", 2500
         )
-        if self.hardwareCore == "cpu":
-            self.LLMwarningCPU()
+        load_llm = settings.value("load_llm")
+        if load_llm is True or load_llm is None:
+            if self.hardwareCore == "cpu":
+                self.LLMwarningCPU()
 
     def showContextMenu(self, pos):
         selected_text = self.DocumentArea.textCursor().selectedText().strip()
@@ -448,7 +462,12 @@ class SW_Workspace(QMainWindow):
         lang = settings.value("appLanguage")
 
         file = self.file_name if self.file_name else translations[lang]["new"]
-        textMode = translations[lang]["readonly"] if file.endswith(".docx") else ""
+        textMode = ""
+        if file.endswith(".docx"):
+            if self.DocumentArea.isReadOnly():
+                textMode = translations[lang]["readonly"]
+        elif self.DocumentArea.isReadOnly():
+            textMode = translations[lang]["readonly"]
 
         if len(textMode) == 0:
             asterisk = "*" if not self.is_saved else ""
@@ -689,7 +708,7 @@ class SW_Workspace(QMainWindow):
                 "contentBackgroundColor_message",
             ),
             self.fontfamily: ("font", "font_message"),
-            self.addimage: ("image", "image_message"),
+            self.addImageAction: ("image", "image_message"),
         }
 
         for action, (text_key, status_key) in actions.items():
@@ -826,6 +845,7 @@ class SW_Workspace(QMainWindow):
             QTimer.singleShot(500, self.loadLLM)
 
         if reply == QMessageBox.No:
+            settings.setValue("load_llm", False)
             self.ai_widget.setWidget(QLabel("GPU/NPU not available."))
 
     def LLMinitDock(self):
@@ -866,7 +886,7 @@ class SW_Workspace(QMainWindow):
             QDockWidget.NoDockWidgetFeatures | QDockWidget.DockWidgetClosable
         )
 
-    def LLMmessage(self, text, is_user=True, typing_speed=100):
+    def LLMmessage(self, text, is_user=True, typing_speed=50):
         DetectorFactory.seed = 0
 
         language = ""
@@ -964,7 +984,7 @@ class SW_Workspace(QMainWindow):
         self.predict_button.setText("...")
         self.predict_button.setEnabled(False)
 
-        self.llm_thread = LLMThread(prompt, self.llm)
+        self.llm_thread = SW_LLMThread(prompt, self.llm)
         self.llm_thread.result.connect(self.LLMhandleResponse)
         self.llm_thread.start()
 
@@ -991,7 +1011,7 @@ class SW_Workspace(QMainWindow):
             self.LLMmessage("No text selected.", is_user=False)
             return
 
-        self.llm_thread = LLMThread(prompt, self.llm)
+        self.llm_thread = SW_LLMThread(prompt, self.llm)
         self.llm_thread.result.connect(self.LLMhandleResponse)
         self.llm_thread.start()
 
@@ -1057,6 +1077,30 @@ class SW_Workspace(QMainWindow):
             action.setIcon(QIcon(""))
         return action
 
+    def toggleReadOnly(self):
+        current_state = self.DocumentArea.isReadOnly()
+        self.DocumentArea.setReadOnly(not current_state)
+
+        self.updateFormattingButtons()
+        self.updateTitle()
+
+    def updateFormattingButtons(self):
+        if self.DocumentArea.isReadOnly():
+            self.toggleFormattingActions(False)
+        else:
+            self.toggleFormattingActions(True)
+
+    def toggleFormattingActions(self, enable):
+        for toolbar in [
+            self.font_toolbar,
+            self.edit_toolbar,
+            self.list_toolbar,
+            self.color_toolbar,
+            self.multimedia_toolbar,
+        ]:
+            for action in toolbar.actions():
+                action.setEnabled(enable)
+
     def initActions(self):
         action_definitions = [
             {
@@ -1095,20 +1139,6 @@ class SW_Workspace(QMainWindow):
                 "shortcut": QKeySequence.Print,
             },
             {
-                "name": "findaction",
-                "text": translations[lang]["find"],
-                "status_tip": translations[lang]["find_message"],
-                "function": self.find,
-                "shortcut": QKeySequence.Find,
-            },
-            {
-                "name": "replaceaction",
-                "text": translations[lang]["replace"],
-                "status_tip": translations[lang]["replace_message"],
-                "function": self.replace,
-                "shortcut": QKeySequence.Replace,
-            },
-            {
                 "name": "undoaction",
                 "text": translations[lang]["undo"],
                 "status_tip": translations[lang]["undo_message"],
@@ -1123,32 +1153,67 @@ class SW_Workspace(QMainWindow):
                 "shortcut": QKeySequence.Redo,
             },
             {
-                "name": "alignrightevent",
-                "text": translations[lang]["right"],
-                "status_tip": translations[lang]["right_message"],
-                "function": lambda: self.contentAlign(Qt.AlignRight),
-                "shortcut": "",
+                "name": "cutaction",
+                "text": "Cut",
+                "status_tip": "Cut",
+                "function": self.DocumentArea.cut,
+                "shortcut": QKeySequence.Cut,
+            },
+            {
+                "name": "copyaction",
+                "text": "Copy",
+                "status_tip": "Copy",
+                "function": self.DocumentArea.copy,
+                "shortcut": QKeySequence.Copy,
+            },
+            {
+                "name": "pasteaction",
+                "text": "Paste",
+                "status_tip": "Paste",
+                "function": self.DocumentArea.paste,
+                "shortcut": QKeySequence.Paste,
+            },
+            {
+                "name": "findaction",
+                "text": translations[lang]["find"],
+                "status_tip": translations[lang]["find_message"],
+                "function": self.find,
+                "shortcut": QKeySequence.Find,
+            },
+            {
+                "name": "replaceaction",
+                "text": translations[lang]["replace"],
+                "status_tip": translations[lang]["replace_message"],
+                "function": self.replace,
+                "shortcut": QKeySequence.Replace,
             },
             {
                 "name": "alignleftevent",
                 "text": translations[lang]["left"],
                 "status_tip": translations[lang]["left_message"],
                 "function": lambda: self.contentAlign(Qt.AlignLeft),
-                "shortcut": "",
+                "shortcut": QKeySequence("Ctrl+L"),
             },
             {
                 "name": "aligncenterevent",
                 "text": translations[lang]["center"],
                 "status_tip": translations[lang]["center_message"],
                 "function": lambda: self.contentAlign(Qt.AlignCenter),
-                "shortcut": "",
+                "shortcut": QKeySequence("Ctrl+E"),
+            },
+            {
+                "name": "alignrightevent",
+                "text": translations[lang]["right"],
+                "status_tip": translations[lang]["right_message"],
+                "function": lambda: self.contentAlign(Qt.AlignRight),
+                "shortcut": QKeySequence("Ctrl+R"),
             },
             {
                 "name": "alignjustifiedevent",
                 "text": translations[lang]["justify"],
                 "status_tip": translations[lang]["justify_message"],
                 "function": lambda: self.contentAlign(Qt.AlignJustify),
-                "shortcut": "",
+                "shortcut": QKeySequence("Ctrl+J"),
             },
             {
                 "name": "bulletevent",
@@ -1186,6 +1251,13 @@ class SW_Workspace(QMainWindow):
                 "shortcut": QKeySequence.Underline,
             },
             {
+                "name": "fontfamily",
+                "text": translations[lang]["font"],
+                "status_tip": translations[lang]["font_message"],
+                "function": self.contentFont,
+                "shortcut": QKeySequence("Ctrl+Shift+F"),
+            },
+            {
                 "name": "color",
                 "text": translations[lang]["font_color"],
                 "status_tip": translations[lang]["font_color_message"],
@@ -1197,14 +1269,7 @@ class SW_Workspace(QMainWindow):
                 "text": translations[lang]["contentBackgroundColor"],
                 "status_tip": translations[lang]["contentBackgroundColor_message"],
                 "function": self.contentBGColor,
-                "shortcut": QKeySequence("Ctrl+Shift+B"),
-            },
-            {
-                "name": "fontfamily",
-                "text": translations[lang]["font"],
-                "status_tip": translations[lang]["font_message"],
-                "function": self.contentFont,
-                "shortcut": QKeySequence("Ctrl+Shift+F"),
+                "shortcut": QKeySequence("Ctrl+Shift+G"),
             },
             {
                 "name": "inc_fontaction",
@@ -1221,25 +1286,60 @@ class SW_Workspace(QMainWindow):
                 "shortcut": QKeySequence("Ctrl+-"),
             },
             {
-                "name": "addimage",
+                "name": "superscript",
+                "text": "x²",
+                "status_tip": "Superscript",
+                "function": self.contentSuperscript,
+                "shortcut": QKeySequence("Ctrl+Shift+="),
+            },
+            {
+                "name": "subscript",
+                "text": "x₂",
+                "status_tip": "Subscript",
+                "function": self.contentSubscript,
+                "shortcut": QKeySequence("Ctrl+="),
+            },
+            {
+                "name": "addImageAction",
                 "text": translations[lang]["image"],
                 "status_tip": translations[lang]["image_message"],
                 "function": self.addImage,
-                "shortcut": QKeySequence("Ctrl+Shift+P"),
+                "shortcut": QKeySequence("Ctrl+Shift+I"),
+            },
+            {
+                "name": "addTableAction",
+                "text": "Table",
+                "status_tip": "Add Table",
+                "function": self.addTable,
+                "shortcut": QKeySequence("Ctrl+T"),
+            },
+            {
+                "name": "addHyperlinkAction",
+                "text": "Add Hyperlink",
+                "status_tip": "",
+                "function": self.addHyperlink,
+                "shortcut": None,
+            },
+            {
+                "name": "documentAreaSwap",
+                "text": "Document Mode",
+                "status_tip": "",
+                "function": self.toggleReadOnly,
+                "shortcut": None,
             },
             {
                 "name": "helpAction",
                 "text": translations[lang]["help"],
                 "status_tip": translations[lang]["help_message"],
                 "function": self.viewHelp,
-                "shortcut": QKeySequence("Ctrl+H"),
+                "shortcut": QKeySequence("F1"),
             },
             {
                 "name": "aboutAction",
                 "text": translations[lang]["about"],
                 "status_tip": translations[lang]["about"],
                 "function": self.viewAbout,
-                "shortcut": QKeySequence("Ctrl+Shift+I"),
+                "shortcut": QKeySequence("Ctrl+Shift+A"),
             },
         ]
 
@@ -1270,8 +1370,6 @@ class SW_Workspace(QMainWindow):
             self.printaction,
             self.undoaction,
             self.redoaction,
-            self.findaction,
-            self.replaceaction,
         ]
         self.file_toolbar = add_toolbar("file", file_actions)
 
@@ -1296,15 +1394,11 @@ class SW_Workspace(QMainWindow):
         self.powersaveraction.toggled.connect(self.hybridSaver)
         self.ui_toolbar.addAction(self.powersaveraction)
 
-        adaptiveResponse = settings.value(
-            "adaptiveResponse", fallbackValues["adaptiveResponse"]
-        )
-        self.powersaveraction.setChecked(adaptiveResponse > 1)
-
         self.hide_ai_dock = self.createAction(
             "AI", "AI", self.toggleDock, QKeySequence("Ctrl+Shift+D"), ""
         )
         self.ui_toolbar.addAction(self.hide_ai_dock)
+        self.ui_toolbar.addAction(self.documentAreaSwap)
         self.ui_toolbar.addAction(self.helpAction)
         self.ui_toolbar.addAction(self.aboutAction)
 
@@ -1314,18 +1408,28 @@ class SW_Workspace(QMainWindow):
             self.language_combobox.addItem(name, lcid)
         self.language_combobox.currentIndexChanged.connect(self.changeLanguage)
         self.ui_toolbar.addWidget(self.language_combobox)
-
         self.addToolBarBreak()
 
         edit_actions = [
-            self.alignrightevent,
-            self.aligncenterevent,
             self.alignleftevent,
+            self.aligncenterevent,
+            self.alignrightevent,
             self.alignjustifiedevent,
+            self.findaction,
+            self.replaceaction,
         ]
         self.edit_toolbar = add_toolbar("edit", edit_actions)
 
-        font_actions = [self.bold, self.italic, self.underline]
+        font_actions = [
+            self.bold,
+            self.italic,
+            self.underline,
+            self.fontfamily,
+            self.inc_fontaction,
+            self.dec_fontaction,
+            self.superscript,
+            self.subscript,
+        ]
         self.font_toolbar = add_toolbar("font", font_actions)
 
         list_actions = [self.bulletevent, self.numberedevent]
@@ -1336,14 +1440,126 @@ class SW_Workspace(QMainWindow):
         color_actions = [
             self.color,
             self.backgroundcolor,
-            self.fontfamily,
-            self.inc_fontaction,
-            self.dec_fontaction,
         ]
         self.color_toolbar = add_toolbar("color", color_actions)
-
-        multimedia_actions = [self.addimage]
+        multimedia_actions = [
+            self.addImageAction,
+            self.addTableAction,
+            self.addHyperlinkAction,
+        ]
         self.multimedia_toolbar = add_toolbar("multimedia", multimedia_actions)
+
+        self.updateFormattingButtons()
+
+    def addTable(self):
+        templates = [
+            "Simple",
+            "Dual",
+            "Minimalist",
+            "Colored",
+        ]
+
+        alignments = ["left", "center", "right", "justify"]
+
+        template_choice, ok = QInputDialog.getItem(
+            self, "Choose a Table Style", "Select a table style:", templates, 0, False
+        )
+
+        if ok:
+            template_id = templates.index(template_choice)
+
+            alignment_choice, ok = QInputDialog.getItem(
+                self,
+                "Choose Table Alignment",
+                "Select alignment:",
+                alignments,
+                0,
+                False,
+            )
+
+            if ok:
+                rows, ok = QInputDialog.getInt(
+                    self, "Number of Rows", "Enter number of rows:", 3, 1, 100
+                )
+                if not ok:
+                    return
+
+                cols, ok = QInputDialog.getInt(
+                    self, "Number of Columns", "Enter number of columns:", 3, 1, 100
+                )
+                if not ok:
+                    return
+
+                table_html = self.tableTemplates(
+                    template_id, rows=rows, cols=cols, alignment=alignment_choice
+                )
+
+                cursor = self.DocumentArea.textCursor()
+                cursor.insertHtml(table_html)
+                self.DocumentArea.setTextCursor(cursor)
+
+    def tableTemplates(self, template_id, rows, cols, alignment="center"):
+        table_style = "border: 1px solid #ddd; border-collapse: collapse; width: 100%;"
+        td_style = "padding: 8px; border: 1px solid #ddd; color: black;"
+        th_style = "padding: 10px; border: 1px solid #ddd; color: black; width: 1%;"
+        tr_styles = "background-color: #ffffff;"
+
+        templates = {
+            "simple_border": {
+                "table_style": table_style,
+                "td_style": td_style,
+                "th_style": th_style,
+                "tr_styles": "background-color: #ffffff;",
+            },
+            "dual_header_color": {
+                "table_style": table_style,
+                "td_style": "padding: 8px; border: 1px solid #ffcc00; color: black;",
+                "th_style": "padding: 10px; border: 1px solid #ffcc00; color: black; background-color: #ffcc00;",
+                "tr_styles": "background-color: #fff3e0;",
+            },
+            "minimalist_lines": {
+                "table_style": table_style,
+                "td_style": td_style,
+                "th_style": "padding: 10px; border: 1px solid #ddd; background-color: #f2f2f2; color: black;",
+                "tr_styles": "background-color: #f9f9f9;",
+            },
+            "colored_rows": {
+                "table_style": table_style,
+                "td_style": "padding: 8px; border: 1px solid #ffcc00; color: black;",
+                "th_style": "padding: 10px; border: 1px solid #ffcc00; color: black; background-color: #ffcc00;",
+                "tr_styles": "background-color: #fff3e0;",
+            },
+        }
+
+        selected_template = templates.get(template_id, templates["simple_border"])
+        table_style = selected_template["table_style"]
+        td_style = selected_template["td_style"]
+        th_style = selected_template["th_style"]
+        tr_styles = selected_template["tr_styles"]
+
+        table_html = f"""
+            <div style="text-align: {alignment};">
+                <table style="{table_style}">
+                    <tr>
+        """
+
+        for i in range(cols):
+            table_html += f'<th style="{th_style}"></th>'
+
+        table_html += "</tr>"
+
+        for i in range(rows):
+            table_html += f'<tr style="{tr_styles}">'
+            for j in range(cols):
+                table_html += f'<td style="{td_style}"></td>'
+            table_html += "</tr>"
+
+        table_html += """
+                </table>
+            </div>
+        """
+
+        return table_html
 
     def toggleDock(self):
         if self.ai_widget.isHidden():
@@ -1592,6 +1808,40 @@ class SW_Workspace(QMainWindow):
 
         cursor.endEditBlock()
 
+    def handleHyperlink(self, url):
+        link = url.toString()
+
+        if link.lower().startswith(("http", "https", "mailto", "ftp", "file")):
+            QDesktopServices.openUrl(url)
+        else:
+            pass
+
+    def addHyperlink(self):
+        protocol, ok1 = QInputDialog.getItem(
+            self,
+            "Protocols",
+            "Select:",
+            ["http", "https", "ftp", "mailto", "file"],
+            0,
+            False,
+        )
+        if ok1 and protocol:
+            name, ok2 = QInputDialog.getText(self, "Name", "Name:")
+            if ok2 and name:
+                url, ok3 = QInputDialog.getText(self, "URL", "URL:")
+                if ok3 and url:
+                    if not url.lower().startswith(
+                        ("http", "https", "mailto", "ftp", "file")
+                    ):
+                        url = protocol + "://" + url
+
+                    html_content = f'<a href="{url}">{name}</a>'
+
+                    cursor = self.DocumentArea.textCursor()
+                    cursor.insertHtml(html_content)
+
+                    self.DocumentArea.setTextCursor(cursor)
+
     def contentAlign(self, alignment):
         self.DocumentArea.setAlignment(alignment)
 
@@ -1628,6 +1878,44 @@ class SW_Workspace(QMainWindow):
             if isinstance(font, QFont):
                 self.DocumentArea.setCurrentFont(font)
 
+    def contentSuperscript(self):
+        cursor = self.DocumentArea.textCursor()
+        if not cursor.hasSelection():
+            return
+
+        fmt = QTextCharFormat()
+        current_format = cursor.charFormat()
+
+        if (
+            current_format.verticalAlignment()
+            == QTextCharFormat.VerticalAlignment.AlignSuperScript
+        ):
+            fmt.setVerticalAlignment(QTextCharFormat.VerticalAlignment.AlignBaseline)
+        else:
+            fmt.setVerticalAlignment(QTextCharFormat.VerticalAlignment.AlignSuperScript)
+
+        cursor.mergeCharFormat(fmt)
+        self.DocumentArea.mergeCurrentCharFormat(fmt)
+
+    def contentSubscript(self):
+        cursor = self.DocumentArea.textCursor()
+        if not cursor.hasSelection():
+            return
+
+        fmt = QTextCharFormat()
+        current_format = cursor.charFormat()
+
+        if (
+            current_format.verticalAlignment()
+            == QTextCharFormat.VerticalAlignment.AlignSubScript
+        ):
+            fmt.setVerticalAlignment(QTextCharFormat.VerticalAlignment.AlignBaseline)
+        else:
+            fmt.setVerticalAlignment(QTextCharFormat.VerticalAlignment.AlignSubScript)
+
+        cursor.mergeCharFormat(fmt)
+        self.DocumentArea.mergeCurrentCharFormat(fmt)
+
     def incFont(self):
         font = self.DocumentArea.currentFont()
         font.setPointSize(font.pointSize() + 1)
@@ -1639,31 +1927,99 @@ class SW_Workspace(QMainWindow):
         self.DocumentArea.setCurrentFont(font)
 
     def find(self):
-        self.find_dialog = QInputDialog(self)
-        self.find_dialog.setInputMode(QInputDialog.TextInput)
-        self.find_dialog.setLabelText(translations[lang]["find"])
-        self.find_dialog.setWindowTitle(translations[lang]["find"])
-        self.find_dialog.setOkButtonText(translations[lang]["find"])
-        self.find_dialog.setCancelButtonText(translations[lang]["cancel"])
-        self.find_dialog.textValueSelected.connect(self.findText)
-        self.find_dialog.show()
+        text, ok = QInputDialog.getText(
+            self,
+            translations[lang]["find"],
+            translations[lang]["find"],
+        )
+
+        if ok and text:
+            self.findText(text)
 
     def findText(self, text):
-        self.DocumentArea.find(text)
+        found = self.DocumentArea.find(text)
+        if not found:
+            QMessageBox.information(self, translations[lang]["find"], "0")
 
     def replace(self):
-        self.replace_dialog = QInputDialog(self)
-        self.replace_dialog.setInputMode(QInputDialog.TextInput)
-        self.replace_dialog.setLabelText(translations[lang]["replace"])
+        self.replace_dialog = QDialog(self)
         self.replace_dialog.setWindowTitle(translations[lang]["replace"])
-        self.replace_dialog.setOkButtonText(translations[lang]["replace"])
-        self.replace_dialog.setCancelButtonText(translations[lang]["cancel"])
-        self.replace_dialog.textValueSelected.connect(self.replaceText)
-        self.replace_dialog.show()
+        self.replace_dialog.setModal(True)
 
-    def replaceText(self, text):
-        self.DocumentArea.find(text)
-        self.DocumentArea.insertPlainText(text)
+        layout = QVBoxLayout()
+
+        self.find_label = QLabel(translations[lang]["find"])
+        layout.addWidget(self.find_label)
+
+        self.find_input = QLineEdit()
+        layout.addWidget(self.find_input)
+
+        self.replace_label = QLabel(translations[lang]["replace"])
+        layout.addWidget(self.replace_label)
+
+        self.replace_input = QLineEdit()
+        layout.addWidget(self.replace_input)
+
+        self.replace_next_button = QPushButton(translations[lang]["replace"] + " next")
+        self.replace_next_button.clicked.connect(self.replace_next)
+        layout.addWidget(self.replace_next_button)
+
+        self.replace_all_button = QPushButton(translations[lang]["replace"] + " all")
+        self.replace_all_button.clicked.connect(self.replace_all)
+        layout.addWidget(self.replace_all_button)
+
+        self.cancel_button = QPushButton(translations[lang]["cancel"])
+        self.cancel_button.clicked.connect(self.replace_dialog.reject)
+        layout.addWidget(self.cancel_button)
+
+        self.replace_dialog.setLayout(layout)
+        self.find_input.setFocus()
+
+        self.replace_dialog.exec()
+
+    def replace_next(self):
+        find_text = self.find_input.text()
+        replace_text = self.replace_input.text()
+
+        found = self.DocumentArea.find(find_text)
+        if found:
+            cursor = self.DocumentArea.textCursor()
+            cursor.insertText(replace_text)
+            self.DocumentArea.setTextCursor(cursor)
+        else:
+            QMessageBox.information(
+                self,
+                translations[lang]["replace"],
+                "0",
+            )
+
+    def replace_all(self):
+        find_text = self.find_input.text()
+        replace_text = self.replace_input.text()
+
+        cursor = self.DocumentArea.textCursor()
+        self.DocumentArea.moveCursor(QTextCursor.Start)
+        self.DocumentArea.setTextCursor(cursor)
+
+        count = 0
+        while self.DocumentArea.find(find_text):
+            cursor = self.DocumentArea.textCursor()
+            cursor.insertText(replace_text)
+            self.DocumentArea.setTextCursor(cursor)
+            count += 1
+
+        if count == 0:
+            QMessageBox.information(
+                self,
+                translations[lang]["replace"],
+                f"{count}",
+            )
+        else:
+            QMessageBox.information(
+                self,
+                translations[lang]["replace"],
+                f"{count}",
+            )
 
 
 if __name__ == "__main__":
@@ -1675,8 +2031,8 @@ if __name__ == "__main__":
     app.setWindowIcon(QIcon(os.path.join(applicationPath, fallbackValues["icon"])))
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("SolidWriting")
-    app.setApplicationDisplayName("SolidWriting 2025.02")
-    app.setApplicationVersion("1.5.2025.02-2")
+    app.setApplicationDisplayName("SolidWriting 2025.03")
+    app.setApplicationVersion("1.5.2025.03-1")
     ws = SW_ControlInfo()
     ws.show()
     sys.exit(app.exec())

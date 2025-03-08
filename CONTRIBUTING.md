@@ -1,53 +1,46 @@
-# Contributing to SolidWriting
+# Contributing to SolidWriting  
 
-Thank you for considering contributing to SolidWriting! We welcome your contributions to help improve this application. Please read this guide to understand how you can contribute effectively.
+Thank you for your interest in contributing to SolidWriting! Your help in improving the project is always welcome.  
 
-## How to Contribute
+## How to Contribute  
 
-1. Fork the Repository: Start by forking the [SolidWriting repository](https://github.com/berkaygediz/SolidWriting) on GitHub to your account.
-
-2. Clone the Repository: Clone your forked repository to your local development environment.
+1. **Fork & Clone the Repository**  
+   Fork the [SolidWriting repository](https://github.com/berkaygediz/SolidWriting) on GitHub, then clone it to your local machine:  
 
    ```bash
-   git clone https://github.com/berkaygediz/SolidWriting.git
-   ```
+   git clone https://github.com/your-username/SolidWriting.git
+   ```  
 
-3. Create a Branch: Create a new branch for your contribution. Use a descriptive name for your branch.
+2. **Create a Branch**  
+   Create a new branch for your changes:  
 
    ```bash
    git checkout -b feature/your-feature-name
-   ```
+   ```  
 
-4. Make Changes: Make your changes and improvements to the codebase. Ensure that your code follows the project's coding style and conventions.
+3. **Make & Test Your Changes**  
+   - Modify the code as needed.  
+   - Follow PEP 8 coding style.  
+   - Test your changes to ensure everything works as expected.  
 
-5. Test Your Changes: Test your changes thoroughly to ensure they work as expected. Also, run the application and test your feature.
-
-6. Commit Your Changes: Commit your changes with a clear and concise commit message.
-
-   ```bash
-   git commit -m "Add your commit message here"
-   ```
-
-7. Push Your Changes: Push your changes to your fork on GitHub.
+4. **Commit & Push**  
+   Once your changes are ready, commit and push them to your fork:  
 
    ```bash
+   git commit -m "Describe your changes"
    git push origin feature/your-feature-name
-   ```
+   ```  
 
-8. Create a Pull Request: Visit the [SolidWriting repository on GitHub](https://github.com/berkaygediz/SolidWriting) and click on the "New Pull Request" button. Provide a descriptive title and description for your pull request.
+5. **Open a Pull Request**  
+   Go to the [SolidWriting repository](https://github.com/berkaygediz/SolidWriting) and create a new pull request. Add a clear description of your changes.  
 
-9. Review and Discuss: Your pull request will be reviewed by the project maintainers. Be prepared to address any feedback or changes requested during the review process.
+6. **Review & Merge**  
+   Your pull request will be reviewed. If needed, make any requested changes. Once approved, it will be merged into the main repository.  
 
-10. Merge: Once your pull request is approved, it will be merged into the main repository. Congratulations on your contribution!
+## Reporting Issues  
 
-## Development Guidelines
+If you find a bug or have an idea for improvement, please [create an issue](https://github.com/berkaygediz/SolidWriting/issues) on GitHub.  
 
-- Follow PEP 8 style guidelines for Python code.
+## Code of Conduct  
 
-## Reporting Issues
-
-If you encounter any bugs, issues, or have suggestions for improvements, please [create an issue](https://github.com/berkaygediz/SolidWriting/issues) on the GitHub repository.
-
-## Code of Conduct
-
-Please review and adhere to our [Code of Conduct](CODE_OF_CONDUCT.md) to create a positive and inclusive environment for all contributors.
+Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) to maintain a welcoming and respectful community.
