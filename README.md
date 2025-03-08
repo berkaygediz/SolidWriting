@@ -24,7 +24,7 @@ SolidWriting is a supercharged, modern word processor designed as a powerful alt
 - [x] **Document Management**: Create, open, save, and print documents effortlessly.
 - [x] **Find & Replace**: Search and replace text within your document.
 - [x] **Printing & Exporting**: Print documents or export them as PDFs.
-- [x] **File Format Support**: Supports .txt, .html, .docx (partial), and .rsdoc (SolidWriting).
+- [x] **File Format Support**: Supports .txt, .html, .docx (partial), and .swdoc (SolidWriting).
 - [x] **Text Formatting**: Customize text with bold, italic, underline, font selection, size adjustment, color, background color, and alignment options.
 - [x] **Undo & Redo**: Easily reverse or reapply changes.
 - [x] **Cut, Copy, Paste**: Standard clipboard functions for efficient editing.
