@@ -12,15 +12,24 @@ import psutil
 import torch
 from langdetect import DetectorFactory, detect
 from llama_cpp import Llama
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtOpenGL import *
-from PySide6.QtOpenGLWidgets import *
-from PySide6.QtPrintSupport import *
-from PySide6.QtWidgets import *
+from PySide6.QtCore import (QDir, QMargins, QSettings, QSize, QThread, QTimer,
+                            Signal)
+from PySide6.QtGui import (QAction, QColor, QDesktopServices, QFont,
+                           QGuiApplication, QIcon, QKeySequence, QPageLayout,
+                           QPalette, Qt, QTextCharFormat, QTextCursor,
+                           QTextDocument, QTextListFormat)
+from PySide6.QtOpenGLWidgets import QOpenGLWidget
+from PySide6.QtPrintSupport import QPrinter, QPrintPreviewDialog
+from PySide6.QtWidgets import (QApplication, QColorDialog, QComboBox, QDialog,
+                               QDockWidget, QFileDialog, QFontDialog,
+                               QHBoxLayout, QInputDialog, QLabel, QLineEdit,
+                               QMainWindow, QMenu, QMessageBox, QPushButton,
+                               QScrollArea, QStyle, QTextBrowser, QTextEdit,
+                               QToolBar, QVBoxLayout, QWidget)
 
-from modules.globals import *
-from modules.threading import *
+from modules.encryption import EncryptionEngine
+from modules.globals import fallbackValues, languages, translations
+from modules.threading import ThreadingEngine
 
 try:
     from ctypes import windll
@@ -224,9 +233,12 @@ class SW_Workspace(QMainWindow):
         self.setWindowIcon(QIcon(fallbackValues["icon"]))
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
         self.setMinimumSize(768, 540)
-
         system_language = locale.getlocale()[1]
-        if system_language not in languages.items():
+        if (
+            system_language not in languages.items()
+            or settings.value("appLanguage") not in languages.items()
+            or settings.value("appLanguage") is None
+        ):
             settings.setValue("appLanguage", "1252")
         if settings.value("adaptiveResponse") == None:
             settings.setValue("adaptiveResponse", 1)
@@ -451,9 +463,22 @@ class SW_Workspace(QMainWindow):
             self.saveState()
             event.accept()
 
+    def languageFallbackIndex(self):
+        if self.language_combobox.currentIndex() == -1:
+            selected_language = settings.value("appLanguage", 1252)
+            if selected_language:
+                index = self.language_combobox.findData(selected_language)
+                if index != -1:
+                    self.language_combobox.setCurrentIndex(index)
+                else:
+                    self.language_combobox.setCurrentIndex(0)
+            else:
+                self.language_combobox.setCurrentIndex(0)
+
     def changeLanguage(self):
         settings.setValue("appLanguage", self.language_combobox.currentData())
         settings.sync()
+        self.languageFallbackIndex()
         self.toolbarTranslate()
         self.updateStatistics()
         self.updateTitle()
@@ -569,10 +594,13 @@ class SW_Workspace(QMainWindow):
         self.updateTitle()
 
     def saveState(self):
+        encryption = EncryptionEngine("SolidWriting")
+        encrypted_content = encryption.encrypt(self.DocumentArea.toHtml())
+
         settings.setValue("windowScale", self.saveGeometry())
         settings.setValue("defaultDirectory", self.directory)
         settings.setValue("fileName", self.file_name)
-        settings.setValue("content", self.DocumentArea.toHtml())
+        settings.setValue("content", encrypted_content)
         settings.setValue("isSaved", self.is_saved)
         settings.setValue(
             "scrollPosition", self.DocumentArea.verticalScrollBar().value()
@@ -585,9 +613,16 @@ class SW_Workspace(QMainWindow):
         settings.sync()
 
     def restoreState(self):
+        encryption = EncryptionEngine("SolidWriting")
+        encrypted_content = settings.value("content")
+
         geometry = settings.value("windowScale")
         self.directory = settings.value("defaultDirectory", self.default_directory)
-        self.DocumentArea.setHtml(settings.value("content"))
+
+        if encrypted_content:
+            decrypted_content = encryption.decrypt(encrypted_content)
+            self.DocumentArea.setHtml(decrypted_content)
+
         self.is_saved = settings.value("isSaved")
         index = self.language_combobox.findData(lang)
         self.language_combobox.setCurrentIndex(index)
@@ -661,11 +696,61 @@ class SW_Workspace(QMainWindow):
     def toolbarTheme(self):
         palette = self.palette()
         if palette == self.light_theme:
-            text_color = QColor(255, 255, 255)
+            text_color = QColor(0, 0, 0)
+            toolbar_bg = "#F0F0F0"
+            button_bg = "#FFFFFF"
+            button_hover = "#D0D0D0"
+            button_checked = "#ADD8E6"
+            button_disabled = "#E0E0E0"
         else:
             text_color = QColor(255, 255, 255)
+            toolbar_bg = "#2C2F38"
+            button_bg = "#3A3F48"
+            button_hover = "#5C6370"
+            button_checked = "#0000AF"
+            button_disabled = "#555555"
 
         for toolbar in self.findChildren(QToolBar):
+            toolbar.setStyleSheet(
+                f"""
+                QToolBar {{
+                    background-color: {toolbar_bg};
+                    border: none;
+                    padding: 1px;
+                }}
+                
+                QLabel {{
+                    color: {text_color.name()};
+                }}
+                
+                QToolButton {{
+                    background-color: {button_bg}; 
+                    color: {text_color.name()};
+                    border: 1px solid #444;
+                    border-radius: 5px;
+                    margin: 1px;
+                    font-size: 14px;
+                    font-weight: bold;
+                }}
+                
+                QToolButton:hover {{
+                    background-color: {button_hover};
+                    border: 1px solid {button_bg};
+                }}
+                
+                QToolButton:checked {{
+                    background-color: {button_checked};
+                    border: 1px solid {button_bg};
+                }}
+
+                QToolButton:disabled {{
+                    background-color: {button_disabled};
+                    color: #777;
+                    border: 1px solid #444;
+                }}
+                """
+            )
+
             for action in toolbar.actions():
                 if action.text():
                     action_color = QPalette()
@@ -674,6 +759,7 @@ class SW_Workspace(QMainWindow):
                     toolbar.setPalette(action_color)
 
     def toolbarTranslate(self):
+        self.languageFallbackIndex()
         lang = settings.value("appLanguage")
 
         actions = {
@@ -792,9 +878,9 @@ class SW_Workspace(QMainWindow):
                 self.llm = Llama(
                     model_path,
                     n_gpu_layers=-1,
-                    split_mode=0,
                     offload_kqv=True,
                     flash_attn=True,
+                    seed=0,
                     n_threads=4,
                     max_memory=max_memory,
                     device_map="auto",
@@ -886,7 +972,7 @@ class SW_Workspace(QMainWindow):
             QDockWidget.NoDockWidgetFeatures | QDockWidget.DockWidgetClosable
         )
 
-    def LLMmessage(self, text, is_user=True, typing_speed=50):
+    def LLMmessage(self, text, is_user=True, typing_speed=25):
         DetectorFactory.seed = 0
 
         language = ""
@@ -1102,6 +1188,7 @@ class SW_Workspace(QMainWindow):
                 action.setEnabled(enable)
 
     def initActions(self):
+        lang = settings.value("appLanguage")
         action_definitions = [
             {
                 "name": "newaction",
@@ -1356,6 +1443,8 @@ class SW_Workspace(QMainWindow):
             )
 
     def initToolbar(self):
+        lang = settings.value("appLanguage")
+
         def add_toolbar(name_key, actions):
             toolbar = self.addToolBar(translations[lang][name_key])
             self.toolbarLabel(toolbar, translations[lang][name_key] + ": ")
@@ -1406,6 +1495,9 @@ class SW_Workspace(QMainWindow):
         self.language_combobox.setStyleSheet("background-color:#000000; color:#FFFFFF;")
         for lcid, name in languages.items():
             self.language_combobox.addItem(name, lcid)
+
+        self.languageFallbackIndex()
+
         self.language_combobox.currentIndexChanged.connect(self.changeLanguage)
         self.ui_toolbar.addWidget(self.language_combobox)
         self.addToolBarBreak()
@@ -1629,6 +1721,10 @@ class SW_Workspace(QMainWindow):
 
             if reply == QMessageBox.Yes:
                 self.resetDocumentArea()
+                self.directory = self.default_directory
+                self.file_name = None
+                self.is_saved = False
+                self.updateTitle()
 
     def openFile(self, file_to_open=None):
         options = QFileDialog.Options()
@@ -1661,7 +1757,7 @@ class SW_Workspace(QMainWindow):
                         QMessageBox.warning(self, None, "Conversion failed.")
             else:
                 with open(self.file_name, "r", encoding=automaticEncoding) as file:
-                    if self.file_name.endswith((".swdoc")):
+                    if self.file_name.endswith((".swdoc", ".rsdoc")):
                         self.DocumentArea.setHtml(file.read())
                     elif self.file_name.endswith((".html", ".htm")):
                         self.DocumentArea.setHtml(file.read())
@@ -2032,7 +2128,7 @@ if __name__ == "__main__":
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("SolidWriting")
     app.setApplicationDisplayName("SolidWriting 2025.03")
-    app.setApplicationVersion("1.5.2025.03-1")
+    app.setApplicationVersion("1.5.2025.03-2")
     ws = SW_ControlInfo()
     ws.show()
     sys.exit(app.exec())
