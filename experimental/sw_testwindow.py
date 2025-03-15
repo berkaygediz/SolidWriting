@@ -1,8 +1,8 @@
 import sys
 
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
+from PySide6.QtGui import QColor, QPainter, QPen, Qt
+from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QLabel,
+                               QSpinBox, QTextEdit, QVBoxLayout, QWidget)
 
 
 class SW_Ruler(QFrame):

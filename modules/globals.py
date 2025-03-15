@@ -1,9 +1,9 @@
-from PySide6.QtCore import *
+from PySide6.QtCore import Qt
 
 fallbackValues = {
     "icon": "solidwriting_icon.ico",
     "fontFamily": "Segoe UI",
-    "fontSize": 9,
+    "fontSize": 12,
     "bold": False,
     "italic": False,
     "underline": False,
@@ -19,11 +19,10 @@ fallbackValues = {
     "appTheme": "light",
     "appLanguage": "1252",
     "adaptiveResponse": 1,
-    "readFilter": "General File (*.swdoc *.docx);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
+    "readFilter": "General File (*.swdoc *.docx *.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
     "writeFilter": "SolidWriting Document (*.swdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
     "mediaFilter": "General (*.png *.jpg *.jpeg *.bmp);;Animation (*.gif)",
 }
-
 
 # Locale ID (LCID)
 languages = {

@@ -1,6 +1,6 @@
 import time
 
-from PySide6.QtCore import *
+from PySide6.QtCore import QThread, Signal
 
 
 class ThreadingEngine(QThread):

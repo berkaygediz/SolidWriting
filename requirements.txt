@@ -1,9 +1,8 @@
-pyinstaller==6.12.0
-PySide6==6.8.2.1
-mammoth==1.9.0
-chardet==5.2.0
-psutil==7.0.0
-langdetect==1.0.9
-pyinstaller==6.12.0
-llama-cpp-python==0.3.1
-torch==2.6.0
+pyinstaller
+PySide6
+mammoth
+chardet
+psutil
+langdetect
+llama-cpp-python
+torch
