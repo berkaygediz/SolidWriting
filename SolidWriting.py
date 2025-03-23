@@ -325,7 +325,7 @@ class SW_Workspace(QMainWindow):
 
         self.context_menu = QMenu(self)
 
-        if text_length > 0:
+        if text_length > 0 and not self.DocumentArea.isReadOnly():
             format_action = QAction("Format", self)
             format_action.setEnabled(False)
             self.context_menu.addAction(format_action)
