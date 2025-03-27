@@ -19,9 +19,9 @@ fallbackValues = {
     "appTheme": "light",
     "appLanguage": "1252",
     "adaptiveResponse": 1,
-    "readFilter": "General File (*.swdoc *.docx *.rsdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
-    "writeFilter": "SolidWriting Document (*.swdoc);;HTML (*.html);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Extensible Markup Language (*.xml);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
-    "mediaFilter": "General (*.png *.jpg *.jpeg *.bmp);;Animation (*.gif)",
+    "readFilter": "General File (*.swdoc *.swdoc64 *.docx *.rsdoc);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
+    "writeFilter": "SolidWriting Document (*.swdoc);;SolidWriting Base64 (*.swdoc64);;Text (*.txt);;Key-Value (*.ini);;LOG (*.log);;JavaScript Object Notation (*.json);;Javascript (*.js);;Cascading Style Sheets (*.css);;Structured Query Language (*.sql);;Markdown (*.md)",
+    "mediaFilter": "General (*.png *.jpg *.jpeg *.bmp)",
 }
 
 # Locale ID (LCID)
