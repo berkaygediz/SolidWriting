@@ -2,11 +2,11 @@ import base64
 import hashlib
 
 
-class EncryptionEngine:
+class CryptoEngine:
     def __init__(self, key: str):
         self.key = hashlib.md5(key.encode()).digest()
 
-    def encrypt(self, content: str) -> str:
+    def b64_encrypt(self, content: str) -> str:
         encrypted_content = bytearray(content, "utf-8")
 
         for i in range(len(encrypted_content)):
@@ -14,7 +14,7 @@ class EncryptionEngine:
 
         return base64.b64encode(encrypted_content).decode("utf-8")
 
-    def decrypt(self, encrypted_content: str) -> str:
+    def b64_decrypt(self, encrypted_content: str) -> str:
         encrypted_content = base64.b64decode(encrypted_content)
         decrypted_content = bytearray(encrypted_content)
 

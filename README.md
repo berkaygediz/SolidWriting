@@ -16,15 +16,15 @@
     </a>
 </p>
 
-SolidWriting is a supercharged, modern word processor designed as a powerful alternative to traditional software. Built with Python and PySide6, it delivers a lightweight yet feature-rich experience while ensuring seamless cross-platform compatibility on Windows, macOS, and Linux. With its offline AI chat for content generation and intelligent assistance, SolidWriting enhances productivity while prioritizing privacy by processing all interactions locally on your device.
+SolidWriting offers an intuitive interface and powerful features for creating and editing documents. Easily open, edit, and save SWDOC/SWDOC64 and DOCX files. With advanced text formatting, offline AI assistance, and multilingual support, streamline your writing process.
 
 ## Features
 
-- [x] **Cross-Platform**: Fully compatible with Windows, macOS, and Linux.
+- [x] **Cross-Platform**: Compatible with Windows, macOS (experimental), and Linux (experimental).
 - [x] **Document Management**: Create, open, save, and print documents effortlessly.
 - [x] **Find & Replace**: Search and replace text within your document.
 - [x] **Printing & Exporting**: Print documents or export them as PDFs.
-- [x] **File Format Support**: Supports .txt, .html, .docx (partial), and .swdoc (SolidWriting).
+- [x] **File Format Support**: Supports .txt, .html, .docx (partial), and .swdoc/.swdoc64 (SolidWriting).
 - [x] **Text Formatting**: Customize text with bold, italic, underline, font selection, size adjustment, color, background color, and alignment options.
 - [x] **Undo & Redo**: Easily reverse or reapply changes.
 - [x] **Cut, Copy, Paste**: Standard clipboard functions for efficient editing.

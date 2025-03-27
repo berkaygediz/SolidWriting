@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (QApplication, QColorDialog, QComboBox, QDialog,
                                QScrollArea, QStyle, QTextBrowser, QTextEdit,
                                QToolBar, QVBoxLayout, QWidget)
 
-from modules.encryption import EncryptionEngine
+from modules.crypto import CryptoEngine
 from modules.globals import fallbackValues, languages, translations
 from modules.threading import ThreadingEngine
 
@@ -408,7 +408,7 @@ class SW_Workspace(QMainWindow):
                     self.context_menu.addAction(
                         "Clarify", lambda: self.LLMcontextPredict("clarify")
                     )
-        else:
+        elif not self.DocumentArea.isReadOnly():
             undo_action = QAction(translations[lang]["undo"], self)
             undo_action.triggered.connect(self.DocumentArea.undo)
             self.context_menu.addAction(undo_action)
@@ -594,8 +594,8 @@ class SW_Workspace(QMainWindow):
         self.updateTitle()
 
     def saveState(self):
-        encryption = EncryptionEngine("SolidWriting")
-        encrypted_content = encryption.encrypt(self.DocumentArea.toHtml())
+        encryption = CryptoEngine("SolidWriting")
+        encrypted_content = encryption.b64_encrypt(self.DocumentArea.toHtml())
 
         settings.setValue("windowScale", self.saveGeometry())
         settings.setValue("defaultDirectory", self.directory)
@@ -613,14 +613,14 @@ class SW_Workspace(QMainWindow):
         settings.sync()
 
     def restoreState(self):
-        encryption = EncryptionEngine("SolidWriting")
+        encryption = CryptoEngine("SolidWriting")
         encrypted_content = settings.value("content")
 
         geometry = settings.value("windowScale")
         self.directory = settings.value("defaultDirectory", self.default_directory)
 
         if encrypted_content:
-            decrypted_content = encryption.decrypt(encrypted_content)
+            decrypted_content = encryption.b64_decrypt(encrypted_content)
             self.DocumentArea.setHtml(decrypted_content)
 
         self.is_saved = settings.value("isSaved")
@@ -1759,8 +1759,9 @@ class SW_Workspace(QMainWindow):
                 with open(self.file_name, "r", encoding=automaticEncoding) as file:
                     if self.file_name.endswith((".swdoc", ".rsdoc")):
                         self.DocumentArea.setHtml(file.read())
-                    elif self.file_name.endswith((".html", ".htm")):
-                        self.DocumentArea.setHtml(file.read())
+                    elif self.file_name.endswith((".swdoc64")):
+                        encryption = CryptoEngine("SolidWriting")
+                        self.DocumentArea.setHtml(encryption.b64_decrypt(file.read()))
                     elif self.file_name.endswith((".md")):
                         self.DocumentArea.setMarkdown(file.read())
                     else:
@@ -1805,11 +1806,14 @@ class SW_Workspace(QMainWindow):
             except Exception as e:
                 automaticEncoding = "utf-8"
             if self.file_name.lower().endswith(".docx"):
-                None
+                pass
             else:
                 with open(self.file_name, "w", encoding=automaticEncoding) as file:
-                    if self.file_name.lower().endswith((".swdoc", ".html", ".htm")):
+                    if self.file_name.lower().endswith((".swdoc")):
                         file.write(self.DocumentArea.toHtml())
+                    elif self.file_name.lower().endswith((".swdoc64")):
+                        encryption = CryptoEngine("SolidWriting")
+                        file.write(encryption.b64_encrypt(self.DocumentArea.toHtml()))
                     elif self.file_name.lower().endswith((".md")):
                         file.write(self.DocumentArea.toMarkdown())
                     else:
@@ -2128,7 +2132,7 @@ if __name__ == "__main__":
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("SolidWriting")
     app.setApplicationDisplayName("SolidWriting 2025.03")
-    app.setApplicationVersion("1.5.2025.03-2")
+    app.setApplicationVersion("1.5.2025.03-3")
     ws = SW_ControlInfo()
     ws.show()
     sys.exit(app.exec())
