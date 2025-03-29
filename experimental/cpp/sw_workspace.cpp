@@ -1,5 +1,4 @@
-#include "./ui_rs_workspace.h"
-#include "globals.h"
+#include "./globals.h"
 #include "rs_workspace.h"
 #include <QAction>
 #include <QApplication>
