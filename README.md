@@ -1,7 +1,7 @@
 # SolidWriting
 
 <p align="center">
-    <img src="images/banner/solidwriting_banner_2.png" alt="SolidWriting Banner" />
+    <img src="images/banner/solidwriting_banner_3.png" alt="SolidWriting Banner" />
 </p>
 
 <p align="center">
