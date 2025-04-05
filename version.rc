@@ -1,8 +1,8 @@
 #include <windows.h>
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1, 5, 2025, 03
-PRODUCTVERSION 1, 5, 2025, 03
+FILEVERSION 1, 5, 2025, 04
+PRODUCTVERSION 1, 5, 2025, 04
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 FILEFLAGS VS_FILEFLAG_RELEASE
 FILEOS VOS_NT_WINDOWS32
@@ -15,12 +15,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "berkaygediz"
             VALUE "FileDescription", "A supercharged word processor with AI integration, supporting real-time computing and advanced formatting."
-            VALUE "FileVersion", "1.5.2025.03"
+            VALUE "FileVersion", "1.5.2025.04"
             VALUE "InternalName", "SolidWriting"
             VALUE "LegalCopyright", "Copyright (C) 2025 berkaygediz"
             VALUE "OriginalFilename", "SolidWriting.exe"
             VALUE "ProductName", "SolidWriting"
-            VALUE "ProductVersion", "1.5.2025.03"
+            VALUE "ProductVersion", "1.5.2025.04"
         END
     END
     BLOCK "VarFileInfo"
