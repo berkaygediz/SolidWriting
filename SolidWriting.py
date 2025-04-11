@@ -12,20 +12,21 @@ import psutil
 import torch
 from langdetect import DetectorFactory, detect
 from llama_cpp import Llama
-from PySide6.QtCore import (QDir, QMargins, QSettings, QSize, QThread, QTimer,
-                            Signal)
+from PySide6.QtCore import (QDir, QMargins, QSettings, QSize, QSizeF, QThread,
+                            QTimer, QUrl, Signal)
 from PySide6.QtGui import (QAction, QColor, QDesktopServices, QFont,
                            QGuiApplication, QIcon, QKeySequence, QPageLayout,
                            QPalette, Qt, QTextCharFormat, QTextCursor,
-                           QTextDocument, QTextListFormat)
+                           QTextDocument, QTextListFormat, QTransform)
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtPrintSupport import QPrinter, QPrintPreviewDialog
 from PySide6.QtWidgets import (QApplication, QColorDialog, QComboBox, QDialog,
-                               QDockWidget, QFileDialog, QFontDialog,
-                               QHBoxLayout, QInputDialog, QLabel, QLineEdit,
-                               QMainWindow, QMenu, QMessageBox, QPushButton,
-                               QScrollArea, QStyle, QTextBrowser, QTextEdit,
-                               QToolBar, QVBoxLayout, QWidget)
+                               QFileDialog, QFontDialog, QGraphicsScene,
+                               QGraphicsView, QHBoxLayout, QInputDialog,
+                               QLabel, QLineEdit, QMainWindow, QMenu,
+                               QMessageBox, QPushButton, QScrollArea, QStyle,
+                               QTextBrowser, QTextEdit, QToolBar, QVBoxLayout,
+                               QWidget, QWidgetAction)
 
 from modules.crypto import CryptoEngine
 from modules.globals import fallbackValues, languages, translations
@@ -124,6 +125,11 @@ class SW_About(QMainWindow):
                 QApplication.primaryScreen().availableGeometry(),
             )
         )
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        main_layout = QVBoxLayout(central_widget)
+
         self.about_label = QLabel()
         self.about_label.setWordWrap(True)
         self.about_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -133,10 +139,33 @@ class SW_About(QMainWindow):
             f"<b>{app.applicationDisplayName()}</b><br><br>"
             "A supercharged word processor with AI integration, supporting real-time computing and advanced formatting.<br><br>"
             "Made by Berkay Gediz<br><br>"
-            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br><b>Libraries: </b>mwilliamson/python-mammoth, Mimino666/langdetect, abetlen/llama-cpp-python, <br>pytorch/pytorch, PySide6, chardet, psutil<br><br>"
-            "OpenGL: <b>ON</b></center>"
+            "GNU General Public License v3.0<br>GNU LESSER GENERAL PUBLIC LICENSE v3.0<br>Mozilla Public License Version 2.0<br><br>"
+            "<b>Libraries: </b>mwilliamson/python-mammoth, Mimino666/langdetect, abetlen/llama-cpp-python, <br>"
+            "pytorch/pytorch, PySide6, chardet, psutil<br><br>"
+            "OpenGL: <b>ON</b>"
+            "</center>"
         )
-        self.setCentralWidget(self.about_label)
+        main_layout.addWidget(self.about_label)
+
+        button_layout = QHBoxLayout()
+
+        self.donate_github = QPushButton("GitHub Sponsors")
+        self.donate_github.clicked.connect(lambda: self.donationLink("github"))
+        button_layout.addWidget(self.donate_github)
+
+        self.donate_buymeacoffee = QPushButton("Buy Me a Coffee")
+        self.donate_buymeacoffee.clicked.connect(
+            lambda: self.donationLink("buymeacoffee")
+        )
+        button_layout.addWidget(self.donate_buymeacoffee)
+
+        main_layout.addLayout(button_layout)
+
+    def donationLink(self, origin):
+        if origin == "github":
+            QDesktopServices.openUrl(QUrl("https://github.com/sponsors/berkaygediz"))
+        elif origin == "buymeacoffee":
+            QDesktopServices.openUrl(QUrl("https://buymeacoffee.com/berkaygediz"))
 
 
 class SW_Help(QMainWindow):
@@ -211,6 +240,7 @@ class SW_Help(QMainWindow):
             f"<tr><td>Ctrl+=</td><td>Subscript</td></tr>"
             f"<tr><td>Ctrl+Shift+I</td><td>{translations[lang]['image_message']}</td></tr>"
             f"<tr><td>Ctrl+T</td><td>Insert Table</td></tr>"
+            f"<tr><td>Ctrl+Scroll</td><td>Zoom In/Out</td></tr>"
             f"<tr><td>F1</td><td>{translations[lang]['help_message']}</td></tr>"
             f"<tr><td>Ctrl+Shift+A</td><td>{translations[lang]['about']}</td></tr>"
             "</table></body></html>"
@@ -244,7 +274,6 @@ class SW_Workspace(QMainWindow):
             settings.setValue("adaptiveResponse", 1)
 
         settings.sync()
-
         centralWidget = QOpenGLWidget(self)
 
         layout = QVBoxLayout(centralWidget)
@@ -266,10 +295,19 @@ class SW_Workspace(QMainWindow):
         self.llm = None
         self.hardwareCore = self.acceleratorHardware()
 
-        self.LLMinitDock()
+        self.LLMinitBar()
         self.ai_widget.hide()
 
         self.status_bar = self.statusBar()
+
+        self.graphicsView = QGraphicsView(self)
+        self.graphicsScene = QGraphicsScene(self.graphicsView)
+        self.graphicsView.setScene(self.graphicsScene)
+        self.graphicsView.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.graphicsView.setRenderHints(self.graphicsView.renderHints())
+        self.graphicsView.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.graphicsView.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
+
         self.DocumentArea = QTextBrowser()
         self.DocumentArea.setReadOnly(True)
         self.DocumentArea.setUndoRedoEnabled(True)
@@ -278,8 +316,12 @@ class SW_Workspace(QMainWindow):
         self.DocumentArea.anchorClicked.connect(self.handleHyperlink)
         self.DocumentArea.customContextMenuRequested.connect(self.showContextMenu)
 
+        proxy = self.graphicsScene.addWidget(self.DocumentArea)
+
+        self.graphicsView.wheelEvent = self.wheelEventGraphicsView
+
         self.initArea()
-        layout.addWidget(self.DocumentArea)
+        layout.addWidget(self.graphicsView)
 
         self.DocumentArea.setDisabled(True)
         self.initActions()
@@ -311,20 +353,69 @@ class SW_Workspace(QMainWindow):
             if self.hardwareCore == "cpu":
                 self.LLMwarningCPU()
 
+    def wheelEventGraphicsView(self, event):
+        if event.modifiers() == Qt.ControlModifier:
+            zoom_in_factor = 1.25
+            zoom_out_factor = 1 / zoom_in_factor
+            current_transform = self.graphicsView.transform()
+            current_scale = current_transform.m11()
+            if event.angleDelta().y() > 0:
+                new_scale = current_scale * zoom_in_factor
+            else:
+                new_scale = current_scale * zoom_out_factor
+            new_scale = max(0.25, min(new_scale, 5.0))
+            self.graphicsView.setTransform(QTransform().scale(new_scale, new_scale))
+            event.accept()
+            closest_zoom = min(
+                [25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500],
+                key=lambda x: abs(x / 100.0 - new_scale),
+            )
+            self.zoom_level_combobox.blockSignals(True)
+            self.zoom_level_combobox.setCurrentText(f"{closest_zoom}%")
+            self.zoom_level_combobox.blockSignals(False)
+            settings.setValue("zoomLevel", closest_zoom)
+        else:
+            event.ignore()
+
     def showContextMenu(self, pos):
         lang = settings.value("appLanguage", "1252")
         selected_text = self.DocumentArea.textCursor().selectedText().strip()
         text_length = len(selected_text)
 
         show_ai = self.llm is not None and self.llm != ""
-        base_actions = [
-            (f"Selected ({text_length})", ""),
-            ("Typo", "typo"),
-            ("Fix", "fix"),
-            ("Ask", "ask"),
-        ]
 
         self.context_menu = QMenu(self)
+
+        if text_length == 0 and not self.DocumentArea.isReadOnly():
+            cut_action = QAction("Cut", self)
+            cut_action.triggered.connect(self.DocumentArea.cut)
+            self.context_menu.addAction(cut_action)
+
+            copy_action = QAction("Copy", self)
+            copy_action.triggered.connect(self.DocumentArea.copy)
+            self.context_menu.addAction(copy_action)
+
+            paste_action = QAction("Paste", self)
+            paste_action.triggered.connect(self.DocumentArea.paste)
+            self.context_menu.addAction(paste_action)
+
+            delete_action = QAction("Delete", self)
+            delete_action.triggered.connect(
+                lambda: self.DocumentArea.textCursor().removeSelectedText()
+            )
+            self.context_menu.addAction(delete_action)
+
+            undo_action = QAction(translations[lang]["undo"], self)
+            undo_action.triggered.connect(self.DocumentArea.undo)
+            self.context_menu.addAction(undo_action)
+
+            redo_action = QAction(translations[lang]["redo"], self)
+            redo_action.triggered.connect(self.DocumentArea.redo)
+            self.context_menu.addAction(redo_action)
+
+            image_action = QAction(translations[lang]["image"], self)
+            image_action.triggered.connect(self.addImage)
+            self.context_menu.addAction(image_action)
 
         if text_length > 0 and not self.DocumentArea.isReadOnly():
             format_action = QAction("Format", self)
@@ -370,75 +461,116 @@ class SW_Workspace(QMainWindow):
                 action_item.triggered.connect(action["function"])
                 self.context_menu.addAction(action_item)
 
-            if show_ai:
-                self.context_menu.addSeparator()
-                label_action = QAction("AI", self)
-                label_action.setEnabled(False)
-                self.context_menu.addAction(label_action)
-                self.context_menu.addSeparator()
+        if text_length > 0 and show_ai:
+            self.context_menu.addSeparator()
+            widget_action = QWidgetAction(self)
 
-                for action_text, prompt_type in base_actions:
-                    if prompt_type is not None:
-                        self.context_menu.addAction(
-                            action_text,
-                            lambda pt=prompt_type: self.LLMcontextPredict(pt),
-                        )
-                    else:
-                        selected_text_action = QAction(action_text, self)
-                        selected_text_action.setEnabled(False)
-                        self.context_menu.addAction(selected_text_action)
-
-                if text_length < 50:
-                    self.context_menu.addAction(
-                        "Clarify", lambda: self.LLMcontextPredict("clarify")
-                    )
-                elif 50 <= text_length < 200:
-                    self.context_menu.addAction(
-                        "Summary", lambda: self.LLMcontextPredict("summary")
-                    )
-                    self.context_menu.addAction(
-                        "Suggestions", lambda: self.LLMcontextPredict("suggestions")
-                    )
-                else:
-                    self.context_menu.addAction(
-                        "Summary", lambda: self.LLMcontextPredict("summary")
-                    )
-                    self.context_menu.addAction(
-                        "Suggestions", lambda: self.LLMcontextPredict("suggestions")
-                    )
-                    self.context_menu.addAction(
-                        "Clarify", lambda: self.LLMcontextPredict("clarify")
-                    )
-        elif not self.DocumentArea.isReadOnly():
-            undo_action = QAction(translations[lang]["undo"], self)
-            undo_action.triggered.connect(self.DocumentArea.undo)
-            self.context_menu.addAction(undo_action)
-
-            redo_action = QAction(translations[lang]["redo"], self)
-            redo_action.triggered.connect(self.DocumentArea.redo)
-            self.context_menu.addAction(redo_action)
-
-            cut_action = QAction("Cut", self)
-            cut_action.triggered.connect(self.DocumentArea.cut)
-            self.context_menu.addAction(cut_action)
-
-            copy_action = QAction("Copy", self)
-            copy_action.triggered.connect(self.DocumentArea.copy)
-            self.context_menu.addAction(copy_action)
-
-            paste_action = QAction("Paste", self)
-            paste_action.triggered.connect(self.DocumentArea.paste)
-            self.context_menu.addAction(paste_action)
-
-            delete_action = QAction("Delete", self)
-            delete_action.triggered.connect(
-                lambda: self.DocumentArea.textCursor().removeSelectedText()
+            label_widget = QLabel("AI")
+            label_widget.setStyleSheet(
+                """
+                font-weight: bold;
+                background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1, 
+                                        stop: 0 #6A7F8C, stop: 0.7 #8A9DAD, stop: 1 #1C3D5C); 
+                color: black;
+                border: 1px solid white;
+                border-radius: 10px;
+                padding: 5px;
+            """
             )
-            self.context_menu.addAction(delete_action)
 
-            image_action = QAction(translations[lang]["image"], self)
-            image_action.triggered.connect(self.addImage)
-            self.context_menu.addAction(image_action)
+            widget_action.setDefaultWidget(label_widget)
+
+            self.context_menu.addAction(widget_action)
+            self.context_menu.addSeparator()
+
+            if text_length < 50:
+                self.context_menu.addAction(
+                    f"Selected ({text_length})",
+                    lambda: self.LLMcontextPredict(""),
+                )
+                self.context_menu.addAction(
+                    "Clarify", lambda: self.LLMcontextPredict("clarify")
+                )
+            elif 50 <= text_length < 200:
+                self.context_menu.addAction(
+                    f"Selected ({text_length})",
+                    lambda: self.LLMcontextPredict("selected"),
+                )
+                self.context_menu.addAction(
+                    "Summary", lambda: self.LLMcontextPredict("summary")
+                )
+                self.context_menu.addAction(
+                    "Suggestions", lambda: self.LLMcontextPredict("suggestions")
+                )
+            else:
+                self.context_menu.addAction(
+                    f"Selected ({text_length})",
+                    lambda: self.LLMcontextPredict("selected"),
+                )
+                self.context_menu.addAction(
+                    "Summary", lambda: self.LLMcontextPredict("summary")
+                )
+                self.context_menu.addAction(
+                    "Suggestions", lambda: self.LLMcontextPredict("suggestions")
+                )
+                self.context_menu.addAction(
+                    "Clarify", lambda: self.LLMcontextPredict("clarify")
+                )
+        elif text_length > 0 and self.DocumentArea.isReadOnly() and show_ai:
+            self.context_menu.addSeparator()
+            widget_action = QWidgetAction(self)
+
+            label_widget = QLabel("AI")
+            label_widget.setStyleSheet(
+                """
+                font-weight: bold;
+                background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1, 
+                                        stop: 0 #6A7F8C, stop: 0.7 #8A9DAD, stop: 1 #1C3D5C); 
+                color: black;
+                border: 1px solid white;
+                border-radius: 10px;
+                padding: 5px;
+            """
+            )
+
+            widget_action.setDefaultWidget(label_widget)
+
+            self.context_menu.addAction(widget_action)
+            self.context_menu.addSeparator()
+
+            if text_length < 50:
+                self.context_menu.addAction(
+                    f"Selected ({text_length})",
+                    lambda: self.LLMcontextPredict(""),
+                )
+                self.context_menu.addAction(
+                    "Clarify", lambda: self.LLMcontextPredict("clarify")
+                )
+            elif 50 <= text_length < 200:
+                self.context_menu.addAction(
+                    f"Selected ({text_length})",
+                    lambda: self.LLMcontextPredict(""),
+                )
+                self.context_menu.addAction(
+                    "Summary", lambda: self.LLMcontextPredict("summary")
+                )
+                self.context_menu.addAction(
+                    "Suggestions", lambda: self.LLMcontextPredict("suggestions")
+                )
+            else:
+                self.context_menu.addAction(
+                    f"Selected ({text_length})",
+                    lambda: self.LLMcontextPredict(""),
+                )
+                self.context_menu.addAction(
+                    "Summary", lambda: self.LLMcontextPredict("summary")
+                )
+                self.context_menu.addAction(
+                    "Suggestions", lambda: self.LLMcontextPredict("suggestions")
+                )
+                self.context_menu.addAction(
+                    "Clarify", lambda: self.LLMcontextPredict("clarify")
+                )
 
         if self.context_menu.actions():
             self.context_menu.exec(self.DocumentArea.mapToGlobal(pos))
@@ -611,6 +743,7 @@ class SW_Workspace(QMainWindow):
         )
         settings.setValue("appLanguage", self.language_combobox.currentData())
         settings.setValue("adaptiveResponse", self.adaptiveResponse)
+        settings.setValue("zoomLevel", self.zoom_level_combobox.currentText())
         settings.sync()
 
     def restoreState(self):
@@ -655,6 +788,15 @@ class SW_Workspace(QMainWindow):
         self.is_saved = bool(self.file_name)
 
         self.adaptiveResponse = settings.value("adaptiveResponse")
+        zoom = settings.value("zoomLevel", 100)
+        if isinstance(zoom, str):
+            zoom_value = int(zoom.replace("%", ""))
+        else:
+            zoom_value = zoom
+
+        self.zoom_level_combobox.setCurrentText(f"{zoom_value}%")
+
+        self.zoom_level_combobox.setCurrentText(f"{zoom_value}%")
         self.restoreTheme()
         self.updateTitle()
 
@@ -662,9 +804,11 @@ class SW_Workspace(QMainWindow):
         if settings.value("appTheme") == "dark":
             self.setPalette(self.dark_theme)
             self.DocumentArea.setStyleSheet("background-color:#50557a; color: #ffffff;")
+            self.graphicsView.setStyleSheet("background-color:#000000;")
         else:
             self.setPalette(self.light_theme)
-            self.DocumentArea.setStyleSheet("background-color:#6c73a4; color: #000000;")
+            self.DocumentArea.setStyleSheet("background-color:#ffffff; color: #000000;")
+            self.graphicsView.setStyleSheet("background-color:#FDF4DC;")
         self.toolbarTheme()
 
     def themePalette(self):
@@ -691,12 +835,12 @@ class SW_Workspace(QMainWindow):
         if self.palette() == self.light_theme:
             self.setPalette(self.dark_theme)
             self.DocumentArea.setStyleSheet("background-color:#50557a; color: #ffffff;")
+            self.graphicsView.setStyleSheet("background-color:#000000;")
             settings.setValue("appTheme", "dark")
         else:
             self.setPalette(self.light_theme)
-            self.DocumentArea.setStyleSheet(
-                "background-color:#6c73a4; color: #000000; font-weight:500;"
-            )
+            self.DocumentArea.setStyleSheet("background-color:#ffffff; color: #000000;")
+            self.graphicsView.setStyleSheet("background-color:#FDF4DC;")
             settings.setValue("appTheme", "light")
         self.toolbarTheme()
 
@@ -831,8 +975,15 @@ class SW_Workspace(QMainWindow):
                 return
 
     def initArea(self):
+        textDocument = self.DocumentArea.document()
+        pageWidth = 24 * 28.35
+        pageHeight = 29.7 * 28.35
+
+        textDocument.setPageSize(QSizeF(pageWidth, pageHeight))
+        textDocument.setDocumentMargin(2 * 28.35)
+        self.DocumentArea.setFixedSize(pageWidth, pageHeight)
+
         self.resetDocumentArea()
-        self.DocumentArea.document().setDocumentMargin(self.width() * 0.25)
 
     def loadLLM(self):
         if settings.value("load_llm") == None or settings.value("load_llm") == "true":
@@ -938,7 +1089,7 @@ class SW_Workspace(QMainWindow):
         if reply == QMessageBox.No:
             settings.setValue("load_llm", False)
 
-    def LLMinitDock(self):
+    def LLMinitBar(self):
         self.statistics_label = QLabel()
 
         self.ai_widget = QWidget(self)
@@ -957,25 +1108,33 @@ class SW_Workspace(QMainWindow):
 
         main_layout = QVBoxLayout()
 
-        self.scrollableArea = QScrollArea()
-        self.messages_layout = QVBoxLayout()
-
-        self.ai_label = QLabel()
-        self.ai_label.setText("AI")
+        self.ai_label = QLabel("AI")
         self.ai_label.setStyleSheet(
             "text-align:center; font-weight: bold; color: white; background-color:#666666;"
         )
-        main_layout.addWidget(self.ai_label)
+
+        self.hide_button = QPushButton("_")
+        self.hide_button.setStyleSheet(
+            "color: white; font-size: 24px; font-weight: bold; background-color: transparent;"
+        )
+        self.hide_button.setFixedSize(36, 36)
+        self.hide_button.clicked.connect(self.hideAIWidget)
+
+        label_layout = QHBoxLayout()
+        label_layout.addWidget(self.ai_label)
+        label_layout.addWidget(self.hide_button)
+
+        main_layout.addLayout(label_layout)
 
         self.input_text = QTextEdit()
         self.input_text.setPlaceholderText("...")
         self.input_text.setFixedHeight(80)
-
         main_layout.addWidget(self.input_text)
 
         self.predict_button = QPushButton("->")
         self.predict_button.clicked.connect(self.LLMpredict)
         palette = self.palette()
+
         if palette == self.light_theme:
             text_color = QColor(0, 0, 0)
             button_bg = "#FFFFFF"
@@ -988,48 +1147,60 @@ class SW_Workspace(QMainWindow):
             button_hover = "#5C6370"
             button_checked = "#0000AF"
             button_disabled = "#555555"
+
         self.predict_button.setStyleSheet(
             f"""
-                QPushButton {{
-                    background-color: {button_bg}; 
-                    color: {text_color.name()};
-                    border: 1px solid #444;
-                    border-radius: 5px;
-                    margin: 1px;
-                    font-size: 14px;
-                    font-weight: bold;
-                }}
-                
-                QPushButton:hover {{
-                    background-color: {button_hover};
-                    border: 1px solid {button_bg};
-                }}
-                
-                QPushButton:checked {{
-                    background-color: {button_checked};
-                    border: 1px solid {button_bg};
-                }}
+            QPushButton {{
+                background-color: {button_bg}; 
+                color: {text_color.name()};
+                border: 1px solid #444;
+                border-radius: 5px;
+                margin: 1px;
+                font-size: 14px;
+                font-weight: bold;
+            }}
+            
+            QPushButton:hover {{
+                background-color: {button_hover};
+                border: 1px solid {button_bg};
+            }}
+            
+            QPushButton:checked {{
+                background-color: {button_checked};
+                border: 1px solid {button_bg};
+            }}
 
-                QPushButton:disabled {{
-                    background-color: {button_disabled};
-                    color: #777;
-                    border: 1px solid #444;
-                }}
-                """
+            QPushButton:disabled {{
+                background-color: {button_disabled};
+                color: #777;
+                border: 1px solid #444;
+            }}
+            """
         )
         main_layout.addWidget(self.predict_button)
 
+        self.clear_button = QPushButton("DEL")
+        self.clear_button.setStyleSheet(
+            "background-color: red; color: white; font-weight: bold; border-radius: 5px;"
+        )
+        self.clear_button.clicked.connect(self.clearMessages)
+        main_layout.addWidget(self.clear_button)
+
+        self.scrollableArea = QScrollArea()
         self.scrollableArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.scrollableArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.scrollableArea.setWidgetResizable(True)
+
+        self.messages_layout = QVBoxLayout()
+
         scroll_contents = QWidget()
         scroll_contents.setLayout(self.messages_layout)
         self.scrollableArea.setWidget(scroll_contents)
+
         main_layout.addWidget(self.scrollableArea)
 
         container = QWidget(self.ai_widget)
         container.setLayout(main_layout)
-
         container.setStyleSheet(
             "background-color: #2f2f2f; border-top-left-radius: 15px; border-top-right-radius: 15px; padding: 5px;"
         )
@@ -1039,6 +1210,15 @@ class SW_Workspace(QMainWindow):
 
         self.ai_widget.setStyleSheet("background-color: transparent;")
         self.scrollableArea.setStyleSheet("background-color:#000000; color:white;")
+
+    def hideAIWidget(self):
+        self.ai_widget.setVisible(False)
+
+    def clearMessages(self):
+        for i in range(self.messages_layout.count()):
+            widget = self.messages_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
 
     def LLMmessage(self, text, is_user=True, typing_speed=25):
         DetectorFactory.seed = 0
@@ -1471,7 +1651,7 @@ class SW_Workspace(QMainWindow):
             },
             {
                 "name": "addHyperlinkAction",
-                "text": "Add Hyperlink",
+                "text": "Hyperlink",
                 "status_tip": "",
                 "function": self.addHyperlink,
                 "shortcut": None,
@@ -1609,8 +1789,24 @@ class SW_Workspace(QMainWindow):
             self.addHyperlinkAction,
         ]
         self.multimedia_toolbar = add_toolbar("multimedia", multimedia_actions)
+        zoom_levels = [25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 500]
+        self.zoom_level_combobox = QComboBox(self)
+        self.zoom_level_combobox.setStyleSheet(
+            "background-color:#000000; color:#FFFFFF;"
+        )
+        self.zoom_level_combobox.addItems([f"{level}%" for level in zoom_levels])
+        self.zoom_level_combobox.setCurrentText(f"{settings.value('zoomLevel', 100)}%")
+        self.zoom_level_combobox.currentTextChanged.connect(self.setZoomLevel)
+        self.ui_toolbar.addWidget(self.zoom_level_combobox)
 
         self.updateFormattingButtons()
+
+    def setZoomLevel(self, value):
+        if isinstance(value, str):
+            value = int(value.replace("%", ""))
+
+        zoom_level = value / 100.0
+        self.graphicsView.setTransform(QTransform().scale(zoom_level, zoom_level))
 
     def addTable(self):
         templates = [
@@ -1741,6 +1937,17 @@ class SW_Workspace(QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         if hasattr(self, "ai_widget") and self.ai_widget is not None:
+            window_width = self.width()
+            window_height = self.height()
+            right_margin = max(int(window_width * 0.07), 50)
+            widget_height = max(515, min(int(window_height * 0.8), 900))
+            widget_width = max(500, min(int(window_width * 0.30), 800))
+            self.ai_widget.setMinimumHeight(widget_height)
+            self.ai_widget.setMaximumHeight(widget_height)
+            self.ai_widget.setMinimumWidth(widget_width)
+            self.ai_widget.setMaximumWidth(widget_width)
+            self.ai_widget.setContentsMargins(0, 0, right_margin, 42)
+
             if not self.ai_widget.isHidden():
                 self.updateAiWidgetPosition()
 
@@ -1786,7 +1993,6 @@ class SW_Workspace(QMainWindow):
         self.DocumentArea.setTextBackgroundColor(
             QColor(fallbackValues["contentBackgroundColor"])
         )
-        self.DocumentArea.setTabStopDistance(27)
 
     def newFile(self):
         if self.is_saved:
@@ -2223,7 +2429,7 @@ if __name__ == "__main__":
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("SolidWriting")
     app.setApplicationDisplayName("SolidWriting 2025.04")
-    app.setApplicationVersion("1.5.2025.04-1")
+    app.setApplicationVersion("1.5.2025.04-2")
     ws = SW_ControlInfo()
     ws.show()
     sys.exit(app.exec())
