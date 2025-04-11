@@ -803,7 +803,7 @@ class SW_Workspace(QMainWindow):
     def restoreTheme(self):
         if settings.value("appTheme") == "dark":
             self.setPalette(self.dark_theme)
-            self.DocumentArea.setStyleSheet("background-color:#50557a; color: #ffffff;")
+            self.DocumentArea.setStyleSheet("background-color:#727694; color: #FFFFFF;")
             self.graphicsView.setStyleSheet("background-color:#000000;")
         else:
             self.setPalette(self.light_theme)
@@ -834,12 +834,12 @@ class SW_Workspace(QMainWindow):
     def themeAction(self):
         if self.palette() == self.light_theme:
             self.setPalette(self.dark_theme)
-            self.DocumentArea.setStyleSheet("background-color:#50557a; color: #ffffff;")
+            self.DocumentArea.setStyleSheet("background-color:#727694; color: #FFFFFF;")
             self.graphicsView.setStyleSheet("background-color:#000000;")
             settings.setValue("appTheme", "dark")
         else:
             self.setPalette(self.light_theme)
-            self.DocumentArea.setStyleSheet("background-color:#ffffff; color: #000000;")
+            self.DocumentArea.setStyleSheet("background-color:#FFFFFF; color: #000000;")
             self.graphicsView.setStyleSheet("background-color:#FDF4DC;")
             settings.setValue("appTheme", "light")
         self.toolbarTheme()

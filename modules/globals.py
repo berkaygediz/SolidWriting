@@ -8,7 +8,7 @@ fallbackValues = {
     "italic": False,
     "underline": False,
     "contentAlign": Qt.AlignmentFlag.AlignLeft,
-    "contentColor": "#FFFFFF",
+    "contentColor": "#000000",
     "contentBackgroundColor": "transparent",
     "windowScale": None,
     "defaultDirectory": None,
