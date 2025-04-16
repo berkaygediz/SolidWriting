@@ -35,7 +35,7 @@ SolidWriting offers an intuitive interface and powerful features for creating an
 - [x] **Document Statistics**: Provides key statistical information about the document.
 - [x] **User Experience**: Drag and drop functionality, dark mode support, and alerts for unsaved changes.
 - [x] **Customizable Toolbar**: Personalize the user interface toolbar to suit your workflow.
-- [x] **Multilingual Support**: English, Deutsch, Español, Türkçe, Azərbaycanca, Uzbek, 中文 (Chinese), 한국어 (Korean), 日本語 (Japanese), العربية (Arabic), Русский (Russian), Français, Ελληνικά (Greek), Kinyarwanda (Rwandan), Hebrew (עברית).
+- [x] **Multilingual Support**: English, Deutsch, Español, Türkçe, Azərbaycanca, 中文 (Chinese), 한국어 (Korean), 日本語 (Japanese), العربية (Arabic), Русский (Russian), Français, Ελληνικά (Greek), Kinyarwanda (Rwandan), Hebrew (עברית).
 - [x] **Offline AI Chat**: Built-in AI assistant (offline mode) for content generation & Q&A, with automatic language detection and a context menu for seamless interaction.
 
 ## Prerequisites
