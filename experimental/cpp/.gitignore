@@ -556,3 +556,6 @@ compile_commands.json
 *creator.user*
 
 *_qmlcache.qrc
+
+# Ignore files in externals/llama.cpp directory
+externals/*
