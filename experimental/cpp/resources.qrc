@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/resources">
-        <file>solidwriting_icon.ico</file>
-        <file>solidwriting_icon.png</file>
-    </qresource>
-</RCC>
