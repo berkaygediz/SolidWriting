@@ -1,5 +1,5 @@
 #include "sw_controlinfo.h"
-#include "sw_about.h"
+#include "sw_workspace.h"
 
 #include <QApplication>
 #include <QFont>
@@ -11,8 +11,9 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <qmainwindow.h>
 
-SW_ControlInfo::SW_ControlInfo(QWidget *parent)
+SW_ControlInfo::SW_ControlInfo(QMainWindow *parent)
     : QMainWindow(parent), wsWindow(nullptr) {
   setAttribute(Qt::WA_TranslucentBackground);
   setWindowModality(Qt::ApplicationModal);
@@ -49,6 +50,6 @@ SW_ControlInfo::SW_ControlInfo(QWidget *parent)
 
 void SW_ControlInfo::showWS() {
   this->hide();
-  wsWindow = new SW_About();
+  wsWindow = new SW_Workspace();
   wsWindow->show();
 }
