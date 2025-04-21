@@ -559,3 +559,10 @@ compile_commands.json
 
 # Ignore files in externals/llama.cpp directory
 externals/*
+
+*.vcxproj
+*.vcxproj.filters
+*.sln
+.qt/
+SolidWriting_autogen/
+SolidWriting_dir/
