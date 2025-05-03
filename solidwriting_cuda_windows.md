@@ -4,9 +4,9 @@ This guide provides step-by-step instructions to enable CUDA acceleration for `l
 
 ---
 
-## 1. Install NVIDIA CUDA (v12.8 or Newer)  
+## 1. Install NVIDIA CUDA (v12.9 or Newer)  
 
-Download and install **NVIDIA CUDA v12.8** or a newer version from the [official NVIDIA website](https://developer.nvidia.com/cuda-downloads).  
+Download and install **NVIDIA CUDA v12.9** or a newer version from the [official NVIDIA website](https://developer.nvidia.com/cuda-downloads).  
 
 ---
 
@@ -22,7 +22,7 @@ Download and install **NVIDIA CUDA v12.8** or a newer version from the [official
 Copy the `bin`, `include`, and `lib` folders from the extracted cuDNN archive to the CUDA installation directory:  
 
 ```powershell
-C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8
+C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9
 ```
 
 ---
@@ -32,7 +32,7 @@ C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8
 Copy the MSBuild extension files from:  
 
 ```powershell
-C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\extras\visual_studio_integration\MSBuildExtensions
+C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\extras\visual_studio_integration\MSBuildExtensions
 ```  
 
 Paste them into:  
@@ -56,19 +56,19 @@ Configure the environment variables required for CUDA compilation.
 - Set the **CUDA compiler (`nvcc.exe`) path**:  
 
   ```powershell
-  $env:CUDACXX="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\bin\nvcc.exe"
+  $env:CUDACXX="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin\nvcc.exe"
   ```
 
 - Set **CMake arguments** for the build process:  
 
   ```powershell
-  set CMAKE_ARGS=-DGGML_CUDA=on -DCMAKE_GENERATOR_TOOLSET="cuda=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8"
+  set CMAKE_ARGS=-DGGML_CUDA=on -DCMAKE_GENERATOR_TOOLSET="cuda=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9"
   ```
 
 - Set the **CUDA toolkit directory**:  
 
   ```powershell
-  $env:CudaToolkitDir="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\"
+  $env:CudaToolkitDir="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\"
   ```
 
 ---

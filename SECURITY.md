@@ -6,6 +6,8 @@ The following table outlines which versions of SolidWriting receive security upd
 
 | Version         | Supported          |  
 | -------------- | ------------------ |  
+| 1.5.2025.05-1  | ❌ No longer supported |  
+| 1.5.2025.04-2  | ❌ No longer supported |  
 | 1.5.2025.04-1  | ❌ No longer supported |  
 | 1.5.2025.03-2  | ❌ No longer supported |  
 | 1.5.2025.03-1  | ❌ No longer supported |  

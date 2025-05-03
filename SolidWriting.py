@@ -5,6 +5,7 @@ import mimetypes
 import os
 import re
 import sys
+from functools import partial
 
 import chardet
 import mammoth
@@ -377,6 +378,61 @@ class SW_Workspace(QMainWindow):
         else:
             event.ignore()
 
+    def contextMenuOnlineServices(self, selected_text):
+        query = selected_text.replace(" ", "+")
+
+        search_engines = {
+            "Google": f"https://www.google.com/search?q={query}",
+            "DuckDuckGo": f"https://duckduckgo.com/?q={query}",
+            "Searx": f"https://searx.be/search?q={query}",
+            "Ecosia": f"https://www.ecosia.org/search?q={query}",
+            "Bing": f"https://www.bing.com/search?q={query}",
+            "Yandex": f"https://yandex.com/search/?text={query}",
+            "ChatGPT": f"https://chat.openai.com/?q={query}",
+            "Perplexity": f"https://www.perplexity.ai/search?q={query}",
+        }
+
+        search_menu = QMenu("Search", self)
+
+        search_menu.addAction(
+            "All",
+            lambda: [
+                QDesktopServices.openUrl(QUrl(url)) for url in search_engines.values()
+            ],
+        )
+
+        search_menu.addSeparator()
+
+        for name, url in search_engines.items():
+            search_menu.addAction(name, partial(QDesktopServices.openUrl, QUrl(url)))
+
+        search_menu.addSeparator()
+
+        translate_menu = QMenu("Translate", self)
+        encoded_text = QUrl.toPercentEncoding(selected_text).data().decode()
+
+        translation_services = {
+            "Google": f"https://translate.google.com/?sl=auto&tl=auto&text={encoded_text}&op=translate",
+            "Yandex": f"https://translate.yandex.com/?lang=auto-auto&text={encoded_text}",
+            "Microsoft": f"https://www.bing.com/translator?from=auto&to=en&text={encoded_text}",
+            "Naver Papago": f"https://papago.naver.com/?sk=auto&tk=ko&st={encoded_text}",
+        }
+
+        translate_menu.addAction(
+            "All",
+            lambda: [
+                QDesktopServices.openUrl(QUrl(url))
+                for url in translation_services.values()
+            ],
+        )
+
+        translate_menu.addSeparator()
+
+        for name, url in translation_services.items():
+            translate_menu.addAction(name, partial(QDesktopServices.openUrl, QUrl(url)))
+
+        return search_menu, translate_menu
+
     def showContextMenu(self, pos):
         lang = settings.value("appLanguage", "1252")
         selected_text = self.DocumentArea.textCursor().selectedText().strip()
@@ -387,24 +443,6 @@ class SW_Workspace(QMainWindow):
         self.context_menu = QMenu(self)
 
         if text_length == 0 and not self.DocumentArea.isReadOnly():
-            cut_action = QAction("Cut", self)
-            cut_action.triggered.connect(self.DocumentArea.cut)
-            self.context_menu.addAction(cut_action)
-
-            copy_action = QAction("Copy", self)
-            copy_action.triggered.connect(self.DocumentArea.copy)
-            self.context_menu.addAction(copy_action)
-
-            paste_action = QAction("Paste", self)
-            paste_action.triggered.connect(self.DocumentArea.paste)
-            self.context_menu.addAction(paste_action)
-
-            delete_action = QAction("Delete", self)
-            delete_action.triggered.connect(
-                lambda: self.DocumentArea.textCursor().removeSelectedText()
-            )
-            self.context_menu.addAction(delete_action)
-
             undo_action = QAction(translations[lang]["undo"], self)
             undo_action.triggered.connect(self.DocumentArea.undo)
             self.context_menu.addAction(undo_action)
@@ -416,6 +454,13 @@ class SW_Workspace(QMainWindow):
             image_action = QAction(translations[lang]["image"], self)
             image_action.triggered.connect(self.addImage)
             self.context_menu.addAction(image_action)
+
+            self.context_menu.addSeparator()
+
+        if text_length > 0 and self.DocumentArea.isReadOnly():
+            search_menu, translate_menu = self.contextMenuOnlineServices(selected_text)
+            self.context_menu.addMenu(search_menu)
+            self.context_menu.addMenu(translate_menu)
 
         if text_length > 0 and not self.DocumentArea.isReadOnly():
             format_action = QAction("Format", self)
@@ -460,6 +505,32 @@ class SW_Workspace(QMainWindow):
                 action_item = QAction(action["text"], self)
                 action_item.triggered.connect(action["function"])
                 self.context_menu.addAction(action_item)
+
+            self.context_menu.addSeparator()
+
+            cut_action = QAction("Cut", self)
+            cut_action.triggered.connect(self.DocumentArea.cut)
+            self.context_menu.addAction(cut_action)
+
+            copy_action = QAction("Copy", self)
+            copy_action.triggered.connect(self.DocumentArea.copy)
+            self.context_menu.addAction(copy_action)
+
+            paste_action = QAction("Paste", self)
+            paste_action.triggered.connect(self.DocumentArea.paste)
+            self.context_menu.addAction(paste_action)
+
+            delete_action = QAction("Delete", self)
+            delete_action.triggered.connect(
+                lambda: self.DocumentArea.textCursor().removeSelectedText()
+            )
+            self.context_menu.addAction(delete_action)
+
+            self.context_menu.addSeparator()
+
+            search_menu, translate_menu = self.contextMenuOnlineServices(selected_text)
+            self.context_menu.addMenu(search_menu)
+            self.context_menu.addMenu(translate_menu)
 
         if text_length > 0 and show_ai:
             self.context_menu.addSeparator()
@@ -2428,8 +2499,8 @@ if __name__ == "__main__":
     app.setWindowIcon(QIcon(os.path.join(applicationPath, fallbackValues["icon"])))
     app.setOrganizationName("berkaygediz")
     app.setApplicationName("SolidWriting")
-    app.setApplicationDisplayName("SolidWriting 2025.04")
-    app.setApplicationVersion("1.5.2025.04-2")
+    app.setApplicationDisplayName("SolidWriting 2025.05")
+    app.setApplicationVersion("1.5.2025.05-1")
     ws = SW_ControlInfo()
     ws.show()
     sys.exit(app.exec())
